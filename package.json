@@ -1,0 +1,27 @@
+{
+  "name": "game-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "bun src/Main.ts",
+    "debug": "bun --inspect-wait src/Main.ts",
+    "test": "bun src/Test.ts",
+    "introspect": "drizzle-kit introspect:mysql",
+    "generate": "drizzle-kit generate:mysql",
+    "push": "drizzle-kit push:mysql"
+  },
+  "dependencies": {
+    "drizzle-kit": "^0.20.14",
+    "drizzle-orm": "^0.29.5",
+    "fast-xml-parser": "^4.3.5",
+    "mysql2": "^3.9.2",
+    "node-schedule": "^2.1.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node-schedule": "^2.1.6",
+    "typescript": "^5.3.3"
+  },
+  "module": "src/Main.ts"
+}

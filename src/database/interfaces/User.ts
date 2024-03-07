@@ -1,0 +1,50 @@
+export default interface User {
+    id: number;
+    name: string;
+    hash: string;
+    hairId: number;
+    access: number;
+    activationFlag: number;
+    permamuteFlag: boolean;
+    country: string;
+    age: number;
+    gender: 'M' | 'F' | unknown;
+    email: string;
+    level: number;
+    gold: number;
+    coins: number;
+    exp: number;
+    colorHair: string;
+    colorSkin: string;
+    colorEye: string;
+    colorBase: string;
+    colorTrim: string;
+    colorAccessory: string;
+    slotsBag: number;
+    slotsBank: number;
+    slotsHouse: number;
+    dateCreated: Date;
+    lastLogin: Date;
+
+    cpBoostExpire: Date;
+    repBoostExpire: Date;
+    goldBoostExpire: Date;
+    expBoostExpire: Date;
+    upgradeExpire: Date;
+
+    upgradeDays: number;
+    upgraded: boolean;
+    achievement: number;
+    settings: number;
+    quests: string;
+    quests2: string;
+    dailyQuests0: number;
+    dailyQuests1: number;
+    dailyQuests2: number;
+    monthlyQuests0: number;
+    lastArea: string;
+    currentServer: string;
+    houseInfo: string;
+    killCount: number;
+    deathCount: number;
+}
