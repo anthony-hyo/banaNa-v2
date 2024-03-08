@@ -9,6 +9,7 @@ import JSONArray from "../util/json/JSONArray";
 import JSONObject from "../util/json/JSONObject";
 import Users from "./Users";
 import type Player from "../player/Player.ts";
+import GameController from "../controller/GameController.ts";
 
 export class Rooms {
 
@@ -39,12 +40,11 @@ export class Rooms {
         this.privKeyGenerator = new Random();
     }
 
-    public exit(room: Room, user: Player): void {
-        const exit: string[] = ["exitArea", String(user.getUserId()), user.getName()];
-        this.world.sendToRoomButOne(exit, user, room);
+    public exit(room: Room, player: Player): void {
+        room.writeStringExcept(player, "exitArea", String(player.getUserId()), player.getName());
 
         if (this.world.areas.get(room.getName().split("-")[0]) != null && this.world.areas.get(room.getName().split("-")[0]).isPvP()) {
-            this.world.sendToRoomButOne(["server", user.getName() + " has left the match."], user, room);
+            room.writeStringExcept(player, "server", player.getName() + " has left the match.");
         }
     }
 
@@ -442,7 +442,7 @@ export class Rooms {
             const bName: string = room.properties.get(Rooms.BLUE_TEAM_NAME) as string;
 
             if (redScore >= 1000) {
-                this.world.sendServerMessage(`<font color="#ffffff"><a href="http://augoeides.org/?profile=${rName}" target="_blank">${rName}</a></font> won the match against <font color="#ffffff"><a href="http://infinityarts.co/?profile=${bName}" target="_blank">${bName}</a></font>`);
+                GameController.instance().serverMessage(`<font color="#ffffff"><a href="http://augoeides.org/?profile=${rName}" target="_blank">${rName}</a></font> won the match against <font color="#ffffff"><a href="http://infinityarts.co/?profile=${bName}" target="_blank">${bName}</a></font>`);
 
                 const users: Set<Player> = new Set<Player>();
 
@@ -454,7 +454,7 @@ export class Rooms {
 
                 this.world.scheduleTask(new WarpUser(this.world, users), 5, TimeUnit.SECONDS);
             } else if (blueScore >= 1000) {
-                this.world.sendServerMessage(`<font color="#ffffff"><a href="http://augoeides.org/?profile=${bName}" target="_blank">${bName}</a></font> won the match against <font color="#ffffff"><a href="http://infinityarts.co/?profile=${rName}" target="_blank">${rName}</a></font>`);
+                GameController.instance().serverMessage(`<font color="#ffffff"><a href="http://augoeides.org/?profile=${bName}" target="_blank">${bName}</a></font> won the match against <font color="#ffffff"><a href="http://infinityarts.co/?profile=${rName}" target="_blank">${rName}</a></font>`);
 
                 const users: Set<Player> = new Set<Player>();
 

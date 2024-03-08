@@ -1,7 +1,4 @@
-import World from "./World";
-import JSONObject from "../json/JSONObject";
 import Room from "../room/Room";
-import JSONArray from "../json/JSONArray";
 import {Rank} from "../aqw/Rank";
 import {Quests} from "../aqw/Quests";
 import {Achievement} from "../aqw/Achievement";
@@ -16,6 +13,8 @@ import type Hair from "../database/interfaces/Hair.ts";
 import type PartyInfo from "./PartyInfo.ts";
 import type Enhancement from "../database/interfaces/Enhancement.ts";
 import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../util/Const.ts";
+import JSONObject from "../util/json/JSONObject.ts";
+import JSONArray from "../util/json/JSONArray.ts";
 
 export default class Users {
 
@@ -163,7 +162,7 @@ export default class Users {
 
         this.world.db.jdbc.run("UPDATE users SET Level = ?, Exp = 0 WHERE id = ?", newLevel, user.properties.get(Users.DATABASE_ID));
 
-        this.world.send(levelUp, user);
+        user.network.writeObject(levelUp);
     }
 
     public giveRewards(user: Player, exp: number, gold: number, cp: number, rep: number, factionId: number, fromId: number, npcType: string): void {
@@ -243,7 +242,7 @@ export default class Users {
             }
         }
 
-        this.world.send(addGoldExp, user);
+        user.network.writeObject(addGoldExp);
 
 
         const userResult: QueryResult = this.world.db.jdbc.query("SELECT Gold, Exp FROM users WHERE id = ? FOR UPDATE", user.properties.get(Users.DATABASE_ID));
@@ -541,7 +540,7 @@ export default class Users {
         updateQuest.put("iIndex", index);
         updateQuest.put("iValue", value);
 
-        this.world.send(updateQuest, user);
+        user.network.writeObject(updateQuest);
     }
 
     public getQuestValue(user: Player, index: number): number {
@@ -575,7 +574,7 @@ export default class Users {
         sa.put("index", index);
         sa.put("value", value);
 
-        this.world.send(sa, user);
+        user.network.writeObject(sa);
     }
 
     public getAchievement(field: string, index: number, user: Player): number {
@@ -660,12 +659,12 @@ export default class Users {
             pr.put("unm", user.properties.get(Users.USERNAME));
 
             this.world.send(pr, pi.getChannelListButOne(user));
-            this.world.send(pr, user);
+            user.network.writeObject(pr);
 
             if (pi.getMemberCount() <= 0) {
                 const pc: JSONObject = new JSONObject();
                 pc.put("cmd", "pc");
-                this.world.send(pc, pi.getOwnerObject());
+                pi.getOwnerObject().network.writeObject(pc);
                 this.world.parties.removeParty(partyId);
                 pi.getOwnerObject().properties.put(Users.PARTY_ID, -1);
             }
@@ -694,8 +693,8 @@ export default class Users {
         while (result.next()) {
             const client: Player = this.world.zone.getUserByName(result.getString("Name").toLowerCase());
             if (client) {
-                this.world.send(updateFriend, client);
-                this.world.send(["server", user.getName() + " has logged out."], client);
+                client.network.writeObject(updateFriend);
+                client.network.writeString("server", user.getName() + " has logged out.");
             }
         }
         result.close();
@@ -841,7 +840,7 @@ export default class Users {
         const ca: JSONObject = new JSONObject();
         ca.put("cmd", "clearAuras");
 
-        this.world.send(ca, user);
+        user.network.writeObject(ca);
     }
 
     private applyPassiveAuras(user: Player, rank: number, classObj: Class): void {
