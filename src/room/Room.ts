@@ -1,19 +1,58 @@
 import {Socket} from "net";
-import Player from "../examples/Player";
+import type IDispatchable from "../interfaces/IDispatchable.ts";
+import JSONObject from "../util/json/JSONObject.ts";
+import type Player from "../player/Player.ts";
 
-export default class Room {
+export default class Room implements IDispatchable {
 
     private readonly id: number;
     private readonly name: string;
-    private readonly users: Array<Player>;
     private readonly channel: Socket;
-    properties: Map<string, any>;
+    public properties!: Map<string, any>;
+
+
+    private readonly players: Array<Player> = new Array<Player>();
+    private readonly monsters: Array<Player> = new Array<Player>();
 
     constructor(id: number, name: string) {
         this.id = id;
         this.name = name;
-        this.users = new Array<Player>();
     }
+
+    private allPlayersExcept(networkId: number, data: object): Array<Socket> {
+        return this.players
+            .filter((player: Player): boolean => player.network.id !== networkId)
+            .map((player: Player) => player.network.socket)
+            .reduce((acc: Array<Socket>, channel: Socket) => {
+                acc.push(channel);
+                return acc;
+            }, new Array<Socket>());
+    }
+
+    public writeObjectExcept(ignored: Player, data: JSONObject): void {
+        for (const player of this.players.filter((player: Player): boolean => player.network.id !== ignored.network.id)) {
+            player.network.writeObject(data);
+        }
+    }
+
+    public writeStringExcept(ignored: Player, ...data: any[]): void {
+        for (const player of this.players.filter((player: Player): boolean => player.network.id !== ignored.network.id)) {
+            player.network.writeString(data);
+        }
+    }
+
+    public writeObject(data: JSONObject): void {
+        for (const player of this.players) {
+            player.network.writeObject(data);
+        }
+    }
+
+    public writeString(...data: any[]): void {
+        for (const player of this.players) {
+            player.network.writeString(data);
+        }
+    }
+
 
     public getProperties(): Map<string, any> {
         return this.properties;

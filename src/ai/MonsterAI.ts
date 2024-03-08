@@ -11,12 +11,12 @@ import JSONArray from "../util/json/JSONArray";
 import JSONObject from "../util/json/JSONObject";
 import Users from "../world/Users";
 import type Stats from "../world/stats/Stats";
+import type IDispatchable from "../interfaces/IDispatchable.ts";
 
-export class MonsterAI {
+export class MonsterAI implements IDispatchable {
 
     public attacking: ScheduledTask | null;
 
-    public world: World;
     public monsterId: number;
     public mapId: number;
     public state: number;
@@ -27,6 +27,7 @@ export class MonsterAI {
     public auras: Set<RemoveAura>;
     public rand: Random;
     public room: Room;
+
 
     constructor(mapMon: MapMonster, room: Room) {
         this.monsterId = mapMon.monsterId;
@@ -56,9 +57,9 @@ export class MonsterAI {
 
         const userId: number = this.getRandomTarget();
 
-        const user: Player | null = ExtensionHelper.instance().getUserById(userId);
+        const player: Player | null = ExtensionHelper.instance().getUserById(userId);
 
-        if (!user || (this.room.getId() !== user.getRoom()) || this.frame !== user.properties.get(Users.FRAME)) {
+        if (!player || (this.room.getId() !== player.getRoom()) || this.frame !== player.properties.get(Users.FRAME)) {
             this.removeTarget(userId);
             this.cancel();
             return;
@@ -70,7 +71,7 @@ export class MonsterAI {
 
         let damage: number = this.rand.nextInt(maxDmg - minDmg) + minDmg;
 
-        const stats: Stats = user.properties.get(Users.STATS);
+        const stats: Stats = player.properties.get(Users.STATS);
 
         const crit: boolean = Math.random() < 0.2;
         const dodge: boolean = Math.random() < stats.get$tdo();
@@ -84,7 +85,7 @@ export class MonsterAI {
             }
         }
 
-        const userAuras: Set<RemoveAura> = user.properties.get(Users.AURAS);
+        const userAuras: Set<RemoveAura> = player.properties.get(Users.AURAS);
         for (const ra of userAuras) {
             const aura: SkillAura = ra.getAura();
             if (aura.category !== "d") {
@@ -92,14 +93,14 @@ export class MonsterAI {
             }
         }
 
-        let userHp: number = user.properties.get(Users.HP) - damage;
+        let userHp: number = player.properties.get(Users.HP) - damage;
         userHp = userHp <= 0 ? 0 : userHp;
 
-        user.properties.set(Users.HP, userHp);
-        user.properties.set(Users.STATE, Users.STATE_COMBAT);
+        player.properties.set(Users.HP, userHp);
+        player.properties.set(Users.STATE, Users.STATE_COMBAT);
 
-        if (user.properties.get(Users.HP) <= 0) {
-            this.world.users.die(user);
+        if (player.properties.get(Users.HP) <= 0) {
+            this.world.users.die(player);
             this.removeTarget(userId);
             this.cancel();
         }
@@ -112,18 +113,18 @@ export class MonsterAI {
         const ct: JSONObject = new JSONObject();
 
         anims.add(new JSONObject()
-            .element("strFrame", user.properties.get(Users.FRAME))
+            .element("strFrame", player.properties.get(Users.FRAME))
             .element("cInf", "m:" + this.mapId)
             .element("fx", "m")
             .element("tInf", "p:" + userId)
             .element("animStr", "Attack1,Attack2")
         );
 
-        userData.put("intMP", user.properties.get(Users.MP));
-        userData.put("intHP", user.properties.get(Users.HP));
-        userData.put("intState", user.properties.get(Users.STATE));
+        userData.put("intMP", player.properties.get(Users.MP));
+        userData.put("intHP", player.properties.get(Users.HP));
+        userData.put("intState", player.properties.get(Users.STATE));
 
-        p.put(user.getName(), userData);
+        p.put(player.getName(), userData);
 
         saraObj.put("actionResult", new JSONObject()
             .element("hp", damage)
@@ -151,11 +152,11 @@ export class MonsterAI {
         ct.put("m", m);
         ct.put("cmd", "ct");
 
-        this.world.send(ct, this.room.getChannellList());
+        this.writeObject(ct);
 
         ct.put("sara", sara);
 
-        this.world.send(ct, user);
+        player.network.writeObject(ct);
     }
 
     public restore(): void {
@@ -174,7 +175,7 @@ export class MonsterAI {
         mtls.put("id", this.mapId);
         mtls.put("o", monInfo);
 
-        this.world.send(mtls, this.room.getChannellList());
+        this.writeObject(mtls);
     }
 
     public die(): void {
@@ -318,4 +319,13 @@ export class MonsterAI {
     public getAuras(): ReadonlySet<RemoveAura> {
         return this.auras;
     }
+
+    public writeObject(data: JSONObject): void {
+        this.room.writeObject(data);
+    }
+    public writeString(...data: any[]): void {
+        this.room.writeString(data);
+    }
+
+
 }
