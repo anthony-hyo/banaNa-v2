@@ -9,7 +9,7 @@ import PlayerPreference from "./PlayerPreference.ts";
 export default class Player {
 
     public properties: Map<string, any> = new Map<string, any>();
-    public room: Room;
+    public room: Room = Room.NONE;
 
     private readonly _databaseId: number;
 

@@ -1,149 +1,91 @@
-import {Socket} from "net";
 import type IDispatchable from "../interfaces/IDispatchable.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 import type Player from "../player/Player.ts";
+import database from "../database/drizzle/database.ts";
+import {eq} from "drizzle-orm";
+import {users} from "../database/drizzle/schema.ts";
+import type Area from "../database/interfaces/Area.ts";
 
 export default class Room implements IDispatchable {
 
-    private readonly id: number;
-    private readonly name: string;
-    private readonly channel: Socket;
-    public properties!: Map<string, any>;
+    public static readonly NONE: Room = new Room(-1, 1);
 
+    private readonly _players: Map<number, Player> = new Map<number, Player>();
 
-    private readonly players: Array<Player> = new Array<Player>();
-    private readonly monsters: Array<Player> = new Array<Player>();
-
-    constructor(id: number, name: string) {
-        this.id = id;
-        this.name = name;
+    constructor(
+        private readonly _id: number,
+        private readonly _databaseId: number
+    ) {
     }
 
-    private allPlayersExcept(networkId: number, data: object): Array<Socket> {
-        return this.players
-            .filter((player: Player): boolean => player.network.id !== networkId)
-            .map((player: Player) => player.network.socket)
-            .reduce((acc: Array<Socket>, channel: Socket) => {
-                acc.push(channel);
-                return acc;
-            }, new Array<Socket>());
+    public get id(): number {
+        return this._id;
+    }
+
+    public get databaseId(): number {
+        return this._databaseId;
+    }
+
+    public async data(): Promise<Area> {
+        return (
+            await database.query.maps
+                .findFirst({
+                    where: eq(users.id, this.databaseId)
+                })
+        )!;
+    }
+
+    public addPlayer(player: Player): void {
+        this._players.set(player.network.id, player);
+        player.room = this;
+    }
+
+    public removePlayer(player: Player): void {
+        this._players.delete(player.network.id);
+    }
+
+    public get players(): Map<number, Player> {
+        return this._players;
+    }
+
+    public get playersCount():number {
+        return this._players.size;
+    }
+
+    public writeExcept(ignored: Player, data: string): void {
+        for (let [networkId, player] of this.players) {
+            if (networkId !== ignored.network.id) {
+                player.network.write(data);
+            }
+        }
     }
 
     public writeObjectExcept(ignored: Player, data: JSONObject): void {
-        for (const player of this.players.filter((player: Player): boolean => player.network.id !== ignored.network.id)) {
-            player.network.writeObject(data);
+        for (let [networkId, player] of this.players) {
+            if (networkId !== ignored.network.id) {
+                player.network.writeObject(data);
+            }
         }
     }
 
     public writeStringExcept(ignored: Player, ...data: any[]): void {
-        for (const player of this.players.filter((player: Player): boolean => player.network.id !== ignored.network.id)) {
-            player.network.writeString(data);
+        for (let [networkId, player] of this.players) {
+            if (networkId !== ignored.network.id) {
+                player.network.writeString(data);
+            }
         }
     }
 
     public writeObject(data: JSONObject): void {
-        for (const player of this.players) {
+        for (let [, player] of this.players) {
             player.network.writeObject(data);
         }
     }
 
     public writeString(...data: any[]): void {
-        for (const player of this.players) {
+        for (let [, player] of this.players) {
             player.network.writeString(data);
         }
-    }
-
-
-    public getProperties(): Map<string, any> {
-        return this.properties;
-    }
-
-    public getAllUsers(): any {
-        // Implement getAllUsers method
-        return [];
-    }
-
-    public getChannellList(): string[] {
-        // Implement getChannellList method
-        return [];
-    }
-
-    public getId(): number {
-        return this.id;
-    }
-
-    public getName(): string {
-        return this.name;
-    }
-
-    public getUsers(): Array<Player> {
-        return this.users;
-    }
-
-    public getChannel(): Socket {
-        return this.channel;
-    }
-
-    public addUser(user: Player): void {
-        this.users.add(user);
-    }
-
-    public removeUser(user: Player): void {
-        this.users.remove(user);
-    }
-
-    public getChannellList(): Array<Socket> {
-        const channels: Array<Socket> = new Array<Socket>();
-        for (const user of this.users) {
-            channels.push(user.channel);
-        }
-        return channels;
-    }
-
-    public getAllUsersButOne(user: Player): Array<Player> {
-        const otherUsers: Array<Player> = new Array<Player>();
-        for (const u of this.users) {
-            if (u !== user) {
-                otherUsers.push(u);
-            }
-        }
-        return otherUsers;
-    }
-
-    /// --
-
-    getId(): number {
-        return 1;
-    }
-
-    getName(): string {
-        return "";
-    }
-
-    addUser(user: Player): boolean {
-        if (this.userCount < this.maxUsers) {
-            this.users.push(user);
-            this.userCount++;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    removeUser(user: Player): void {
-        const index = this.users.indexOf(user);
-        if (index !== -1) {
-            this.users.splice(index, 1);
-            this.userCount--;
-        }
-    }
-
-    getUserCount(): number {
-        return this.userCount;
-    }
-
-    getMaxUsers(): number {
-        return this.maxUsers;
     }
 
 }
