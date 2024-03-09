@@ -75,7 +75,7 @@ export default class Decoder {
                                 this.sendPreferences(user, Settings.DUEL);
                                 this.sendPreferences(user, Settings.GUILD);
 
-                                this.playerNetwork.writeString(`loginResponse`, `true`, user.id, user.name, `Message of the day`, `2017-09-30T10:58:57`, GameController.singleton.gameLogin)
+                                this.playerNetwork.writeString(`loginResponse`, `true`, player.network.id, user.name, `Message of the day`, `2017-09-30T10:58:57`, GameController.singleton.gameLogin)
                             })
                         break
                     default:
