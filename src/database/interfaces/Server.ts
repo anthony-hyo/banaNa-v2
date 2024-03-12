@@ -3,6 +3,7 @@ export default interface Server {
     name: string;
     ip: string;
     online: boolean;
+    staff: boolean;
     upgrade: boolean;
     chat: number;
     count: number;

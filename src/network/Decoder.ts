@@ -10,6 +10,7 @@ import type PlayerNetwork from "../player/PlayerNetwork.ts";
 import Settings from "../aqw/Settings.ts";
 import type User from "../database/interfaces/User.ts";
 import type {IRequest} from "../dispatcher/IRequest.ts";
+import PlayerController from "../controller/PlayerController.ts";
 
 export default class Decoder {
 
@@ -45,38 +46,7 @@ export default class Decoder {
                         const username: string = dataXML.msg.body.login.nick.split(`~`)[1]
                         const token: string = dataXML.msg.body.login.pword
 
-                        database.query.users
-                            .findFirst({
-                                where: and(
-                                    eq(users.name, username),
-                                    eq(users.hash, token)
-                                )
-                            })
-                            .then((user: User | undefined): void => {
-                                if (!user) {
-                                    this.playerNetwork.writeString(`loginResponse`, `false`, `-1`, username, `User Data for '${username}' could not be retrieved. Please contact the staff to resolve the issue.`);
-                                    //TODO: Close socket
-                                    return;
-                                }
-
-                                const player: Player = null!;
-
-                                //TODO: Multi login
-
-                                //TODO: Maintanance
-
-                                this.playerNetwork.player = new Player(user, this.playerNetwork)
-
-                                this.sendPreferences(user, Settings.PARTY);
-                                this.sendPreferences(user, Settings.GOTO);
-                                this.sendPreferences(user, Settings.FRIEND);
-                                this.sendPreferences(user, Settings.WHISPER);
-                                this.sendPreferences(user, Settings.TOOLTIPS);
-                                this.sendPreferences(user, Settings.DUEL);
-                                this.sendPreferences(user, Settings.GUILD);
-
-                                this.playerNetwork.writeString(`loginResponse`, `true`, player.network.id, user.name, `Message of the day`, `2017-09-30T10:58:57`, GameController.singleton.gameLogin)
-                            })
+                        PlayerController.login(this.playerNetwork, username, token)
                         break
                     default:
                         //TODO: Kick or Ban

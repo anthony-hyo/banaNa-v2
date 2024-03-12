@@ -41,10 +41,10 @@ export class Rooms {
     }
 
     public exit(room: Room, player: Player): void {
-        room.writeStringExcept(player, "exitArea", String(player.getUserId()), player.getName());
+        room.writeStringExcept(player, "exitArea", String(player.networkid()), player.username());
 
         if (this.world.areas.get(room.getName().split("-")[0]) != null && this.world.areas.get(room.getName().split("-")[0]).isPvP()) {
-            room.writeStringExcept(player, "server", player.getName() + " has left the match.");
+            room.writeStringExcept(player, "server", player.username() + " has left the match.");
         }
     }
 
@@ -196,7 +196,7 @@ export class Rooms {
         } else if (area.upgrade && parseInt(player.properties.get(Users.UPGRADE_DAYS)) <= 0) {
             player.network.writeString("warning", "\"" + areaName + "\" is member only.");
             return Rooms.ROOM_REQUIRE_UPGRADE;
-        } else if (room.contains(player.getName())) {
+        } else if (room.contains(player.username())) {
             player.network.writeString("warning", "Cannot join a room you are currently in!");
             return Rooms.ROOM_USER_INSIDE;
         } else if (area instanceof Hall && (area as Hall).getGuildId() != parseInt(player.properties.get(Users.GUILD_ID))) {

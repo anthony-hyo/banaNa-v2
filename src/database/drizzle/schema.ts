@@ -302,11 +302,11 @@ export const maps = mysqlTable("maps", {
     id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
     name: varchar("name", { length: 32 }).default("None").notNull(),
     file: varchar("file", { length: 128 }).notNull(),
-    maxPlayers: tinyint("max_players", { unsigned: true }).default(6).notNull(),
-    reqLevel: tinyint("required_level", { unsigned: true }).default(0).notNull(),
-    upgrade: boolean("is_upgrade_only").default(false).notNull(),
-    staff: boolean("is_staff_only").default(false).notNull(),
-    pvp: boolean("is_pvp").default(false).notNull(),
+    max_players: tinyint("max_players", { unsigned: true }).default(10).notNull(),
+    required_level: tinyint("required_level", { unsigned: true }).default(0).notNull(),
+    is_upgrade_only: boolean("is_upgrade_only").default(false).notNull(),
+    is_staff_only: boolean("is_staff_only").default(false).notNull(),
+    is_pvp: boolean("is_pvp").default(false).notNull(),
 });
 
 export const mapsCells = mysqlTable("maps_cells", {
@@ -622,7 +622,8 @@ export const skillsAurasEffects = mysqlTable("skills_auras_effects", {
 export const users = mysqlTable("users", {
     id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
     username: varchar("username", { length: 32 }).default("None").notNull(),
-    hash: char("Hash", { length: 17 }).notNull(),
+    password: varchar("username", { length: 64 }).notNull(),
+    token: varchar("username", { length: 64 }),
     hairId: int("hair_id", { unsigned: true }).notNull().references(() => hairs.id, {
         onDelete: "restrict",
         onUpdate: "cascade"

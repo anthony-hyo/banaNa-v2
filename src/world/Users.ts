@@ -127,7 +127,7 @@ export default class Users {
         }
 
         uotls.put("o", o);
-        uotls.put("unm", user.getName());
+        uotls.put("unm", user.username());
 
         this.world.send(uotls, this.world.zone.getRoom(user.room.getId()).getChannellList());
     }
@@ -350,7 +350,7 @@ export default class Users {
         const userprop: JSONObject = new JSONObject();
 
         userprop.put("afk", user.properties.get(Users.AFK) as boolean);
-        userprop.put("entID", user.getUserId());
+        userprop.put("entID", user.networkid());
         userprop.put("entType", "p");
         userprop.put("intHP", user.properties.get(Users.HP) as number);
         userprop.put("intHPMax", user.properties.get(Users.HP_MAX) as number);
@@ -365,7 +365,7 @@ export default class Users {
         userprop.put("strUsername", user.properties.get(Users.USERNAME) as string);
         userprop.put("tx", user.properties.get(Users.TX) as number);
         userprop.put("ty", user.properties.get(Users.TY) as number);
-        userprop.put("uoName", user.getName());
+        userprop.put("uoName", user.username());
 
         if (!room.getName().includes("house") && this.world.areas.get(room.getName().split("-")[0]).isPvP()) {
             userprop.put("pvpTeam", user.properties.get(Users.PVP_TEAM) as number);
@@ -694,7 +694,7 @@ export default class Users {
             const client: Player = this.world.zone.getUserByName(result.getString("Name").toLowerCase());
             if (client) {
                 client.network.writeObject(updateFriend);
-                client.network.writeString("server", user.getName() + " has logged out.");
+                client.network.writeString("server", user.username() + " has logged out.");
             }
         }
         result.close();
@@ -747,7 +747,7 @@ export default class Users {
                 if (result.next()) {
                     userData.put("CharID", user.properties.get(Users.DATABASE_ID));
                     userData.put("HairID", hairId);
-                    userData.put("UserID", user.getUserId());
+                    userData.put("UserID", user.networkid());
                     userData.put("bPermaMute", user.properties.get(Users.PERMAMUTE_FLAG));
                     userData.put("bitSuccess", "1");
                     userData.put("dCreated", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(result.getDate("DateCreated")));
@@ -890,7 +890,7 @@ export default class Users {
         this.world.send(
             aurap.element("auras", auras)
                 .element("cmd", "aura+p")
-                .element("tInf", "p:" + user.getUserId()),
+                .element("tInf", "p:" + user.networkid()),
             user
         );
     }

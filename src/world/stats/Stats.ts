@@ -645,6 +645,7 @@ export default class Stats {
                 }
             }
         }
+
         this.wDPS = Math.round((CoreValues.getBaseHPByLevel(wLvl) / TTD) * iDPS * PCDPSMod + Math.round(this.attackPower / intAPtoDPS));
         // this.mDPS = Math.round(((this.world.getBaseHPByLevel(wLvl) / TTD) * iDPS * PCDPSMod) + Math.round(($sp / intSPtoDPS)));
     }

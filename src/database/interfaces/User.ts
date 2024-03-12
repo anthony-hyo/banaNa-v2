@@ -1,7 +1,8 @@
 export default interface User {
     id: number;
-    name: string;
-    hash: string;
+    username: string;
+    password: string;
+    token: string | null;
     hairId: number;
     access: number;
     activationFlag: number;

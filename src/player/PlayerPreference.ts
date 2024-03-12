@@ -1,11 +1,13 @@
 import Player from "./Player.ts";
 import Settings from "../aqw/Settings.ts";
 import Users from "../world/Users.ts";
-import JSONObject from "../json/JSONObject.ts";
+import JSONObject from "../util/json/JSONObject.ts";
 
 export default class PlayerPreference {
 
-    constructor(private player: Player) {
+    constructor(
+        private readonly player: Player
+    ) {
     }
 
     public sendPreferences(preference: string): void {
@@ -46,16 +48,16 @@ export default class PlayerPreference {
 
         const uotls: JSONObject = new JSONObject();
         uotls.put("cmd", "uotls");
-        uotls.put("unm", user.getName());
+        uotls.put("unm", user.username());
 
         if (pref === Settings.HELM) {
             uotls.put("o", new JSONObject().put("showHelm", Settings.getPreferences(Settings.HELM, ia1)));
-            this.world.sendToRoomButOne(uotls, user, this.world.zone.getRoom(user.room.getId()));
+            this.player.room.writeObjectExcept(this.player, uotls)
         }
 
         if (pref === Settings.CLOAK) {
             uotls.put("o", new JSONObject().put("showCloak", Settings.getPreferences(Settings.CLOAK, ia1)));
-            this.world.sendToRoomButOne(uotls, user, this.world.zone.getRoom(user.room.getId()));
+            this.player.room.writeObjectExcept(this.player, uotls)
         }
 
         this.sendPreferences(user, pref);

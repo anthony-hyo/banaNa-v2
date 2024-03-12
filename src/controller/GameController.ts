@@ -1,5 +1,6 @@
 import type IDispatchable from "../interfaces/IDispatchable.ts";
 import JSONObject from "../util/json/JSONObject.ts";
+import type Server from "../database/interfaces/Server.ts";
 
 export default class GameController implements IDispatchable {
 
@@ -28,5 +29,9 @@ export default class GameController implements IDispatchable {
         );
     }
 
+
+    public get server(): Server {
+
+    }
 
 }

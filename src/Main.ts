@@ -44,7 +44,7 @@ export class Main {
             const uJoin: JSONObject = new JSONObject();
             uJoin.put("cmd", "uotls");
             uJoin.put("o", userObj);
-            uJoin.put("unm", user.getName());
+            uJoin.put("unm", user.username());
 
             this.world.sendToRoomButOne(uJoin, user, room);
         } else if (event === InternalEventObject.EVENT_USER_EXIT) {

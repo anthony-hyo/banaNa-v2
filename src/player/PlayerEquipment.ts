@@ -19,7 +19,7 @@ export default class PlayerEquipment {
         updateClass.put("sClassCat", item.class.category);
         updateClass.put("sDesc", item.class.description);
         updateClass.put("sStats", item.class.statsDescription);
-        updateClass.put("uid", user.getUserId());
+        updateClass.put("uid", user.networkid());
 
         if (item.class.manaRegenerationMethods.includes(":")) {
             const aMRM: JSONArray = new JSONArray();
@@ -48,7 +48,7 @@ export default class PlayerEquipment {
                 .element("iCP", classPoints)
                 .element("sClassCat", item.class.category)
                 .element("sClassName", item.name)
-                .element("uid", user.getUserId()),
+                .element("uid", user.networkid()),
             user,
             this.world.zone.getRoom(user.room.getId())
         );

@@ -9,23 +9,26 @@ import PlayerPreference from "./PlayerPreference.ts";
 export default class Player {
 
     public properties: Map<string, any> = new Map<string, any>();
-    public room: Room = Room.NONE;
+    public room: Room | undefined ;
 
     private readonly _databaseId: number;
+    private readonly _username: string;
+    private readonly _network: PlayerNetwork;
 
-    private readonly _network: PlayerNetwork
     private readonly _preferences: PlayerPreference = new PlayerPreference(this);
 
     constructor(user: User, network: PlayerNetwork) {
-        this._network = network;
-
         this._databaseId = user.id;
-
-        this.room = new Room(1, '1');
+        this._username = user.username;
+        this._network = network;
     }
 
     public get databaseId(): number {
         return this._databaseId;
+    }
+
+    public get username(): string {
+        return this._username;
     }
 
     public get network(): PlayerNetwork {
@@ -55,25 +58,12 @@ export default class Player {
             });
     }
 
-
-    // @ts-ignore
-    public getUserId(): number {
-    }
-
-    // @ts-ignore
-    public getId(): number {
-    }
-
-    // @ts-ignore
-    public getName(): string {
-    }
-
-    // @ts-ignore
-    public getRoom(): any {
-    }
-
-    private kick() {
+    public kick() {
         //TODO: Kick
+    }
+
+    public disconnect() {
+
     }
 
 }

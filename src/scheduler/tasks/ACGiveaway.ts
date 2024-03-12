@@ -36,8 +36,8 @@ export class ACGiveaway implements ITask {
                 .then((): void => {
                     target.network.writeString("administrator", "Congratulations! You just won 500 AdventureCoins!");
 
-                    GameController.instance().writeString("administrator", `Congratulations! <font color=\"#ffffff\">${target.getName()}</font> has won 500 AdventureCoins!`);
-                    GameController.instance().serverMessage(`Congratulations! <font color=\"#ffffff\"><a href=\"http://augoeides.org/?profile=${target.getName()}\" target=\"_blank\">${target.getName()}</a></font> has won <font color=\"#ffffff\">500</font> AdventureCoins!`);
+                    GameController.instance().writeString("administrator", `Congratulations! <font color=\"#ffffff\">${target.username()}</font> has won 500 AdventureCoins!`);
+                    GameController.instance().serverMessage(`Congratulations! <font color=\"#ffffff\"><a href=\"http://augoeides.org/?profile=${target.username()}\" target=\"_blank\">${target.username()}</a></font> has won <font color=\"#ffffff\">500</font> AdventureCoins!`);
 
 
                     target.network.writeObject(
