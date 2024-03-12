@@ -8,7 +8,8 @@
     "test": "bun src/Test.ts",
     "introspect": "drizzle-kit introspect:mysql",
     "generate": "drizzle-kit generate:mysql",
-    "push": "drizzle-kit push:mysql"
+    "push": "drizzle-kit push:mysql",
+    "build": "bun build ./index.ts --compile --minify --outfile server"
   },
   "dependencies": {
     "drizzle-kit": "^0.20.14",
