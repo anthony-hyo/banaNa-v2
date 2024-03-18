@@ -4,16 +4,14 @@ import type Player from "../player/Player.ts";
 import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {users} from "../database/drizzle/schema.ts";
-import type Area from "../database/interfaces/Area.ts";
+import type IArea from "../database/interfaces/IArea.ts";
 import type RoomData from "./RoomData.ts";
 
 export default class Room implements IDispatchable {
 
     public static readonly NONE: Room = new Room(-1, 1);
-
-    private readonly _players: Map<number, Player> = new Map<number, Player>();
-
     public data!: RoomData;
+    private readonly _players: Map<number, Player> = new Map<number, Player>();
 
     constructor(
         private readonly _id: number,
@@ -29,7 +27,15 @@ export default class Room implements IDispatchable {
         return this._databaseId;
     }
 
-    public async dataAsync(): Promise<Area> {
+    public get players(): Map<number, Player> {
+        return this._players;
+    }
+
+    public get playersCount(): number {
+        return this._players.size;
+    }
+
+    public async dataAsync(): Promise<IArea> {
         return (
             await database.query.maps
                 .findFirst({
@@ -45,14 +51,6 @@ export default class Room implements IDispatchable {
 
     public removePlayer(player: Player): void {
         this._players.delete(player.network.id);
-    }
-
-    public get players(): Map<number, Player> {
-        return this._players;
-    }
-
-    public get playersCount():number {
-        return this._players.size;
     }
 
     public writeObject(data: JSONObject): void {

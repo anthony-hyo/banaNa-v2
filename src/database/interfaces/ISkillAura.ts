@@ -1,6 +1,6 @@
-import type SkillAuraEffect from "./SkillAuraEffect.ts";
+import type ISkillAuraEffect from "./ISkillAuraEffect.ts";
 
-export default interface SkillAura {
+export default interface ISkillAura {
     id: number;
     name: string;
     duration: number;
@@ -8,5 +8,5 @@ export default interface SkillAura {
     damageIncrease: number;
     damageTakenDecrease: number;
 
-    effects: Array<SkillAuraEffect>
+    effects: Array<ISkillAuraEffect>;
 }

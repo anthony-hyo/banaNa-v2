@@ -1,4 +1,4 @@
-export default interface Skill {
+export default interface ISkill {
     id: number;
     itemId: number;
     auraId: number | null;

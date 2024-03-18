@@ -5,9 +5,9 @@ import PlayerNetwork from "../player/PlayerNetwork";
 
 export default class Network {
 
-    private readonly server: Server
+    private readonly server: Server;
 
-    private count: number = 0
+    private count: number = 0;
 
     constructor() {
         this.server = net.createServer();
@@ -15,9 +15,9 @@ export default class Network {
         this.server.addListener('connection', (socket: Socket): void => {
             socket.setEncoding('utf-8');
 
-            logger.warn(`[Network] new connection from: ${socket.remoteAddress}`)
+            logger.warn(`[Network] new connection from: ${socket.remoteAddress}`);
 
-            this.count++
+            this.count++;
 
             const playerNetwork: PlayerNetwork = new PlayerNetwork(this.count, socket);
 
@@ -26,7 +26,7 @@ export default class Network {
             socket.on('close', (): void => {
                 logger.debug(`Disconnected`);
             });
-        })
+        });
 
         this.server.listen({
             port: 5588,

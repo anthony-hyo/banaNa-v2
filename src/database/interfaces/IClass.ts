@@ -1,6 +1,6 @@
-import type Skill from "./Skill.ts";
+import type ISkill from "./ISkill.ts";
 
-export default interface Class {
+export default interface IClass {
     id: number;
     itemId: number;
     category: unknown;
@@ -8,5 +8,5 @@ export default interface Class {
     manaRegenerationMethods: string;
     statsDescription: string;
 
-    skills: Array<Skill>
+    skills: Array<ISkill>;
 }

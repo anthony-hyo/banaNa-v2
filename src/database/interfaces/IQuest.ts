@@ -1,4 +1,4 @@
-export default interface Quest {
+export default interface IQuest {
     id: number;
     factionId: number;
     reqReputation: number;

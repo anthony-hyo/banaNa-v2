@@ -3,23 +3,23 @@ import PlayerNetwork from "./PlayerNetwork";
 import {guilds, servers, users, usersFriends, usersItems, usersLogs} from "../database/drizzle/schema";
 import database from "../database/drizzle/database";
 import {and, eq, sql} from "drizzle-orm";
-import type User from "../database/interfaces/User.ts";
+import type IUser from "../database/interfaces/IUser.ts";
 import PlayerPreference from "./PlayerPreference.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 import {CoreValues} from "../aqw/CoreValues.ts";
 import {Rank} from "../aqw/Rank.ts";
 import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../util/Const.ts";
-import type SkillAura from "../database/interfaces/SkillAura.ts";
+import type ISkillAura from "../database/interfaces/ISkillAura.ts";
 import JSONArray from "../util/json/JSONArray.ts";
-import type Enhancement from "../database/interfaces/Enhancement.ts";
+import type IEnhancement from "../database/interfaces/IEnhancement.ts";
 import Stats from "../world/stats/Stats.ts";
 import {Quests} from "../aqw/Quests.ts";
 import {Achievement} from "../aqw/Achievement.ts";
 import Party from "../party/Party.ts";
-import type Hair from "../database/interfaces/Hair.ts";
-import type Class from "../database/interfaces/Classess.ts";
-import type Skill from "../database/interfaces/Skill.ts";
-import type SkillAuraEffect from "../database/interfaces/SkillAuraEffect.ts";
+import type IHair from "../database/interfaces/IHair.ts";
+import type IClass from "../database/interfaces/IClass.ts";
+import type ISkill from "../database/interfaces/ISkill.ts";
+import type ISkillAuraEffect from "../database/interfaces/ISkillAuraEffect.ts";
 import PlayerConst from "./PlayerConst.ts";
 import GameController from "../controller/GameController.ts";
 import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
@@ -42,7 +42,7 @@ export default class Player {
 
     private readonly _preferences: PlayerPreference = new PlayerPreference(this);
 
-    constructor(user: User, network: PlayerNetwork) {
+    constructor(user: IUser, network: PlayerNetwork) {
         this._databaseId = user.id;
         this._username = user.username;
         this._network = network;
@@ -64,7 +64,7 @@ export default class Player {
         return this._preferences;
     }
 
-    public async data(): Promise<User> {
+    public async data(): Promise<IUser> {
         return (
             await database.query.users
                 .findFirst({
@@ -288,7 +288,7 @@ export default class Player {
         const auras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS);
 
         for (const ra of auras) {
-            const aura: SkillAura = ra.getAura();
+            const aura: ISkillAura = ra.getAura();
 
             if (aura.id === auraId) {
                 return true;
@@ -303,7 +303,7 @@ export default class Player {
         removeAuras.delete(ra);
     }
 
-    public applyAura(aura: SkillAura): RemoveAura {
+    public applyAura(aura: ISkillAura): RemoveAura {
         const ra: RemoveAura = new RemoveAura(aura, this, undefined);
 
         ra.setRunning(Scheduler.oneTime(ra, aura.duration));
@@ -381,7 +381,7 @@ export default class Player {
         return userprop;
     }
 
-    public updateStats(enhancement: Enhancement, equipment: string): void {
+    public updateStats(enhancement: IEnhancement, equipment: string): void {
         const itemStats: Map<string, number> = CoreValues.getItemStats(enhancement, equipment);
 
         const stats: Stats = this.properties.get(PlayerConst.STATS);
@@ -723,7 +723,7 @@ export default class Player {
         const userData: JSONObject = new JSONObject();
 
         const hairId: number = this.properties.get(PlayerConst.HAIR_ID) as number;
-        const hair: Hair = this.world.hairs.get(hairId);
+        const hair: IHair = this.world.hairs.get(hairId);
 
         const lastArea: string = this.properties.get(PlayerConst.LAST_AREA).split("\\|")[0];
 
@@ -862,7 +862,7 @@ export default class Player {
         );
     }
 
-    private applyPassiveAuras(rank: number, classObj: Class): void {
+    private applyPassiveAuras(rank: number, classObj: IClass): void {
         if (rank < 4) {
             return;
         }
@@ -873,10 +873,10 @@ export default class Player {
         const stats: Stats = this.properties.get(PlayerConst.STATS);
 
         for (const skillId of classObj.skills) {
-            const skill: Skill = this.world.skills.get(skillId);
+            const skill: ISkill = this.world.skills.get(skillId);
 
             if (skill.type === "passive" && skill.auraId) {
-                const aura: SkillAura = this.world.auras.get(skill.auraId);
+                const aura: ISkillAura = this.world.auras.get(skill.auraId);
 
                 if (aura.effects.length != 0) {
 
@@ -884,7 +884,7 @@ export default class Player {
                     const effects: JSONArray = new JSONArray();
 
                     for (const effectId of aura.effects) {
-                        const ae: SkillAuraEffect = this.world.effects.get(effectId);
+                        const ae: ISkillAuraEffect = this.world.effects.get(effectId);
 
                         effects.add(
                             new JSONObject()

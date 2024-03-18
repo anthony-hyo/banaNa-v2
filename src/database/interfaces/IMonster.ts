@@ -1,4 +1,4 @@
-export default interface Monster {
+export default interface IMonster {
     id: number;
     name: string;
     race: string;

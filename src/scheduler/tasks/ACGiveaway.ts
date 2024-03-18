@@ -50,7 +50,7 @@ export class ACGiveaway implements ITask {
                     GameController.instance().serverMessage("The next lucky winner will be selected randomly in the next 30 minutes.");
                 });
         } catch (error: any) {
-            logger.warn(error)
+            logger.warn(error);
         }
     }
 

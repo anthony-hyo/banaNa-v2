@@ -1,4 +1,4 @@
-import type User from "../database/interfaces/User";
+import type IUser from "../database/interfaces/IUser.ts";
 import Player from "../player/Player";
 import logger from "../util/Logger";
 import GameController from "./GameController";
@@ -21,7 +21,7 @@ export default class PlayerController {
                     eq(users.token, token)
                 )
             })
-            .then((user: User | undefined): void => {
+            .then((user: IUser | undefined): void => {
                 if (user === undefined) {
                     playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `User Data for '${username}' could not be retrieved. Please contact the staff to resolve the issue.`);
 
@@ -73,16 +73,6 @@ export default class PlayerController {
             });
     }
 
-    private static removeConnection(name: string): void {
-        const player: Player | undefined = this.findByUsername(name);
-
-        if (player !== undefined) {
-            player.disconnect();
-        }
-
-        logger.info(`User ${name} ${(this.findByUsername(name) === undefined ? "Connection still exist" : "Connection Removed")}`);
-    }
-
     public static add(player: Player): void {
         this.PLAYERS.set(player.network.id, player);
     }
@@ -123,6 +113,16 @@ export default class PlayerController {
 
     public static total(): number {
         return this.PLAYERS.size;
+    }
+
+    private static removeConnection(name: string): void {
+        const player: Player | undefined = this.findByUsername(name);
+
+        if (player !== undefined) {
+            player.disconnect();
+        }
+
+        logger.info(`User ${name} ${(this.findByUsername(name) === undefined ? "Connection still exist" : "Connection Removed")}`);
     }
 
 }

@@ -1,4 +1,4 @@
-export default interface MapCell {
+export default interface IMapCell {
     id: number;
     mapId: number;
     frame: string;

@@ -1,4 +1,4 @@
-export default interface Hair {
+export default interface IHair {
     id: number;
     gender: string;
     name: string;

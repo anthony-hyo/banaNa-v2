@@ -5,9 +5,8 @@ import Helper from "../util/Helper.ts";
 
 export default class RoomController {
 
-    private readonly rooms: Map<number, Room> = new Map<number, Room>();
-
     private static _instance: RoomController | null = null;
+    private readonly rooms: Map<number, Room> = new Map<number, Room>();
 
     public static instance(): RoomController {
         if (!this._instance) {

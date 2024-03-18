@@ -1,6 +1,6 @@
 import {MonsterAI} from "../ai/MonsterAI";
-import type Area from "../database/interfaces/Area";
-import type Monster from "../database/interfaces/Monster";
+import type IArea from "../database/interfaces/IArea.ts";
+import type IMonster from "../database/interfaces/IMonster.ts";
 import ExtensionHelper from "../examples/ExtensionHelper";
 import type Zone from "../examples/Zone";
 import type Room from "../room/Room";
@@ -46,65 +46,6 @@ export class Rooms {
         if (this.world.areas.get(room.getName().split("-")[0]) != null && this.world.areas.get(room.getName().split("-")[0]).isPvP()) {
             room.writeArrayExcept(player, "server", player.username() + " has left the match.");
         }
-    }
-
-    private moveToArea(room: Room, player: Player): void {
-        const mta: JSONObject = new JSONObject();
-        const mapName: string = room.getName().split("-")[0].equals("house") ? room.getName() : room.getName().split("-")[0];
-        const area: Area = this.world.areas.get(mapName);
-        const uoBranch: JSONArray = new JSONArray();
-
-        const users: Player[] = room.getAllUsers();
-
-        for (const userInRoom of users) {
-            const userObj: JSONObject = this.world.users.getProperties(userInRoom, room);
-            uoBranch.add(userObj);
-        }
-
-        mta.element("cmd", "moveToArea");
-        mta.element("areaId", room.getId());
-        mta.element("areaName", room.getName());
-        mta.element("sExtra", "");
-        mta.element("strMapFileName", area.file);
-        mta.element("strMapName", mapName);
-        mta.element("uoBranch", uoBranch);
-        mta.element("monBranch", this.getMonBranch(room, area));
-        mta.element("intType", 2);
-
-        /*if (area instanceof House) {
-            mta.element("houseData", (area as House).getData());
-        }
-
-        if (area instanceof Hall) {
-            mta.element("guildData", this.world.users.getGuildHallData((area as Hall).getGuildId()));
-            mta.element("strMapName", "guildhall");
-        }*/
-
-        if (area.pvp) {
-            mta
-                .element("pvpTeam", player.properties.get(PlayerConst.PVP_TEAM))
-                .element("PVPFactions", room.properties.get(Rooms.PVP_FACTIONS));
-
-            const bs: JSONObject = new JSONObject();
-            bs.put("v", room.properties.get(Rooms.BLUE_TEAM_SCORE));
-
-            const rs: JSONObject = new JSONObject();
-            rs.put("v", room.properties.get(Rooms.RED_TEAM_SCORE));
-
-            const pvpScore: JSONArray = new JSONArray();
-            pvpScore.add(bs);
-            pvpScore.add(rs);
-
-            mta.element("pvpScore", pvpScore);
-        }
-
-        if (area.monsters.length != 0) {
-            mta
-                .element("mondef", this.getMonsterDefinition(area))
-                .element("monmap", this.getMonMap(area));
-        }
-
-        player.network.writeObject(mta);
     }
 
     public basicRoomJoin(player: Player, roomName: string, roomFrame: string = "Enter", roomPad: string = "Spawn"): void {
@@ -182,7 +123,7 @@ export class Rooms {
         }
 
         const areaName: string = room.getName().split("-")[0].equals("house") ? room.getName() : room.getName().split("-")[0];
-        const area: Area = this.world.areas.get(areaName);
+        const area: IArea = this.world.areas.get(areaName);
 
         if (area.reqLevel > parseInt(player.properties.get(PlayerConst.LEVEL))) {
             player.network.writeArray("warning", "\"" + areaName + "\" requires level " + area.reqLevel + " and above to enter.");
@@ -241,7 +182,7 @@ export class Rooms {
         const map: Map<string, string> = new Map<string, string>();
 
         const mapName: string = name.split("-")[0].equals("house") ? name : name.split("-")[0];
-        const area: Area = this.world.areas.get(mapName);
+        const area: IArea = this.world.areas.get(mapName);
 
         map.set("isGame", "false");
         map.set("maxU", String(area.maxPlayers));
@@ -286,89 +227,6 @@ export class Rooms {
         return room;
     }
 
-    private getMonMap(area: Area): JSONArray {
-        const monMap: JSONArray = new JSONArray();
-        for (const mapMonster of area.monsters) {
-            const monInfo: JSONObject = new JSONObject();
-
-            monInfo.put("MonID", String(mapMonster.monsterId));
-            monInfo.put("MonMapID", String(mapMonster.getMonMapId()));
-            monInfo.put("bRed", 0);
-            monInfo.put("intRSS", String(-1));
-            monInfo.put("strFrame", mapMonster.getFrame());
-
-            monMap.add(monInfo);
-        }
-        return monMap;
-    }
-
-    private getMonsterDefinition(area: Area): JSONArray {
-        const monDef: JSONArray = new JSONArray();
-
-        for (const mapMonster of area.monsters) {
-            const monInfo: JSONObject = new JSONObject();
-
-            const monster: Monster = this.world.monsters.get(mapMonster.monsterId);
-
-            monInfo.put("MonID", String(mapMonster.monsterId));
-            monInfo.put("intHP", monster.health);
-            monInfo.put("intHPMax", monster.health);
-            monInfo.put("intLevel", monster.level);
-            monInfo.put("intMP", monster.mana);
-            monInfo.put("intMPMax", monster.mana);
-            monInfo.put("sRace", monster.race);
-            monInfo.put("strBehave", "walk");
-            monInfo.put("strElement", monster.element);
-            monInfo.put("strLinkage", monster.linkage);
-            monInfo.put("strMonFileName", monster.file);
-            monInfo.put("strMonName", monster.name);
-
-            monDef.add(monInfo);
-        }
-
-        return monDef;
-    }
-
-    private getMonBranch(room: Room, area: Area): JSONArray {
-        const monBranch: JSONArray = new JSONArray();
-        const monsters: Map<number, MonsterAI> = room.properties.get(Rooms.MONSTERS) as Map<number, MonsterAI>;
-
-        for (const actMon of monsters.values()) {
-            const mon: JSONObject = new JSONObject();
-
-            const monster: Monster = this.world.monsters.get(actMon.monsterId);
-
-            mon.put("MonID", String(actMon.monsterId));
-            mon.put("MonMapID", String(actMon.getMapId()));
-            mon.put("bRed", "0");
-            mon.put("iLvl", monster.level);
-            mon.put("intHP", actMon.health);
-            mon.put("intHPMax", monster.health);
-            mon.put("intMP", actMon.mana);
-            mon.put("intMPMax", monster.mana);
-            mon.put("intState", actMon.getState());
-            mon.put("wDPS", monster.damage_per_second);
-
-            if (area.pvp) {
-                const react: JSONArray = new JSONArray();
-
-                if (monster.teamId > 0) {
-                    react.add(0);
-                    react.add(1);
-                } else {
-                    react.add(1);
-                    react.add(0);
-                }
-
-                mon.put("react", react);
-            }
-
-            monBranch.add(mon);
-        }
-
-        return monBranch;
-    }
-
     public addPvPScore(room: Room, score: number, teamId: number): void {
         if (room.properties.get(Rooms.PVP_DONE) as boolean) {
             return;
@@ -389,7 +247,7 @@ export class Rooms {
     }
 
     public relayPvPEvent(ai: MonsterAI, teamId: number): void {
-        const monster: Monster = this.world.monsters.get(ai.monsterId);
+        const monster: IMonster = this.world.monsters.get(ai.monsterId);
         const monName: string = monster.name;
         const room: Room = ai.getRoom();
 
@@ -478,6 +336,148 @@ export class Rooms {
         pvpcmd.put("pvpScore", pvpScore);
 
         return pvpcmd;
+    }
+
+    private moveToArea(room: Room, player: Player): void {
+        const mta: JSONObject = new JSONObject();
+        const mapName: string = room.getName().split("-")[0].equals("house") ? room.getName() : room.getName().split("-")[0];
+        const area: IArea = this.world.areas.get(mapName);
+        const uoBranch: JSONArray = new JSONArray();
+
+        const users: Player[] = room.getAllUsers();
+
+        for (const userInRoom of users) {
+            const userObj: JSONObject = this.world.users.getProperties(userInRoom, room);
+            uoBranch.add(userObj);
+        }
+
+        mta.element("cmd", "moveToArea");
+        mta.element("areaId", room.getId());
+        mta.element("areaName", room.getName());
+        mta.element("sExtra", "");
+        mta.element("strMapFileName", area.file);
+        mta.element("strMapName", mapName);
+        mta.element("uoBranch", uoBranch);
+        mta.element("monBranch", this.getMonBranch(room, area));
+        mta.element("intType", 2);
+
+        /*if (area instanceof House) {
+            mta.element("houseData", (area as House).getData());
+        }
+
+        if (area instanceof Hall) {
+            mta.element("guildData", this.world.users.getGuildHallData((area as Hall).getGuildId()));
+            mta.element("strMapName", "guildhall");
+        }*/
+
+        if (area.pvp) {
+            mta
+                .element("pvpTeam", player.properties.get(PlayerConst.PVP_TEAM))
+                .element("PVPFactions", room.properties.get(Rooms.PVP_FACTIONS));
+
+            const bs: JSONObject = new JSONObject();
+            bs.put("v", room.properties.get(Rooms.BLUE_TEAM_SCORE));
+
+            const rs: JSONObject = new JSONObject();
+            rs.put("v", room.properties.get(Rooms.RED_TEAM_SCORE));
+
+            const pvpScore: JSONArray = new JSONArray();
+            pvpScore.add(bs);
+            pvpScore.add(rs);
+
+            mta.element("pvpScore", pvpScore);
+        }
+
+        if (area.monsters.length != 0) {
+            mta
+                .element("mondef", this.getMonsterDefinition(area))
+                .element("monmap", this.getMonMap(area));
+        }
+
+        player.network.writeObject(mta);
+    }
+
+    private getMonMap(area: IArea): JSONArray {
+        const monMap: JSONArray = new JSONArray();
+        for (const mapMonster of area.monsters) {
+            const monInfo: JSONObject = new JSONObject();
+
+            monInfo.put("MonID", String(mapMonster.monsterId));
+            monInfo.put("MonMapID", String(mapMonster.getMonMapId()));
+            monInfo.put("bRed", 0);
+            monInfo.put("intRSS", String(-1));
+            monInfo.put("strFrame", mapMonster.getFrame());
+
+            monMap.add(monInfo);
+        }
+        return monMap;
+    }
+
+    private getMonsterDefinition(area: IArea): JSONArray {
+        const monDef: JSONArray = new JSONArray();
+
+        for (const mapMonster of area.monsters) {
+            const monInfo: JSONObject = new JSONObject();
+
+            const monster: IMonster = this.world.monsters.get(mapMonster.monsterId);
+
+            monInfo.put("MonID", String(mapMonster.monsterId));
+            monInfo.put("intHP", monster.health);
+            monInfo.put("intHPMax", monster.health);
+            monInfo.put("intLevel", monster.level);
+            monInfo.put("intMP", monster.mana);
+            monInfo.put("intMPMax", monster.mana);
+            monInfo.put("sRace", monster.race);
+            monInfo.put("strBehave", "walk");
+            monInfo.put("strElement", monster.element);
+            monInfo.put("strLinkage", monster.linkage);
+            monInfo.put("strMonFileName", monster.file);
+            monInfo.put("strMonName", monster.name);
+
+            monDef.add(monInfo);
+        }
+
+        return monDef;
+    }
+
+    private getMonBranch(room: Room, area: IArea): JSONArray {
+        const monBranch: JSONArray = new JSONArray();
+        const monsters: Map<number, MonsterAI> = room.properties.get(Rooms.MONSTERS) as Map<number, MonsterAI>;
+
+        for (const actMon of monsters.values()) {
+            const mon: JSONObject = new JSONObject();
+
+            const monster: IMonster = this.world.monsters.get(actMon.monsterId);
+
+            mon.put("MonID", String(actMon.monsterId));
+            mon.put("MonMapID", String(actMon.getMapId()));
+            mon.put("bRed", "0");
+            mon.put("iLvl", monster.level);
+            mon.put("intHP", actMon.health);
+            mon.put("intHPMax", monster.health);
+            mon.put("intMP", actMon.mana);
+            mon.put("intMPMax", monster.mana);
+            mon.put("intState", actMon.getState());
+            mon.put("wDPS", monster.damage_per_second);
+
+            if (area.pvp) {
+                const react: JSONArray = new JSONArray();
+
+                if (monster.teamId > 0) {
+                    react.add(0);
+                    react.add(1);
+                } else {
+                    react.add(1);
+                    react.add(0);
+                }
+
+                mon.put("react", react);
+            }
+
+            monBranch.add(mon);
+        }
+
+        return monBranch;
     }
 
 

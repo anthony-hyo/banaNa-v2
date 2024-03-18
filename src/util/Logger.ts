@@ -1,4 +1,4 @@
-const winston = require('winston')
+const winston = require('winston');
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -27,6 +27,6 @@ const logger = winston.createLogger({
             ),
         }),
     ],
-})
+});
 
-export default logger
+export default logger;

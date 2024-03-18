@@ -1,6 +1,6 @@
-import type Enhancement from "./Enhancement.ts";
+import type IEnhancement from "./IEnhancement.ts";
 
-export default interface EnhancementPattern {
+export default interface IEnhancementPattern {
     id: number;
     name: string;
     category: 'M1' | 'M2' | 'M3' | 'M4' | 'C1' | 'C2' | 'C3' | 'S1';
@@ -11,7 +11,7 @@ export default interface EnhancementPattern {
     endurance: number;
     intelligence: number;
 
-    enhancement: Enhancement
+    enhancement: IEnhancement;
 }
 
 export interface EnhancementPatternStat {

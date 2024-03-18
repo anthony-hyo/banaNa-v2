@@ -1,6 +1,6 @@
 import Player from "./Player.ts";
 import Settings from "../aqw/Settings.ts";
-import PlayerConst from "../world/PlayerConst.ts";
+import PlayerConst from "../player/PlayerConst.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 
 export default class PlayerPreference {
@@ -52,12 +52,12 @@ export default class PlayerPreference {
 
         if (pref === Settings.HELM) {
             uotls.put("o", new JSONObject().put("showHelm", Settings.getPreferences(Settings.HELM, ia1)));
-            this.player.room.writeObjectExcept(this.player, uotls)
+            this.player.room.writeObjectExcept(this.player, uotls);
         }
 
         if (pref === Settings.CLOAK) {
             uotls.put("o", new JSONObject().put("showCloak", Settings.getPreferences(Settings.CLOAK, ia1)));
-            this.player.room.writeObjectExcept(this.player, uotls)
+            this.player.room.writeObjectExcept(this.player, uotls);
         }
 
         this.sendPreferences(user, pref);

@@ -1,7 +1,7 @@
-import type Area from "../database/interfaces/Area.ts";
-import type MapMonster from "../database/interfaces/MapMonster.ts";
+import type IArea from "../database/interfaces/IArea.ts";
+import type IMapMonster from "../database/interfaces/IMapMonster.ts";
 
-export default class RoomData implements Area {
+export default class RoomData implements IArea {
 
     id: number;
     name: string;
@@ -11,9 +11,9 @@ export default class RoomData implements Area {
     is_upgrade_only: boolean;
     is_staff_only: boolean;
     is_pvp: boolean;
-    monsters?: Array<MapMonster>;
+    monsters?: Array<IMapMonster>;
 
-    constructor(id: number, name: string, file: string, max_players: number, required_level: number, is_upgrade_only: boolean, is_staff_only: boolean, is_pvp: boolean, monsters?: Array<MapMonster>) {
+    constructor(id: number, name: string, file: string, max_players: number, required_level: number, is_upgrade_only: boolean, is_staff_only: boolean, is_pvp: boolean, monsters?: Array<IMapMonster>) {
         this.id = id;
 
         this.name = name;

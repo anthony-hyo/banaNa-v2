@@ -1,4 +1,4 @@
-export default interface MonsterDrop {
+export default interface IMonsterDrop {
     monsterId: number;
     itemId: number;
     chance: number;

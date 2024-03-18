@@ -1,20 +1,20 @@
-import type MapMonster from "../database/interfaces/MapMonster";
-import type Monster from "../database/interfaces/Monster";
-import type MonsterDrop from "../database/interfaces/MonsterDrop";
-import type SkillAura from "../database/interfaces/SkillAura";
+import type IMapMonster from "../database/interfaces/IMapMonster.ts";
+import type IMonster from "../database/interfaces/IMonster.ts";
+import type IMonsterDrop from "../database/interfaces/IMonsterDrop.ts";
+import type ISkillAura from "../database/interfaces/ISkillAura.ts";
 import ExtensionHelper from "../examples/ExtensionHelper";
 import type Player from "../player/Player";
+import Player from "../player/Player";
 import type Room from "../room/Room";
+import Room from "../room/Room";
 import MonsterRespawn from "../scheduler/tasks/MonsterRespawn";
 import Random from "../util/Random";
 import JSONArray from "../util/json/JSONArray";
 import JSONObject from "../util/json/JSONObject";
-import PlayerConst from "../world/PlayerConst.ts";
+import PlayerConst from "../player/PlayerConst.ts";
 import type Stats from "../world/stats/Stats";
-import type IDispatchable from "../interfaces/IDispatchable.ts";
-import Room from "../room/Room";
-import Player from "../player/Player";
 import Stats from "../world/stats/Stats";
+import type IDispatchable from "../interfaces/IDispatchable.ts";
 import schedule from "node-schedule";
 import type RemoveAura from "../scheduler/tasks/RemoveAura.ts";
 
@@ -34,7 +34,7 @@ export class MonsterAI implements IDispatchable {
     public room: Room;
 
 
-    constructor(mapMon: MapMonster, room: Room) {
+    constructor(mapMon: IMapMonster, room: Room) {
         this.monsterId = mapMon.monsterId;
         this.mapId = mapMon.monMapId;
         this.frame = mapMon.frame;
@@ -84,7 +84,7 @@ export class MonsterAI implements IDispatchable {
         damage = dodge ? 0 : crit ? damage * 1.25 : damage;
 
         for (const ra of this.auras) {
-            const aura: SkillAura = ra.getAura();
+            const aura: ISkillAura = ra.getAura();
             if (["stun", "freeze", "stone", "disabled"].includes(aura.category)) {
                 return;
             }
@@ -92,7 +92,7 @@ export class MonsterAI implements IDispatchable {
 
         const userAuras: Set<RemoveAura> = player.properties.get(PlayerConst.AURAS);
         for (const ra of userAuras) {
-            const aura: SkillAura = ra.getAura();
+            const aura: ISkillAura = ra.getAura();
             if (aura.category !== "d") {
                 damage *= 1 - aura.damageTakenDecrease;
             }
@@ -202,9 +202,9 @@ export class MonsterAI implements IDispatchable {
 
         schedule(new MonsterRespawn(this.world, this), 20, TimeUnit.SECONDS);
 
-        const mon: Monster = this.world.monsters.get(this.monsterId)!;
+        const mon: IMonster = this.world.monsters.get(this.monsterId)!;
 
-        const drops: Set<MonsterDrop> = new Set<MonsterDrop>();
+        const drops: Set<IMonsterDrop> = new Set<IMonsterDrop>();
 
         for (const md of mon.monstersDrops) {
             if (Math.random() <= md.chance * this.world.DROP_RATE) {
@@ -226,7 +226,7 @@ export class MonsterAI implements IDispatchable {
 
     public hasAura(auraId: number): boolean {
         for (const ra of this.auras) {
-            const aura: SkillAura = ra.getAura();
+            const aura: ISkillAura = ra.getAura();
             if (aura.id === auraId) {
                 return true;
             }
@@ -238,7 +238,7 @@ export class MonsterAI implements IDispatchable {
         this.auras.delete(ra);
     }
 
-    public applyAura(aura: SkillAura): RemoveAura {
+    public applyAura(aura: ISkillAura): RemoveAura {
         const ra: RemoveAura = new RemoveAura(this.world, aura, this);
         ra.setRunning(this.world.scheduleTask(ra, aura.duration, TimeUnit.SECONDS));
 
@@ -326,23 +326,23 @@ export class MonsterAI implements IDispatchable {
     }
 
     public writeObject(data: JSONObject): void {
-        this.room.writeObject(data)
+        this.room.writeObject(data);
     }
 
     public writeArray(...data: any[]): void {
-        this.room.writeArray(data)
+        this.room.writeArray(data);
     }
 
     public writeExcept(ignored: Player, data: string): void {
-        this.room.writeExcept(ignored, data)
+        this.room.writeExcept(ignored, data);
     }
 
     public writeObjectExcept(ignored: Player, data: JSONObject): void {
-        this.room.writeObjectExcept(ignored, data)
+        this.room.writeObjectExcept(ignored, data);
     }
 
     public writeArrayExcept(ignored: Player, ...data: any[]): void {
-        this.room.writeArrayExcept(ignored, data)
+        this.room.writeArrayExcept(ignored, data);
     }
 
 }

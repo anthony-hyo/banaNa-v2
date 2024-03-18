@@ -3,8 +3,8 @@ import type RequestArg from "../request/RequestArg.ts";
 
 export default interface IRequest {
 
-    name: string
+    name: string;
 
-    handler(player: Player, args: RequestArg): void
+    handler(player: Player, args: RequestArg): void;
 
 }

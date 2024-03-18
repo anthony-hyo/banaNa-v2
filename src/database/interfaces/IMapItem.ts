@@ -1,4 +1,4 @@
-export default interface MapItem {
+export default interface IMapItem {
     mapId: number;
     itemId: number;
 }

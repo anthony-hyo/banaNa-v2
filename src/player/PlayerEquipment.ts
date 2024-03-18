@@ -1,8 +1,8 @@
 import Player from "./Player.ts";
-import PlayerConst from "../world/PlayerConst.ts";
+import PlayerConst from "../player/PlayerConst.ts";
 import {Rank} from "../aqw/Rank.ts";
-import type Item from "../database/interfaces/Item.ts";
-import type Skill from "../database/interfaces/Skill.ts";
+import type IItem from "../database/interfaces/IItem.ts";
+import type ISkill from "../database/interfaces/ISkill.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 
@@ -11,7 +11,7 @@ export default class PlayerEquipment {
     constructor(private readonly player: Player, private readonly properties: Map<string, any>) {
     }
 
-    public updateClass(player: Player, item: Item, classPoints: number): void {
+    public updateClass(player: Player, item: IItem, classPoints: number): void {
         const updateClass: JSONObject = new JSONObject();
 
         updateClass.put("cmd", "updateClass");
@@ -55,7 +55,7 @@ export default class PlayerEquipment {
         this.loadSkills(player, item, classPoints);
     }
 
-    private loadSkills(user: Player, item: Item, classPoints: number): void {
+    private loadSkills(user: Player, item: IItem, classPoints: number): void {
         const rank: number = Rank.getRankFromPoints(classPoints);
 
         const skills: Map<string, number> = user.properties.get(PlayerConst.SKILLS);
@@ -67,7 +67,7 @@ export default class PlayerEquipment {
         sAct.put("cmd", "sAct");
 
         for (const skillId of item.class.skills) {
-            const skill: Skill = this.world.skills.get(skillId);
+            const skill: ISkill = this.world.skills.get(skillId);
 
             if (skill.type === "passive") {
                 const passObj: JSONObject = new JSONObject();

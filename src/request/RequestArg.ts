@@ -1,8 +1,12 @@
 export default class RequestArg {
 
+    private readonly args: Array<string> = new Array<string>();
+
     public _length!: number;
 
-    private readonly args: Array<string> = new Array<string>();
+    public get length(): number {
+        return this._length;
+    }
 
     public static parse(params: string[]): RequestArg {
         const arg: RequestArg = new RequestArg();
@@ -24,10 +28,6 @@ export default class RequestArg {
 
     public list(): Array<string> {
         return this.args;
-    }
-
-    public get length(): number {
-        return this._length;
     }
 
     public toString(): string {

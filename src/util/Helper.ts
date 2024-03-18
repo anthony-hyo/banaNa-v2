@@ -18,19 +18,19 @@ export default class Helper {
     public static joinOK = (roomId: number): string => `<msg t='sys'><body action='joinOK' r='${roomId}'><pid id='0'/><vars /><uLs r='${roomId}'>`;
 
     public static getAllFilesFromFolder(dir: string): Array<string> {
-        let results: Array<string> = []
+        let results: Array<string> = [];
 
         fs.readdirSync(dir).forEach((file: string) => {
-            file = dir + '/' + file
+            file = dir + '/' + file;
 
-            const stat: any = fs.statSync(file)
+            const stat: any = fs.statSync(file);
 
             if (stat && stat.isDirectory()) {
-                results = results.concat(Helper.getAllFilesFromFolder(file))
+                results = results.concat(Helper.getAllFilesFromFolder(file));
             } else {
-                results.push(file)
+                results.push(file);
             }
-        })
+        });
 
         return results;
     }

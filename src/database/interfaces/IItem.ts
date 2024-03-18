@@ -1,7 +1,7 @@
-import type ItemRequirement from "./ItemRequirement.ts";
-import type Class from "./Classess.ts";
+import type IItemRequirement from "./IItemRequirement.ts";
+import type IClass from "./IClass.ts";
 
-export default interface Item {
+export default interface IItem {
     id: number;
     name: string;
     description: string;
@@ -32,9 +32,9 @@ export default interface Item {
     questStringValue: number;
     meta: string | null;
 
-    class: Class;
+    class: IClass;
 
-    requirements: ItemRequirement[];
+    requirements: IItemRequirement[];
 }
 
 

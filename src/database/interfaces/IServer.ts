@@ -1,4 +1,4 @@
-export default interface Server {
+export default interface IServer {
     id: number;
     name: string;
     ip: string;

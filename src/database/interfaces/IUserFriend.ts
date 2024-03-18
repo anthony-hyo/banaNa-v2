@@ -1,4 +1,4 @@
-import type User from "./User.ts";
+import type IUser from "./IUser.ts";
 
 export default interface IUserFriend {
     id: number;
@@ -6,6 +6,6 @@ export default interface IUserFriend {
     userId: number;
     friendId: number;
 
-    user?: User;
-    friend?: User;
+    user?: IUser;
+    friend?: IUser;
 }

@@ -1,4 +1,4 @@
-export default interface ShopItem {
+export default interface IShopItem {
     id: number;
     shopId: number;
     itemId: number;

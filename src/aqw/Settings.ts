@@ -1,9 +1,9 @@
 import {Achievement} from "./Achievement";
 import type Player from "../player/Player.ts";
-import PlayerConst from "../world/PlayerConst.ts";
+import PlayerConst from "../player/PlayerConst.ts";
 
 export default class Settings {
-    
+
     public static readonly ANIMATION: string = "bWAnim";
     public static readonly CLOAK: string = "bCloak";
     public static readonly DUEL: string = "bDuel";

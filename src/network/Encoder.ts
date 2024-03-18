@@ -11,23 +11,23 @@ export default class Encoder {
                 r: -1,
                 o: data
             },
-        }))
+        }));
     }
 
     public static writeArray(socket: Socket, ...data: any[]): void {
-        let response: string = ``
+        let response: string = ``;
 
         for (let i: number = 1; i < data.length; ++i) {
-            response += `${data[i]}%`
+            response += `${data[i]}%`;
         }
 
-        Encoder.write(socket, `%xt%${data[0]}%-1%${response}`)
+        Encoder.write(socket, `%xt%${data[0]}%-1%${response}`);
     }
 
 
     private static write(socket: Socket, data: string): void {
-        logger.debug(`[PlayerNetwork] sending ${data}`)
-        socket.write(data + DELIMITER)
+        logger.debug(`[PlayerNetwork] sending ${data}`);
+        socket.write(data + DELIMITER);
     }
 
 }

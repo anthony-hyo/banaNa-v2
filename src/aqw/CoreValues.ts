@@ -1,8 +1,8 @@
 import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../util/Const.ts";
 import database from "../database/drizzle/database.ts";
-import type SettingCoreValue from "../database/interfaces/SettingCoreValue.ts";
+import type ISettingCoreValue from "../database/interfaces/ISettingCoreValue.ts";
 import Stats from "../world/stats/Stats.ts";
-import type Enhancement from "../database/interfaces/Enhancement.ts";
+import type IEnhancement from "../database/interfaces/IEnhancement.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 
 export class CoreValues {
@@ -13,7 +13,7 @@ export class CoreValues {
     static {
         database.query.settingsCoreValues
             .findMany()
-            .then((settingsLogin: SettingCoreValue[]) => settingsLogin.forEach((settingLogin: SettingCoreValue) => this.CORE_VALUES.set(settingLogin.name, Number(settingLogin.value))))
+            .then((settingsLogin: ISettingCoreValue[]) => settingsLogin.forEach((settingLogin: ISettingCoreValue) => this.CORE_VALUES.set(settingLogin.name, Number(settingLogin.value))));
 
         this.EQUIPMENT_RATIO.set(EQUIPMENT_HELM, 0.25);
         this.EQUIPMENT_RATIO.set(EQUIPMENT_CLASS, 0.25);
@@ -96,7 +96,7 @@ export class CoreValues {
         }
     }
 
-    public static getItemStats(enhancement: Enhancement, equipment: string): Map<string, number> {
+    public static getItemStats(enhancement: IEnhancement, equipment: string): Map<string, number> {
         const itemStats: Map<string, number> = new Map<string, number>([
             ["END", 0],
             ["STR", 0],

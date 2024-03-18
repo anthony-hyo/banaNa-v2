@@ -1,6 +1,6 @@
-import type MapMonster from "./MapMonster.ts";
+import type IMapMonster from "./IMapMonster.ts";
 
-export default interface Area {
+export default interface IArea {
     id: number;
 
     name: string;
@@ -13,6 +13,6 @@ export default interface Area {
     is_staff_only: boolean;
     is_pvp: boolean;
 
-    monsters?: Array<MapMonster>;
+    monsters?: Array<IMapMonster>;
 }
 

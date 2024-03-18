@@ -1,4 +1,4 @@
-export default interface MapMonster {
+export default interface IMapMonster {
     mapId: number;
     monsterId: number;
     monMapId: number;

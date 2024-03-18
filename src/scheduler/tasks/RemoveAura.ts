@@ -4,9 +4,9 @@ import JSONObject from "../../util/json/JSONObject";
 import type Stats from "../../world/stats/Stats";
 import PlayerConst from "../../player/PlayerConst.ts";
 import type Player from "../../player/Player.ts";
-import type SkillAura from "../../database/interfaces/SkillAura.ts";
+import type ISkillAura from "../../database/interfaces/ISkillAura.ts";
 import type ITask from "../../interfaces/ITask";
-import type SkillAuraEffect from "../../database/interfaces/SkillAuraEffect.ts";
+import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";
 import schedule from "node-schedule";
 
 export default class RemoveAura implements ITask {
@@ -16,7 +16,7 @@ export default class RemoveAura implements ITask {
     private running: schedule.Job | undefined;
 
     constructor(
-        private aura: SkillAura,
+        private aura: ISkillAura,
         private player: Player | undefined,
         private ai: MonsterAI | undefined
     ) {
@@ -61,7 +61,7 @@ export default class RemoveAura implements ITask {
 
             if (this.aura.effects.length != 0) {
                 const stats: Stats = this.player!.properties.get(PlayerConst.STATS);
-                const auraEffects: Set<SkillAuraEffect> = new Set<SkillAuraEffect>();
+                const auraEffects: Set<ISkillAuraEffect> = new Set<ISkillAuraEffect>();
 
                 for (const effect of this.aura.effects) {
                     stats.effects.delete(effect);
@@ -97,7 +97,7 @@ export default class RemoveAura implements ITask {
         this.running = running;
     }
 
-    public getAura(): SkillAura {
+    public getAura(): ISkillAura {
         return this.aura;
     }
 

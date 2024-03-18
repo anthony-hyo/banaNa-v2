@@ -1,6 +1,5 @@
 import schedule from 'node-schedule';
 import type ITask from "../interfaces/ITask.ts";
-import logger from "../util/Logger.ts";
 
 export default class Scheduler {
 

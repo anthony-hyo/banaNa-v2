@@ -1,4 +1,4 @@
-export default interface Shop {
+export default interface IShop {
     id: number;
     name: string;
     house: boolean;

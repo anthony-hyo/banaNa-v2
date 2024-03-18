@@ -1,4 +1,4 @@
-import type User from "./User.ts";
+import type IUser from "./IUser.ts";
 
 export default interface IGuild {
     id: number;
@@ -12,5 +12,5 @@ export default interface IGuild {
 
     lastUpdated: string;
 
-    members: User[];
+    members: IUser[];
 }

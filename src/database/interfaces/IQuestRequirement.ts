@@ -1,5 +1,4 @@
-export default interface QuestReward {
-    id: number;
+export default interface IQuestRequirement {
     questId: number;
     itemId: number;
     quantity: number;

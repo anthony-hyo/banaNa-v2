@@ -1,12 +1,11 @@
-import PlayerConst from "../PlayerConst.ts";
-
 import type Player from "../../player/Player.ts";
-import type Enhancement from "../../database/interfaces/Enhancement.ts";
-import type Item from "../../database/interfaces/Item.ts";
-import type Skill from "../../database/interfaces/Skill.ts";
-import type SkillAuraEffect from "../../database/interfaces/SkillAuraEffect.ts";
+import type IEnhancement from "../../database/interfaces/IEnhancement.ts";
+import type IItem from "../../database/interfaces/IItem.ts";
+import type ISkill from "../../database/interfaces/ISkill.ts";
+import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";
 import {CoreValues} from "../../aqw/CoreValues.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
+import PlayerConst from "../../player/PlayerConst.ts";
 
 export default class Stats {
 
@@ -34,7 +33,7 @@ export default class Stats {
     public helm: Map<string, number> = new Map<string, number>();
     public armor: Map<string, number> = new Map<string, number>();
     public cape: Map<string, number> = new Map<string, number>();
-    public effects: Set<SkillAuraEffect> = new Set<SkillAuraEffect>();
+    public effects: Set<ISkillAuraEffect> = new Set<ISkillAuraEffect>();
     private $cai: number = 1.0;
     private $cao: number = 1.0;
     private $cdi: number = 1.0;
@@ -129,7 +128,7 @@ export default class Stats {
         this.cape.set("LCK", 0.0);
     }
 
-    public sendStatChanges(stat: Stats, effects: Set<SkillAuraEffect>): void {
+    public sendStatChanges(stat: Stats, effects: Set<ISkillAuraEffect>): void {
         const stu: JSONObject = new JSONObject();
         const sta: JSONObject = new JSONObject();
 
@@ -539,7 +538,7 @@ export default class Stats {
 
     private applyCoreStatRatings(): void {
         const cat: string = this.player.properties.get(PlayerConst.CLASS_CATEGORY) as string;
-        const enhancement: Enhancement = this.player.properties.get(PlayerConst.ITEM_WEAPON_ENHANCEMENT);
+        const enhancement: IEnhancement = this.player.properties.get(PlayerConst.ITEM_WEAPON_ENHANCEMENT);
         const level: number = this.player.properties.get(PlayerConst.LEVEL) as number;
 
         const wLvl: number = enhancement ? enhancement.level : 1;
@@ -654,10 +653,10 @@ export default class Stats {
         //Calculate Damage
 
         let userSkills: Map<string, any> = this.player.properties.get("skills");
-        let weaponItem: Item = this.player.properties.get("weaponitem");
+        let weaponItem: IItem = this.player.properties.get("weaponitem");
 
         if (userSkills && weaponItem) {
-            const autoAttack: Skill | undefined = this.world.skills.get(userSkills.get("aa"));
+            const autoAttack: ISkill | undefined = this.world.skills.get(userSkills.get("aa"));
 
             if (!autoAttack) {
                 throw new Error("not allowed to have class without auto attack");

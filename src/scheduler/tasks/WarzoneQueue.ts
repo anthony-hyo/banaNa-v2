@@ -23,7 +23,7 @@ export default class WarzoneQueue implements ITask {
                         .element("cmd", "PVPI")
                         .element("warzone", warzone);
 
-                    const warzoneRoom: Room = this.world.rooms.createRoom(`bludrutbrawl-${Math.abs(PVPI.hashCode())}`);
+                    const warzoneRoom: Room = this.world.rooms.createRoom(`bludrutbrawl-1`);
 
                     for (let i: number = 0; i < WarzoneQueue.MAX_QUEUE; i++) {
                         const player: Player = queue.shift()!;

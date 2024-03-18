@@ -82,7 +82,7 @@ export const enhancementsPatterns = mysqlTable("enhancements_patterns", {
     intelligence: tinyint("intelligence", { unsigned: true }).default(10).notNull(),
 });
 
-export const enhancementsPatternsRelations = relations(enhancementsPatterns, ({one,  many}) => ({
+export const enhancementsPatternsRelations = relations(enhancementsPatterns, ({ one, many }) => ({
     enhancements: many(enhancements),
 }));
 
