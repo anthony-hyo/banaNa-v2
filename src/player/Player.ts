@@ -1,6 +1,6 @@
 import Room from "../room/Room";
 import PlayerNetwork from "./PlayerNetwork";
-import {guilds, servers, users, usersFriends, usersItems, usersLogs} from "../database/drizzle/schema";
+import {guilds, servers, users, usersFactions, usersFriends, usersItems, usersLogs} from "../database/drizzle/schema";
 import database from "../database/drizzle/database";
 import {and, eq, sql} from "drizzle-orm";
 import type IUser from "../database/interfaces/IUser.ts";
@@ -169,7 +169,7 @@ export default class Player {
             .where(eq(servers.name, ConfigData.SERVER_NAME));
     }
 
-    public giveRewards(exp: number, gold: number, cp: number, rep: number, factionId: number, fromId: number, npcType: string): void {
+    public async giveRewards(exp: number, gold: number, cp: number, rep: number, factionId: number, fromId: number, npcType: string): Promise<void> {
         const xpBoost: boolean = this.properties.get(PlayerConst.BOOST_XP);
         const goldBoost: boolean = this.properties.get(PlayerConst.BOOST_GOLD);
         const repBoost: boolean = this.properties.get(PlayerConst.BOOST_REP);
@@ -185,7 +185,7 @@ export default class Player {
         const expReward: number = userLevel < maxLevel ? calcExp : 0;
 
         const classPoints: number = this.properties.get(PlayerConst.CLASS_POINTS);
-        let userCp: number = (calcCp + classPoints) >= 302500 ? 302500 : (calcCp + classPoints);
+        let userCp: number = Math.min(calcCp + classPoints, 302500);
 
         const curRank: number = Rank.getRankFromPoints(this.properties.get(PlayerConst.CLASS_POINTS));
 
@@ -199,7 +199,7 @@ export default class Player {
             addGoldExp.element("intExp", expReward);
 
             if (xpBoost) {
-                addGoldExp.element("bonusExp", expReward / 2);
+                addGoldExp.element("bonusExp", expReward >> 1);
             }
         }
 
@@ -207,48 +207,80 @@ export default class Player {
             addGoldExp.element("iCP", calcCp);
 
             if (cpBoost) {
-                addGoldExp.element("bonusCP", calcCp / 2);
+                addGoldExp.element("bonusCP", calcCp >> 1);
             }
 
             this.properties.set(PlayerConst.CLASS_POINTS, userCp);
         }
 
         if (factionId > 1) {
-            const rewardRep: number = calcRep >= 302500 ? 302500 : calcRep;
+            const rewardRep: number = Math.min(calcRep, 302500);
 
-            addGoldExp.element("FactionID", factionId)
+            addGoldExp
+                .element("FactionID", factionId)
                 .element("iRep", calcRep);
 
             if (repBoost) {
-                addGoldExp.element("bonusRep", calcRep / 2);
+                addGoldExp.element("bonusRep", calcRep >> 1);
             }
 
-            if (this.world.db.jdbc.queryForBoolean("SELECT COUNT(*) AS rowcount FROM users_factions WHERE UserID = ? AND FactionID = ?", this.properties.get(PlayerConst.DATABASE_ID), factionId)) {
-                this.world.db.jdbc.run("UPDATE users_factions SET Reputation = (Reputation + ?) WHERE UserID = ? AND FactionID = ?", rewardRep, this.properties.get(PlayerConst.DATABASE_ID), factionId);
-            } else {
-                this.world.db.jdbc.holdConnection();
-                this.world.db.jdbc.run("INSERT INTO users_factions (UserID, FactionID, Reputation) VALUES (?, ?, ?)", this.properties.get(PlayerConst.DATABASE_ID), factionId, rewardRep);
-                const charFactionId: number = Long.valueOf(this.world.db.jdbc.getLastInsertId()).intValue();
-                this.world.db.jdbc.releaseConnection();
+            /*database.query.usersFactions.findFirst({
+                where:
+                    and(
+                        eq(usersFactions.userId, this.databaseId),
+                        eq(usersFactions.factionId, factionId)
+                    )
+            })
+                .then((faction: IUserFaction | undefined) => {
+                    if (faction) {
+                        database
+                            .update(usersFactions)
+                            .set({
+                                reputation: sql`${usersFactions.reputation} + rewardRep`,
+                            })
+                            .where(
+                                and(
+                                    eq(usersFactions.userId, this.databaseId),
+                                    eq(usersFactions.factionId, factionId)
+                                )
+                            );
 
-                this.network.writeObject(
-                    new JSONObject()
-                        .element("cmd", "addFaction")
-                        .element("faction", new JSONObject()
-                            .element("FactionID", factionId)
-                            .element("bitSuccess", 1)
-                            .element("CharFactionID", charFactionId)
-                            .element("sName", this.world.factions.get(factionId))
-                            .element("iRep", calcRep)
-                        )
-                );
-            }
+                        return;
+                    }
+
+                    //INSERT
+                });*/
+
+            const factionResult = await database
+                .insert(usersFactions)
+                .values({
+                    userId: this.databaseId,
+                    factionId: factionId,
+                    reputation: rewardRep,
+                })
+                .onDuplicateKeyUpdate({
+                    set: {
+                        reputation: sql`${usersFactions.reputation}
+                        + rewardRep`,
+                    }
+                });
+
+            this.network.writeObject(
+                new JSONObject()
+                    .element("cmd", "addFaction")
+                    .element("faction", new JSONObject()
+                        .element("FactionID", factionId)
+                        .element("bitSuccess", 1)
+                        .element("CharFactionID", factionResult[0].insertId)
+                        .element("sName", "Nname") //TODO: Faction name
+                        .element("iRep", calcRep)
+                    )
+            );
         }
 
         this.network.writeObject(addGoldExp);
 
-
-        const userResult: QueryResult = this.world.db.jdbc.query("SELECT Gold, Exp FROM users WHERE id = ? FOR UPDATE", this.properties.get(PlayerConst.DATABASE_ID));
+        /*const userResult: QueryResult = this.world.db.jdbc.query("SELECT Gold, Exp FROM users WHERE id = ? FOR UPDATE", this.properties.get(PlayerConst.DATABASE_ID));
         if (userResult.next()) {
             let userXp: number = userResult.getInt("Exp") + expReward;
             let userGold: number = userResult.getInt("Gold") + calcGold;
@@ -281,7 +313,7 @@ export default class Player {
             }
         }
 
-        userResult.close();
+        userResult.close();*/
     }
 
     public hasAura(auraId: number): boolean {
@@ -315,7 +347,7 @@ export default class Player {
         return ra;
     }
 
-    public async getGuildObject(guildId: number): Promise<JSONObject> {
+    public async getGuildObject(): Promise<JSONObject> {
         const guild: IGuild | undefined = await database.query.guilds.findFirst({
             where: eq(guilds.id, this.properties.get(PlayerConst.GUILD_ID)),
             with: {
@@ -337,7 +369,7 @@ export default class Player {
                     .element("ID", member.id)
                     .element("userName", member.username)
                     .element("Level", member.level)
-                    .element("Rank", member.guild_rank)
+                    .element("Rank", member.guild_rank)//TODO
                     .element("Server", member.current_server.Name)
             );
         }
