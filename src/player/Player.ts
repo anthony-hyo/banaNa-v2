@@ -1,15 +1,40 @@
 import Room from "../room/Room";
 import PlayerNetwork from "./PlayerNetwork";
-import {users, usersLogs} from "../database/drizzle/schema";
+import {guilds, servers, users, usersFriends, usersItems, usersLogs} from "../database/drizzle/schema";
 import database from "../database/drizzle/database";
-import {eq} from "drizzle-orm";
+import {and, eq, sql} from "drizzle-orm";
 import type User from "../database/interfaces/User.ts";
 import PlayerPreference from "./PlayerPreference.ts";
+import JSONObject from "../util/json/JSONObject.ts";
+import {CoreValues} from "../aqw/CoreValues.ts";
+import {Rank} from "../aqw/Rank.ts";
+import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../util/Const.ts";
+import type SkillAura from "../database/interfaces/SkillAura.ts";
+import JSONArray from "../util/json/JSONArray.ts";
+import type Enhancement from "../database/interfaces/Enhancement.ts";
+import Stats from "../world/stats/Stats.ts";
+import {Quests} from "../aqw/Quests.ts";
+import {Achievement} from "../aqw/Achievement.ts";
+import Party from "../party/Party.ts";
+import type Hair from "../database/interfaces/Hair.ts";
+import type Class from "../database/interfaces/Classess.ts";
+import type Skill from "../database/interfaces/Skill.ts";
+import type SkillAuraEffect from "../database/interfaces/SkillAuraEffect.ts";
+import PlayerConst from "./PlayerConst.ts";
+import GameController from "../controller/GameController.ts";
+import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
+import ConfigData from "../config/ConfigData.ts";
+import {format} from "date-fns";
+import type IUserFriend from "../database/interfaces/IUserFriend.ts";
+import PlayerController from "../controller/PlayerController.ts";
+import PartyController from "../party/PartyController.ts";
+import Scheduler from "../scheduler/Scheduler.ts";
+import type IGuild from "../database/interfaces/IGuild.ts";
 
 export default class Player {
 
     public properties: Map<string, any> = new Map<string, any>();
-    public room: Room | undefined ;
+    public room: Room | undefined;
 
     private readonly _databaseId: number;
     private readonly _username: string;
@@ -48,22 +73,845 @@ export default class Player {
         )!;
     }
 
-    public log(user: Player, violation: string, details: string): void {
+    public log(violation: string, details: string): void {
         database
             .insert(usersLogs)
             .values({
-                userId: user.databaseId,
+                userId: this.databaseId,
                 violation: violation,
                 details: details,
             });
     }
 
-    public kick() {
+    public kick(): void {
         //TODO: Kick
     }
 
-    public disconnect() {
+    public disconnect(): void {
 
+    }
+
+
+    public sendUotls(showHp: boolean, showHpMax: boolean, showMp: boolean, showMpMax: boolean, showLevel: boolean, showState: boolean): void {
+        const uotls: JSONObject = new JSONObject();
+        const o: JSONObject = new JSONObject();
+
+        uotls.put("cmd", "uotls");
+
+        if (showHp) {
+            o.put("intHP", this.properties.get(PlayerConst.HP));
+        }
+
+        if (showHpMax) {
+            o.put("intHPMax", this.properties.get(PlayerConst.HP_MAX));
+        }
+
+        if (showMp) {
+            o.put("intMP", this.properties.get(PlayerConst.MP));
+        }
+
+        if (showMpMax) {
+            o.put("intMPMax", this.properties.get(PlayerConst.MP_MAX));
+        }
+
+        if (showLevel) {
+            o.put("intLevel", this.properties.get(PlayerConst.LEVEL));
+        }
+
+        if (showState) {
+            o.put("intState", this.properties.get(PlayerConst.STATE));
+        }
+
+        this.room!.writeObject(
+            uotls.element("o", o)
+                .element("unm", this.username)
+        );
+    }
+
+    public async getBankCount(): Promise<number> {
+        const usersItemBankCount: {
+            count: number
+        }[] = await database
+            .select({
+                count: sql`COUNT(*)`.mapWith(Number)
+            })
+            .from(usersItems)
+            .where(
+                and(
+                    eq(usersItems.userId, this.databaseId),
+                    eq(usersItems.bank, true)
+                )
+            );
+
+        return usersItemBankCount[0].count;
+    }
+
+    public levelUp(level: number): void {
+        const newLevel: number = level >= CoreValues.getValue("intLevelMax") ? CoreValues.getValue("intLevelMax") : level;
+
+        this.properties.set(PlayerConst.LEVEL, newLevel);
+
+        this.sendStats(true);
+
+        this.network.writeObject(
+            new JSONObject()
+                .element("cmd", "levelUp")
+                .element("intLevel", newLevel)
+                .element("intExpToLevel", CoreValues.getExpToLevel(newLevel))
+        );
+
+        database
+            .update(users)
+            .set({
+                level: newLevel,
+                exp: this.databaseId,
+            })
+            .where(eq(servers.name, ConfigData.SERVER_NAME));
+    }
+
+    public giveRewards(exp: number, gold: number, cp: number, rep: number, factionId: number, fromId: number, npcType: string): void {
+        const xpBoost: boolean = this.properties.get(PlayerConst.BOOST_XP);
+        const goldBoost: boolean = this.properties.get(PlayerConst.BOOST_GOLD);
+        const repBoost: boolean = this.properties.get(PlayerConst.BOOST_REP);
+        const cpBoost: boolean = this.properties.get(PlayerConst.BOOST_CP);
+
+        const calcExp: number = xpBoost ? exp * (1 + GameController.EXP_RATE) : exp * GameController.EXP_RATE;
+        const calcGold: number = goldBoost ? gold * (1 + GameController.GOLD_RATE) : gold * GameController.GOLD_RATE;
+        const calcRep: number = repBoost ? rep * (1 + GameController.REP_RATE) : rep * GameController.REP_RATE;
+        const calcCp: number = cpBoost ? cp * (1 + GameController.CP_RATE) : cp * GameController.CP_RATE;
+
+        const maxLevel: number = CoreValues.getValue("intLevelMax");
+        const userLevel: number = this.properties.get(PlayerConst.LEVEL);
+        const expReward: number = userLevel < maxLevel ? calcExp : 0;
+
+        const classPoints: number = this.properties.get(PlayerConst.CLASS_POINTS);
+        let userCp: number = (calcCp + classPoints) >= 302500 ? 302500 : (calcCp + classPoints);
+
+        const curRank: number = Rank.getRankFromPoints(this.properties.get(PlayerConst.CLASS_POINTS));
+
+        const addGoldExp: JSONObject = new JSONObject()
+            .element("cmd", "addGoldExp")
+            .element("id", fromId)
+            .element("intGold", calcGold)
+            .element("typ", npcType);
+
+        if (userLevel < maxLevel) {
+            addGoldExp.element("intExp", expReward);
+
+            if (xpBoost) {
+                addGoldExp.element("bonusExp", expReward / 2);
+            }
+        }
+
+        if (curRank !== 10 && calcCp > 0) {
+            addGoldExp.element("iCP", calcCp);
+
+            if (cpBoost) {
+                addGoldExp.element("bonusCP", calcCp / 2);
+            }
+
+            this.properties.set(PlayerConst.CLASS_POINTS, userCp);
+        }
+
+        if (factionId > 1) {
+            const rewardRep: number = calcRep >= 302500 ? 302500 : calcRep;
+
+            addGoldExp.element("FactionID", factionId)
+                .element("iRep", calcRep);
+
+            if (repBoost) {
+                addGoldExp.element("bonusRep", calcRep / 2);
+            }
+
+            if (this.world.db.jdbc.queryForBoolean("SELECT COUNT(*) AS rowcount FROM users_factions WHERE UserID = ? AND FactionID = ?", this.properties.get(PlayerConst.DATABASE_ID), factionId)) {
+                this.world.db.jdbc.run("UPDATE users_factions SET Reputation = (Reputation + ?) WHERE UserID = ? AND FactionID = ?", rewardRep, this.properties.get(PlayerConst.DATABASE_ID), factionId);
+            } else {
+                this.world.db.jdbc.holdConnection();
+                this.world.db.jdbc.run("INSERT INTO users_factions (UserID, FactionID, Reputation) VALUES (?, ?, ?)", this.properties.get(PlayerConst.DATABASE_ID), factionId, rewardRep);
+                const charFactionId: number = Long.valueOf(this.world.db.jdbc.getLastInsertId()).intValue();
+                this.world.db.jdbc.releaseConnection();
+
+                this.network.writeObject(
+                    new JSONObject()
+                        .element("cmd", "addFaction")
+                        .element("faction", new JSONObject()
+                            .element("FactionID", factionId)
+                            .element("bitSuccess", 1)
+                            .element("CharFactionID", charFactionId)
+                            .element("sName", this.world.factions.get(factionId))
+                            .element("iRep", calcRep)
+                        )
+                );
+            }
+        }
+
+        this.network.writeObject(addGoldExp);
+
+
+        const userResult: QueryResult = this.world.db.jdbc.query("SELECT Gold, Exp FROM users WHERE id = ? FOR UPDATE", this.properties.get(PlayerConst.DATABASE_ID));
+        if (userResult.next()) {
+            let userXp: number = userResult.getInt("Exp") + expReward;
+            let userGold: number = userResult.getInt("Gold") + calcGold;
+            userResult.close();
+            while (userXp >= CoreValues.getExpToLevel(userLevel)) {
+                userXp -= CoreValues.getExpToLevel(userLevel);
+                userLevel++;
+            }
+
+            // Update Level
+            if (userLevel !== this.properties.get(PlayerConst.LEVEL)) {
+                this.levelUp(user, userLevel);
+                userXp = 0;
+            }
+
+            if (calcGold > 0 || (expReward > 0 && userLevel !== maxLevel)) {
+                this.world.db.jdbc.run("UPDATE users SET Gold = ?, Exp = ? WHERE id = ?", userGold, userXp, this.properties.get(PlayerConst.DATABASE_ID));
+            }
+            if (curRank !== 10 && calcCp > 0) {
+                const eqp: JSONObject = this.properties.get(PlayerConst.EQUIPMENT) as JSONObject;
+                if (eqp.has(EQUIPMENT_CLASS)) {
+                    const oldItem: JSONObject = eqp.getJSONObject(EQUIPMENT_CLASS)!;
+                    const itemId: number = oldItem.getInt("ItemID")!;
+                    this.world.db.jdbc.run("UPDATE users_items SET Quantity = ? WHERE ItemID = ? AND UserID = ?", userCp, itemId, this.properties.get(PlayerConst.DATABASE_ID));
+
+                    if (Rank.getRankFromPoints(userCp) > curRank) {
+                        this.loadSkills(user, this.world.items.get(itemId), userCp);
+                    }
+                }
+            }
+        }
+
+        userResult.close();
+    }
+
+    public hasAura(auraId: number): boolean {
+        const auras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS);
+
+        for (const ra of auras) {
+            const aura: SkillAura = ra.getAura();
+
+            if (aura.id === auraId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public removeAura(ra: RemoveAura): void {
+        const removeAuras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS);
+        removeAuras.delete(ra);
+    }
+
+    public applyAura(aura: SkillAura): RemoveAura {
+        const ra: RemoveAura = new RemoveAura(aura, this, undefined);
+
+        ra.setRunning(Scheduler.oneTime(ra, aura.duration));
+
+        // noinspection JSMismatchedCollectionQueryUpdate
+        const removeAuras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS);
+        removeAuras.add(ra);
+
+        return ra;
+    }
+
+    public async getGuildObject(guildId: number): Promise<JSONObject> {
+        const guild: IGuild | undefined = await database.query.guilds.findFirst({
+            where: eq(guilds.id, this.properties.get(PlayerConst.GUILD_ID)),
+            with: {
+                members: true
+            }
+        });
+
+        const guildJSONObject: JSONObject = new JSONObject();
+
+        if (!guild) {
+            return guildJSONObject;
+        }
+
+        const members: JSONArray = new JSONArray();
+
+        for (let member of guild.members) {
+            members.add(
+                new JSONObject()
+                    .element("ID", member.id)
+                    .element("userName", member.username)
+                    .element("Level", member.level)
+                    .element("Rank", member.guild_rank)
+                    .element("Server", member.current_server.Name)
+            );
+        }
+
+        return guildJSONObject.element("Name", guild.name)
+            .element("MOTD", guild.messageOfTheDay.length > 0 ? guild.messageOfTheDay : "undefined")
+            .element("pending", new JSONObject())
+            .element("MaxMembers", guild.maxMembers)
+            .element("dateUpdated", format(guild.lastUpdated, "yyyy-MM-dd'T'HH:mm:ss"))
+            .element("Level", 1)
+            .element("HallSize", guild.hallSize)
+            //.element("guildHall", getGuildHallData(guildId))
+            .element("guildHall", new JSONArray())
+            .element("ul", members);
+    }
+
+    public getProperties(): JSONObject {
+        const userprop: JSONObject = new JSONObject()
+            .element("afk", this.properties.get(PlayerConst.AFK) as boolean)
+            .element("entID", this.network.id)
+            .element("entType", "p")
+            .element("intHP", this.properties.get(PlayerConst.HP) as number)
+            .element("intHPMax", this.properties.get(PlayerConst.HP_MAX) as number)
+            .element("intLevel", this.properties.get(PlayerConst.LEVEL) as number)
+            .element("intMP", this.properties.get(PlayerConst.MP) as number)
+            .element("intMPMax", this.properties.get(PlayerConst.MP_MAX) as number)
+            .element("intState", this.properties.get(PlayerConst.STATE) as number)
+            .element("showCloak", true)
+            .element("showHelm", true)
+            .element("strFrame", this.properties.get(PlayerConst.FRAME) as string)
+            .element("strPad", this.properties.get(PlayerConst.PAD) as string)
+            .element("strUsername", this.properties.get(PlayerConst.USERNAME) as string)
+            .element("tx", this.properties.get(PlayerConst.TX) as number)
+            .element("ty", this.properties.get(PlayerConst.TY) as number)
+            .element("uoName", this.username);
+
+        if (this.room!.data.name.includes("house") && this.room!.data.is_pvp) {
+            userprop.put("pvpTeam", this.properties.get(PlayerConst.PVP_TEAM) as number);
+        }
+
+        return userprop;
+    }
+
+    public updateStats(enhancement: Enhancement, equipment: string): void {
+        const itemStats: Map<string, number> = CoreValues.getItemStats(enhancement, equipment);
+
+        const stats: Stats = this.properties.get(PlayerConst.STATS);
+
+        switch (equipment) {
+            case EQUIPMENT_CLASS:
+                for (const [key, value] of itemStats) {
+                    stats.armor.set(key, value);
+                }
+                break;
+            case EQUIPMENT_WEAPON:
+                for (const [key, value] of itemStats) {
+                    stats.weapon.set(key, value);
+                }
+                break;
+            case EQUIPMENT_CAPE:
+                for (const [key, value] of itemStats) {
+                    stats.cape.set(key, value);
+                }
+                break;
+            case EQUIPMENT_HELM:
+                for (const [key, value] of itemStats) {
+                    stats.helm.set(key, value);
+                }
+                break;
+            default:
+                throw new Error("equipment " + equipment + " cannot have stat values!");
+        }
+    }
+
+    public sendStats(levelUp: boolean): void {
+        const stu: JSONObject = new JSONObject();
+        const tempStat: JSONObject = new JSONObject();
+
+        const userLevel: number = this.properties.get(PlayerConst.LEVEL);
+
+        const stats: Stats = this.properties.get(PlayerConst.STATS);
+        stats.update();
+
+        const END: number = stats.get$END() + stats.get_END();
+        const WIS: number = stats.get$WIS() + stats.get_WIS();
+
+        const intHPperEND: number = CoreValues.getValue("intHPperEND");
+        const intMPperWIS: number = CoreValues.getValue("intMPperWIS");
+
+        const addedHP: number = END * intHPperEND;
+
+        // Calculate new HP and MP
+        let userHp: number = CoreValues.getHealthByLevel(userLevel);
+        userHp += addedHP;
+
+        let userMp: number = CoreValues.getManaByLevel(userLevel) + (WIS * intMPperWIS);
+
+        // Max
+        this.properties.set(PlayerConst.HP_MAX, userHp);
+        this.properties.set(PlayerConst.MP_MAX, userMp);
+
+        // Current
+        if (this.properties.get(PlayerConst.STATE) === PlayerConst.STATE_NORMAL || levelUp) {
+            this.properties.set(PlayerConst.HP, userHp);
+        }
+
+        if (this.properties.get(PlayerConst.STATE) === PlayerConst.STATE_NORMAL || levelUp) {
+            this.properties.set(PlayerConst.MP, userMp);
+        }
+
+        this.sendUotls(true, true, true, true, levelUp, false);
+
+        const stat: JSONObject = new JSONObject(stats);
+
+        const ba: JSONObject = new JSONObject();
+        const he: JSONObject = new JSONObject();
+        const Weapon: JSONObject = new JSONObject();
+
+        const ar: JSONObject = new JSONObject();
+
+        for (const [key, value] of stats.armor.entries()) {
+            if (value > 0) {
+                ar.put(key, Math.floor(value));
+            }
+        }
+
+        for (const [key, value] of stats.helm.entries()) {
+            if (value > 0) {
+                he.put(key, Math.floor(value));
+            }
+        }
+
+        for (const [key, value] of stats.weapon.entries()) {
+            if (value > 0) {
+                Weapon.put(key, Math.floor(value));
+            }
+        }
+
+        for (const [key, value] of stats.cape.entries()) {
+            if (value > 0) {
+                ba.put(key, Math.floor(value));
+            }
+        }
+
+        if (!ba.isEmpty()) {
+            tempStat.element("ba", ba);
+        }
+
+        if (!ar.isEmpty()) {
+            tempStat.element("ar", ar);
+        }
+
+        if (!Weapon.isEmpty()) {
+            tempStat.element("Weapon", Weapon);
+        }
+
+        if (!he.isEmpty()) {
+            tempStat.element("he", he);
+        }
+
+        tempStat.element(
+            "innate",
+            new JSONObject()
+                .element("INT", stats.innate.get("INT"))
+                .element("STR", stats.innate.get("STR"))
+                .element("DEX", stats.innate.get("DEX"))
+                .element("END", stats.innate.get("END"))
+                .element("LCK", stats.innate.get("LCK"))
+                .element("WIS", stats.innate.get("WIS"))
+        );
+
+        this.network.writeObject(
+            stu
+                .element("tempSta", tempStat)
+                .element("cmd", "stu")
+                .element("sta", stat)
+                .element("wDPS", stats.wDPS),
+        );
+    }
+
+    public async getFriends(): Promise<JSONArray> {
+        const friends: JSONArray = new JSONArray();
+
+        const userFriends: IUserFriend[] = await database.query.usersFriends.findMany({
+            where: eq(usersFriends.userId, this.databaseId),
+            with: {
+                friend: true
+            }
+        });
+
+        for (let userFriend of userFriends) {
+            friends.add(new JSONObject()
+                .element("iLvl", userFriend.friend?.level)
+                .element("ID", userFriend.friend?.id)
+                .element("sName", userFriend.friend?.username)
+                .element("sServer", userFriend.friend?.current_server_id ? 'Offline' : userFriend.friend.current_server.name)
+            );
+        }
+
+        return friends;
+    }
+
+    public dropItem(itemId: number): void;
+
+    public dropItem(itemId: number, quantity: number): void;
+
+    public dropItem(itemId: number, quantity?: number): void {
+        //TODO: ..
+    }
+
+    public setQuestValue(index: number, value: number): void {
+        if (index > 99) {
+            this.properties.set(PlayerConst.QUESTS_2, Quests.updateValue(this.properties.get(PlayerConst.QUESTS_2) as string, (index - 100), value));
+            this.world.db.jdbc.run("UPDATE users SET Quests2 = ? WHERE id =  ?", this.properties.get(PlayerConst.QUESTS_2), this.properties.get(PlayerConst.DATABASE_ID));
+        } else {
+            this.properties.set(PlayerConst.QUESTS_1, Quests.updateValue(this.properties.get(PlayerConst.QUESTS_1) as string, index, value));
+            this.world.db.jdbc.run("UPDATE users SET Quests = ? WHERE id = ?", this.properties.get(PlayerConst.QUESTS_1), this.properties.get(PlayerConst.DATABASE_ID));
+        }
+
+        this.network.writeObject(
+            new JSONObject()
+                .element("cmd", "updateQuest")
+                .element("iIndex", index)
+                .element("iValue", value)
+        );
+    }
+
+    public getQuestValue(index: number): number {
+        return index > 99 ? Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_2) as string, (index - 100)) : Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_1) as string, index);
+    }
+
+    public setAchievement(field: string, index: number, value: number, user: Player): void {
+        if (field === "ia0") {
+            this.properties.set(PlayerConst.ACHIEVEMENT, Achievement.update(this.properties.get(PlayerConst.ACHIEVEMENT), index, value));
+            this.world.db.jdbc.run("UPDATE users SET Achievement = ? WHERE id = ?", this.properties.get(PlayerConst.ACHIEVEMENT), this.properties.get(PlayerConst.DATABASE_ID));
+        } else if (field === "id0") {
+            this.properties.set(PlayerConst.QUEST_DAILY_0, Achievement.update(this.properties.get(PlayerConst.QUEST_DAILY_0), index, value));
+            this.world.db.jdbc.run("UPDATE users SET DailyQuests0 = ? WHERE id = ?", this.properties.get(PlayerConst.QUEST_DAILY_0), this.properties.get(PlayerConst.DATABASE_ID));
+        } else if (field === "id1") {
+            this.properties.set(PlayerConst.QUEST_DAILY_1, Achievement.update(this.properties.get(PlayerConst.QUEST_DAILY_1), index, value));
+            this.world.db.jdbc.run("UPDATE users SET DailyQuests1 = ? WHERE id = ?", this.properties.get(PlayerConst.QUEST_DAILY_1), this.properties.get(PlayerConst.DATABASE_ID));
+        } else if (field === "id2") {
+            this.properties.set(PlayerConst.QUEST_DAILY_2, Achievement.update(this.properties.get(PlayerConst.QUEST_DAILY_2), index, value));
+            this.world.db.jdbc.run("UPDATE users SET DailyQuests2 = ? WHERE id = ?", this.properties.get(PlayerConst.QUEST_DAILY_2), this.properties.get(PlayerConst.DATABASE_ID));
+        } else if (field === "im0") {
+            this.properties.set(PlayerConst.QUEST_MONTHLY_0, Achievement.update(this.properties.get(PlayerConst.QUEST_MONTHLY_0), index, value));
+            this.world.db.jdbc.run("UPDATE users SET MonthlyQuests0 = ? WHERE id = ?", this.properties.get(PlayerConst.QUEST_MONTHLY_0), this.properties.get(PlayerConst.DATABASE_ID));
+        }
+
+        this.network.writeObject(
+            new JSONObject()
+                .element("cmd", "setAchievement")
+                .element("field", field)
+                .element("index", index)
+                .element("value", value)
+        );
+    }
+
+    public getAchievement(field: string, index: number, user: Player): number {
+        switch (field) {
+            case "ia0":
+                return Achievement.get(this.properties.get(PlayerConst.ACHIEVEMENT) as number, index);
+            case "id0":
+                return Achievement.get(this.properties.get(PlayerConst.QUEST_DAILY_0) as number, index);
+            case "id1":
+                return Achievement.get(this.properties.get(PlayerConst.QUEST_DAILY_1) as number, index);
+            case "id2":
+                return Achievement.get(this.properties.get(PlayerConst.QUEST_DAILY_2) as number, index);
+            case "im0":
+                return Achievement.get(this.properties.get(PlayerConst.QUEST_MONTHLY_0) as number, index);
+            default:
+                return -1;
+        }
+    }
+
+    public getGuildRank(rank: number): string {
+        switch (rank) {
+            case 0:
+                return "duffer";
+            case 1:
+                return "member";
+            case 2:
+                return "officer";
+            case 3:
+                return "leader";
+            default:
+                return "";
+        }
+    }
+
+    public turnInItem(itemId: number, quantity: number): boolean {
+        const items: Map<number, number> = new Map<number, number>();
+        //TODO: ..
+        return this.turnInItems(items);
+    }
+
+    public turnInItems(items: Map<number, number>): boolean {
+        //TODO: ..
+        return false;
+    }
+
+    public addTemporaryItem(itemId: number, quantity: number): void {
+        const inventoryTemporary: Map<number, number> = this.properties.get(PlayerConst.TEMPORARY_INVENTORY);
+
+        const item: number | undefined = inventoryTemporary.get(itemId);
+
+        if (item) {
+            inventoryTemporary.set(itemId, (item! + quantity));
+            return;
+        }
+
+        inventoryTemporary.set(itemId, quantity);
+    }
+
+    public lost(): void {
+        if (this.properties.size == 0) {
+            return;
+        }
+
+        // UPDATE PARTY
+        const partyId: number = this.properties.get(PlayerConst.PARTY_ID);
+        if (partyId > 0) {
+            const pi: Party = PartyController.instance().getPartyInfo(partyId);
+
+            if (pi.getOwner() === this.properties.get(PlayerConst.USERNAME)) {
+                pi.setOwner(pi.getNextOwner());
+            }
+
+            pi.removeMember(this);
+
+            pi.writeObject(
+                new JSONObject()
+                    .element("cmd", "pr")
+                    .element("owner", pi.getOwner())
+                    .element("typ", "l")
+                    .element("unm", this.properties.get(PlayerConst.USERNAME))
+            );
+
+            if (pi.getMemberCount() <= 0) {
+                pi.getOwnerObject().network.writeObject(
+                    new JSONObject()
+                        .element("cmd", "pc")
+                );
+
+                PartyController.instance().removeParty(partyId);
+
+                pi.getOwnerObject().properties.set(PlayerConst.PARTY_ID, -1);
+            }
+        }
+
+        this.world.db.jdbc.run("UPDATE users SET LastArea = ?, CurrentServer = 'Offline' WHERE id = ?", this.properties.get(PlayerConst.LAST_AREA), this.properties.get(PlayerConst.DATABASE_ID));
+
+        // UPDATE GUILD
+        const guildId: number = this.properties.get(PlayerConst.GUILD_ID);
+        if (guildId > 0) {
+            this.world.sendGuildUpdate(this.getGuildObject(guildId));
+        }
+
+        // UPDATE FRIEND
+        const updateFriend: JSONObject = new JSONObject();
+        const friendInfo: JSONObject = new JSONObject();
+
+        updateFriend.put("cmd", "updateFriend");
+        friendInfo.put("iLvl", this.properties.get(PlayerConst.LEVEL));
+        friendInfo.put("ID", this.properties.get(PlayerConst.DATABASE_ID));
+        friendInfo.put("sName", this.properties.get(PlayerConst.USERNAME));
+        friendInfo.put("sServer", "Offline");
+        updateFriend.put("friend", friendInfo);
+
+        const result: QueryResult = this.world.db.jdbc.query("SELECT Name FROM users LEFT JOIN users_friends ON FriendID = id WHERE UserID = ?", this.properties.get(PlayerConst.DATABASE_ID));
+        while (result.next()) {
+            const client: Player | undefined = PlayerController.findByUsername(result.getString("Name").toLowerCase());
+
+            if (client) {
+                client.network.writeObject(updateFriend);
+                client.network.writeArray("server", this.username + " has logged out.");
+            }
+        }
+        result.close();
+    }
+
+    public getUserData(id: number, self: boolean): JSONObject {
+        const userData: JSONObject = new JSONObject();
+
+        const hairId: number = this.properties.get(PlayerConst.HAIR_ID) as number;
+        const hair: Hair = this.world.hairs.get(hairId);
+
+        const lastArea: string = this.properties.get(PlayerConst.LAST_AREA).split("\\|")[0];
+
+        userData
+            .element("eqp", this.properties.get(PlayerConst.EQUIPMENT))
+            .element("iCP", this.properties.get(PlayerConst.CLASS_POINTS))
+            .element("iUpgDays", this.properties.get(PlayerConst.UPGRADE_DAYS))
+            .element("intAccessLevel", this.properties.get(PlayerConst.ACCESS))
+            .element("intColorAccessory", this.properties.get(PlayerConst.COLOR_ACCESSORY))
+            .element("intColorBase", this.properties.get(PlayerConst.COLOR_BASE))
+            .element("intColorEye", this.properties.get(PlayerConst.COLOR_EYE))
+            .element("intColorHair", this.properties.get(PlayerConst.COLOR_HAIR))
+            .element("intColorSkin", this.properties.get(PlayerConst.COLOR_SKIN))
+            .element("intColorTrim", this.properties.get(PlayerConst.COLOR_TRIM))
+            .element("intLevel", this.properties.get(PlayerConst.LEVEL))
+            .element("strClassName", this.properties.get(PlayerConst.CLASS_NAME))
+            .element("strGender", this.properties.get(PlayerConst.GENDER))
+            .element("strHairFilename", hair.file)
+            .element("strHairName", hair.name)
+            .element("strUsername", this.properties.get(PlayerConst.USERNAME));
+
+        if (this.properties.get(PlayerConst.GUILD_ID) > 0) {
+            const guildData: JSONObject = this.properties.get(PlayerConst.GUILD) as JSONObject;
+            const guild: JSONObject = new JSONObject();
+
+            guild
+                .element("id", this.properties.get(PlayerConst.GUILD_ID))
+                .element("Name", guildData.getString("Name"))
+                .element("MOTD", guildData.getString("MOTD"));
+
+            userData
+                .element("guild", guild)
+                .element("guildRank", this.properties.get(PlayerConst.GUILD_RANK));
+        }
+
+        if (self) {
+            const result: QueryResult = this.world.db.jdbc.query("SELECT HouseInfo, ActivationFlag, Gold, Coins, Exp, Country, Email, DateCreated, UpgradeExpire, Age, Upgraded FROM users WHERE id = ?", this.properties.get(PlayerConst.DATABASE_ID));
+
+            if (result.next()) {
+                userData
+                    .element("CharID", this.properties.get(PlayerConst.DATABASE_ID))
+                    .element("HairID", hairId)
+                    .element("UserID", this.network.id)
+                    .element("bPermaMute", this.properties.get(PlayerConst.PERMAMUTE_FLAG))
+                    .element("bitSuccess", "1")
+                    .element("dCreated", format(result.getDate("DateCreated"), "yyyy-MM-dd'T'HH:mm:ss"))
+                    .element("dUpgExp", format(result.getDate("UpgradeExpire"), "yyyy-MM-dd'T'HH:mm:ss"))
+                    .element("iAge", result.getString("Age"))
+                    .element("iBagSlots", this.properties.get(PlayerConst.SLOTS_BAG))
+                    .element("iBankSlots", this.properties.get(PlayerConst.SLOTS_BANK))
+                    .element("iBoostCP", 0)
+                    .element("iBoostG", 0)
+                    .element("iBoostRep", 0)
+                    .element("iBoostXP", 0)
+                    .element("iDBCP", this.properties.get(PlayerConst.CLASS_POINTS))
+                    .element("iDEX", 0)
+                    .element("iDailyAdCap", 6)
+                    .element("iDailyAds", 0)
+                    .element("iEND", 0)
+                    .element("iFounder", 0)
+                    .element("iHouseSlots", this.properties.get(PlayerConst.SLOTS_HOUSE))
+                    .element("iINT", 0)
+                    .element("iLCK", 0)
+                    .element("iSTR", 0)
+                    .element("iUpg", result.getInt("Upgraded"))
+                    .element("iWIS", 0)
+                    .element("ia0", this.properties.get(PlayerConst.ACHIEVEMENT))
+                    .element("ia1", this.properties.get(PlayerConst.SETTINGS))
+                    .element("id0", this.properties.get(PlayerConst.QUEST_DAILY_0))
+                    .element("id1", this.properties.get(PlayerConst.QUEST_DAILY_1))
+                    .element("id2", this.properties.get(PlayerConst.QUEST_DAILY_2))
+                    .element("im0", this.properties.get(PlayerConst.QUEST_MONTHLY_0))
+                    .element("intActivationFlag", result.getInt("ActivationFlag"))
+                    .element("intCoins", result.getInt("Coins"))
+                    .element("intDBExp", result.getInt("Exp"))
+                    .element("intDBGold", result.getInt("Gold"))
+                    .element("intExp", result.getInt("Exp"))
+                    .element("intExpToLevel", CoreValues.getExpToLevel(this.properties.get(PlayerConst.LEVEL)))
+                    .element("intGold", result.getInt("Gold"))
+                    .element("intHP", this.properties.get(PlayerConst.HP))
+                    .element("intHPMax", this.properties.get(PlayerConst.HP_MAX))
+                    .element("intHits", 1267)
+                    .element("intMP", this.properties.get(PlayerConst.MP))
+                    .element("intMPMax", this.properties.get(PlayerConst.MP_MAX))
+                    .element("ip0", 0)
+                    .element("ip1", 0)
+                    .element("ip2", 0)
+                    .element("iq0", 0)
+                    .element("lastArea", lastArea)
+                    .element("sCountry", result.getString("Country"))
+                    .element("sHouseInfo", result.getString("HouseInfo"))
+                    .element("strEmail", result.getString("Email"))
+                    .element("strMapName", this.room!.data.name)
+                    .element("strQuests", this.properties.get(PlayerConst.QUESTS_1))
+                    .element("strQuests2", this.properties.get(PlayerConst.QUESTS_2));
+            }
+
+            result.close();
+        }
+
+        return userData;
+    }
+
+    public respawn(): void {
+        this.properties.set(PlayerConst.HP, this.properties.get(PlayerConst.HP_MAX));
+        this.properties.set(PlayerConst.MP, this.properties.get(PlayerConst.MP_MAX));
+        this.properties.set(PlayerConst.STATE, PlayerConst.STATE_NORMAL);
+
+        this.clearAuras();
+        this.sendUotls(true, false, true, false, false, true);
+    }
+
+    public die(user: Player): void {
+        this.properties.set(PlayerConst.HP, 0);
+        this.properties.set(PlayerConst.MP, 0);
+        this.properties.set(PlayerConst.STATE, PlayerConst.STATE_DEAD);
+
+        this.properties.set(PlayerConst.RESPAWN_TIME, Date.now());
+    }
+
+    private clearAuras(): void {
+        const removeAuras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS) as Set<RemoveAura>;
+
+        for (const removeAura of removeAuras) {
+            removeAura.cancel();
+        }
+
+        removeAuras.clear();
+
+        const stats: Stats = this.properties.get(PlayerConst.STATS);
+        stats.effects.clear();
+
+        this.network.writeObject(
+            new JSONObject()
+                .element("cmd", "clearAuras")
+        );
+    }
+
+    private applyPassiveAuras(rank: number, classObj: Class): void {
+        if (rank < 4) {
+            return;
+        }
+
+        const aurap: JSONObject = new JSONObject();
+        const auras: JSONArray = new JSONArray();
+
+        const stats: Stats = this.properties.get(PlayerConst.STATS);
+
+        for (const skillId of classObj.skills) {
+            const skill: Skill = this.world.skills.get(skillId);
+
+            if (skill.type === "passive" && skill.auraId) {
+                const aura: SkillAura = this.world.auras.get(skill.auraId);
+
+                if (aura.effects.length != 0) {
+
+                    const auraObj: JSONObject = new JSONObject();
+                    const effects: JSONArray = new JSONArray();
+
+                    for (const effectId of aura.effects) {
+                        const ae: SkillAuraEffect = this.world.effects.get(effectId);
+
+                        effects.add(
+                            new JSONObject()
+                                .element("typ", ae.type)
+                                .element("sta", ae.stat)
+                                .element("id", ae.id)
+                                .element("val", ae.value)
+                        );
+
+                        stats.effects.add(ae);
+                    }
+
+                    auraObj
+                        .element("nam", aura.name)
+                        .element("e", effects);
+
+                    auras.add(auraObj);
+                }
+            }
+        }
+
+        this.network.writeObject(
+            aurap
+                .element("auras", auras)
+                .element("cmd", "aura+p")
+                .element("tInf", "p:" + this.network.id),
+        );
     }
 
 }

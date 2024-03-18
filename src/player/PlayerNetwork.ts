@@ -60,6 +60,7 @@ export default class PlayerNetwork implements IDispatchable {
         this.socket.write(data + DELIMITER);
     }
 
+
     public writeObject(data: JSONObject): void {
         this.write(JSON.stringify({
             t: `xt`,
@@ -70,7 +71,7 @@ export default class PlayerNetwork implements IDispatchable {
         }));
     }
 
-    public writeString(...data: any[]): void {
+    public writeArray(...data: any[]): void {
         let response: string = ``;
 
         for (let i: number = 1; i < data.length; ++i) {
@@ -78,6 +79,15 @@ export default class PlayerNetwork implements IDispatchable {
         }
 
         this.write(`%xt%${data[0]}%-1%${response}`);
+    }
+
+    public writeExcept(ignored: Player, data: string): void {
+    }
+
+    public writeObjectExcept(ignored: Player, data: JSONObject): void {
+    }
+
+    public writeArrayExcept(ignored: Player, ...data: any[]): void {
     }
 
 }

@@ -9,9 +9,14 @@ import MonsterRespawn from "../scheduler/tasks/MonsterRespawn";
 import Random from "../util/Random";
 import JSONArray from "../util/json/JSONArray";
 import JSONObject from "../util/json/JSONObject";
-import Users from "../world/Users";
+import PlayerConst from "../world/PlayerConst.ts";
 import type Stats from "../world/stats/Stats";
 import type IDispatchable from "../interfaces/IDispatchable.ts";
+import Room from "../room/Room";
+import Player from "../player/Player";
+import Stats from "../world/stats/Stats";
+import schedule from "node-schedule";
+import type RemoveAura from "../scheduler/tasks/RemoveAura.ts";
 
 export class MonsterAI implements IDispatchable {
 
@@ -59,7 +64,7 @@ export class MonsterAI implements IDispatchable {
 
         const player: Player | null = ExtensionHelper.instance().getUserById(userId);
 
-        if (!player || (this.room.getId() !== player.getRoom()) || this.frame !== player.properties.get(Users.FRAME)) {
+        if (!player || (this.room.getId() !== player.getRoom()) || this.frame !== player.properties.get(PlayerConst.FRAME)) {
             this.removeTarget(userId);
             this.cancel();
             return;
@@ -71,7 +76,7 @@ export class MonsterAI implements IDispatchable {
 
         let damage: number = this.rand.nextInt(maxDmg - minDmg) + minDmg;
 
-        const stats: Stats = player.properties.get(Users.STATS);
+        const stats: Stats = player.properties.get(PlayerConst.STATS);
 
         const crit: boolean = Math.random() < 0.2;
         const dodge: boolean = Math.random() < stats.get$tdo();
@@ -85,7 +90,7 @@ export class MonsterAI implements IDispatchable {
             }
         }
 
-        const userAuras: Set<RemoveAura> = player.properties.get(Users.AURAS);
+        const userAuras: Set<RemoveAura> = player.properties.get(PlayerConst.AURAS);
         for (const ra of userAuras) {
             const aura: SkillAura = ra.getAura();
             if (aura.category !== "d") {
@@ -93,13 +98,13 @@ export class MonsterAI implements IDispatchable {
             }
         }
 
-        let userHp: number = player.properties.get(Users.HP) - damage;
+        let userHp: number = player.properties.get(PlayerConst.HP) - damage;
         userHp = userHp <= 0 ? 0 : userHp;
 
-        player.properties.set(Users.HP, userHp);
-        player.properties.set(Users.STATE, Users.STATE_COMBAT);
+        player.properties.set(PlayerConst.HP, userHp);
+        player.properties.set(PlayerConst.STATE, PlayerConst.STATE_COMBAT);
 
-        if (player.properties.get(Users.HP) <= 0) {
+        if (player.properties.get(PlayerConst.HP) <= 0) {
             this.world.users.die(player);
             this.removeTarget(userId);
             this.cancel();
@@ -113,16 +118,16 @@ export class MonsterAI implements IDispatchable {
         const ct: JSONObject = new JSONObject();
 
         anims.add(new JSONObject()
-            .element("strFrame", player.properties.get(Users.FRAME))
+            .element("strFrame", player.properties.get(PlayerConst.FRAME))
             .element("cInf", "m:" + this.mapId)
             .element("fx", "m")
             .element("tInf", "p:" + userId)
             .element("animStr", "Attack1,Attack2")
         );
 
-        userData.put("intMP", player.properties.get(Users.MP));
-        userData.put("intHP", player.properties.get(Users.HP));
-        userData.put("intState", player.properties.get(Users.STATE));
+        userData.put("intMP", player.properties.get(PlayerConst.MP));
+        userData.put("intHP", player.properties.get(PlayerConst.HP));
+        userData.put("intState", player.properties.get(PlayerConst.STATE));
 
         p.put(player.getName(), userData);
 
@@ -321,11 +326,23 @@ export class MonsterAI implements IDispatchable {
     }
 
     public writeObject(data: JSONObject): void {
-        this.room.writeObject(data);
-    }
-    public writeString(...data: any[]): void {
-        this.room.writeString(data);
+        this.room.writeObject(data)
     }
 
+    public writeArray(...data: any[]): void {
+        this.room.writeArray(data)
+    }
+
+    public writeExcept(ignored: Player, data: string): void {
+        this.room.writeExcept(ignored, data)
+    }
+
+    public writeObjectExcept(ignored: Player, data: JSONObject): void {
+        this.room.writeObjectExcept(ignored, data)
+    }
+
+    public writeArrayExcept(ignored: Player, ...data: any[]): void {
+        this.room.writeArrayExcept(ignored, data)
+    }
 
 }

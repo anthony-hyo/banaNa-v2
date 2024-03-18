@@ -14,7 +14,7 @@ export default class Encoder {
         }))
     }
 
-    public static writeString(socket: Socket, ...data: any[]): void {
+    public static writeArray(socket: Socket, ...data: any[]): void {
         let response: string = ``
 
         for (let i: number = 1; i < data.length; ++i) {

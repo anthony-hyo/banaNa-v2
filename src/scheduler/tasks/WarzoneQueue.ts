@@ -3,17 +3,16 @@ import type Player from "../../player/Player";
 import type Room from "../../room/Room";
 import logger from "../../util/Logger";
 import JSONObject from "../../util/json/JSONObject";
-import Users from "../../world/Users";
-import type World from "../../world/World";
+import PlayerConst from "../../player/PlayerConst.ts";
 
 export default class WarzoneQueue implements ITask {
-    private static readonly MAX_QUEUE: number = 10;
-    private warzoneQueues: Map<string, Player[]> = new Map();
-    private world: World;
 
-    constructor(world: World) {
-        this.world = world;
-        console.log("WarzoneQueue initialized.");
+    private static readonly MAX_QUEUE: number = 10;
+
+    private warzoneQueues: Map<string, Player[]> = new Map();
+
+    constructor() {
+        logger.info("WarzoneQueue initialized.");
     }
 
     public run(): void {
@@ -27,23 +26,24 @@ export default class WarzoneQueue implements ITask {
                     const warzoneRoom: Room = this.world.rooms.createRoom(`bludrutbrawl-${Math.abs(PVPI.hashCode())}`);
 
                     for (let i: number = 0; i < WarzoneQueue.MAX_QUEUE; i++) {
-                        const user: Player = queue.shift()!;
-                        user.properties.set(Users.ROOM_QUEUED, warzoneRoom);
+                        const player: Player = queue.shift()!;
+
+                        player.properties.set(PlayerConst.ROOM_QUEUED, warzoneRoom);
 
                         if (i % 2 === 0) {
-                            user.properties.set(Users.PVP_TEAM, 0);
+                            player.properties.set(PlayerConst.PVP_TEAM, 0);
                         } else {
-                            user.properties.set(Users.PVP_TEAM, 1);
+                            player.properties.set(PlayerConst.PVP_TEAM, 1);
                         }
 
 
-                        this.world.send(["server", "A new Warzone battle has started!"], user),
-                            this.world.send(PVPI, user)
+                        player.network.writeArray("server", "A new Warzone battle has started!");
+                        player.network.writeObject(PVPI);
                     }
                 }
             }
         } catch (error: any) {
-            logger.warn(error)
+            logger.warn(error);
         }
     }
 
@@ -54,8 +54,8 @@ export default class WarzoneQueue implements ITask {
     }
 
     public queueUser(warzone: string, user: Player): void {
-        const queue: Player[] = this.getWarzoneQueue(warzone);
-        queue.push(user);
+        this.getWarzoneQueue(warzone)
+            .push(user);
     }
 
     private getWarzoneQueue(warzone: string): Player[] {

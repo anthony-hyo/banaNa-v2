@@ -1,6 +1,6 @@
 import {Achievement} from "./Achievement";
 import type Player from "../player/Player.ts";
-import Users from "../world/Users.ts";
+import PlayerConst from "../world/PlayerConst.ts";
 
 export default class Settings {
     
@@ -34,7 +34,7 @@ export default class Settings {
     public static readonly WHISPER_MESSAGE_ON: string = "Accepting PMs.";
 
     public static isAllowed(pref: string, player: Player, target: Player): boolean {
-        return Settings.getPreferences(pref, parseInt(target.properties.get(Users.SETTINGS)));
+        return Settings.getPreferences(pref, parseInt(target.properties.get(PlayerConst.SETTINGS)));
     }
 
     public static getPreferences(pref: string, anyValue: any): boolean {

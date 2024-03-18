@@ -16,7 +16,7 @@ import {
     tinyint,
     unique,
     varchar
-} from "drizzle-orm/mysql-core"
+} from "drizzle-orm/mysql-core";
 import {relations} from "drizzle-orm";
 
 const combatCategory: MySqlColumnBuilderBase = mysqlEnum('category', ['M1', 'M2', 'M3', 'M4', 'C1', 'C2', 'C3', 'S1'])
@@ -82,11 +82,8 @@ export const enhancementsPatterns = mysqlTable("enhancements_patterns", {
     intelligence: tinyint("intelligence", { unsigned: true }).default(10).notNull(),
 });
 
-export const enhancementsPatternsRelations = relations(enhancementsPatterns, ({
-                                                                                  one,
-                                                                                  many
-                                                                              }) => ({
-    enhancements: many(enhancementsPatterns),
+export const enhancementsPatternsRelations = relations(enhancementsPatterns, ({one,  many}) => ({
+    enhancements: many(enhancements),
 }));
 
 export const factions = mysqlTable("factions", {
@@ -102,6 +99,10 @@ export const guilds = mysqlTable("guilds", {
     hallSize: tinyint("HallSize", { unsigned: true }).default(1).notNull(),
     lastUpdated: timestamp("LastUpdated", { mode: 'string' }).onUpdateNow().notNull(),
 });
+
+export const guildsRelations = relations(guilds, ({ many }) => ({
+    members: many(users),
+}));
 
 export const guildsHalls = mysqlTable("guilds_halls", {
     id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
@@ -264,7 +265,7 @@ export const items = mysqlTable("items", {
     reqQuests: varchar("ReqQuests", { length: 64 }).default('').notNull(),
     questStringIndex: tinyint("QuestStringIndex").default(-1).notNull(),
     questStringValue: tinyint("QuestStringValue").default(0).notNull(),
-    meta: varchar("Meta", { length: 32 }).default('NULL'),
+    meta: varchar("Meta", { length: 32 }).default('null'),
 });
 
 
@@ -571,7 +572,7 @@ export const skills = mysqlTable("skills", {
     (table) => {
         return {
             fkSkillsClassid: index("fk_skills_classid").on(table.itemId),
-        }
+        };
     });
 
 export const skillsAuras = mysqlTable("skills_auras", {
@@ -687,7 +688,10 @@ export const users = mysqlTable("users", {
     dailyQuests2: smallint("DailyQuests2", { unsigned: true }).notNull(),
     monthlyQuests0: smallint("MonthlyQuests0", { unsigned: true }).notNull(),
     lastArea: varchar("LastArea", { length: 64 }).default('faroff-1|Enter|Spawn').notNull(),
-    currentServer: varchar("CurrentServer", { length: 16 }).default('Offline').notNull(),
+    current_server_id: int("current_server_id").references(() => hairs.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade"
+    }),
     houseInfo: text("HouseInfo").notNull(),
     killCount: int("KillCount", { unsigned: true }).default(0).notNull(),
     deathCount: int("DeathCount", { unsigned: true }).default(0).notNull(),
@@ -708,10 +712,11 @@ export const usersFactions = mysqlTable("users_factions", {
     (table) => {
         return {
             userId: unique("user_id").on(table.userId, table.factionId),
-        }
+        };
     });
 
 export const usersFriends = mysqlTable("users_friends", {
+    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
     userId: int("user_id", { unsigned: true }).notNull().references(() => users.id, {
         onDelete: "cascade",
         onUpdate: "cascade"
@@ -721,6 +726,17 @@ export const usersFriends = mysqlTable("users_friends", {
         onUpdate: "cascade"
     }),
 });
+
+export const usersFriendsRelations = relations(usersFriends, ({ one }) => ({
+    user: one(users, {
+        fields: [usersFriends.userId],
+        references: [users.id],
+    }),
+    friend: one(users, {
+        fields: [usersFriends.friendId],
+        references: [users.id],
+    }),
+}));
 
 export const usersGuilds = mysqlTable("users_guilds", {
     guildId: int("GuildID", { unsigned: true }).notNull().references(() => guilds.id, {
@@ -759,7 +775,7 @@ export const usersItems = mysqlTable("users_items", {
     (table) => {
         return {
             uidItemid: index("uid_itemid").on(table.itemId, table.userId),
-        }
+        };
     });
 
 export const usersLogs = mysqlTable("users_logs", {

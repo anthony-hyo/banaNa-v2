@@ -25,7 +25,7 @@ export default class RoomController {
         if (player.room) {
             // noinspection HtmlUnknownAttribute
             player.room.writeExcept(player, `<msg t='sys'><body action='userGone' r='${room.id}'><user id='${player.network.id}' /></body></msg>`);
-            player.room.writeStringExcept(player, "exitArea", player.network.id, player.network);
+            player.room.writeArrayExcept(player, "exitArea", player.network.id, player.network);
             player.room.removePlayer(player);
             //TODO: remove room if room count <= 0
         }

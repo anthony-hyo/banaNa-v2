@@ -1,17 +1,13 @@
 import type User from "../database/interfaces/User";
 import Player from "../player/Player";
-import type RequestArg from "../request/RequestArg";
 import logger from "../util/Logger";
-import JSONObject from "../util/json/JSONObject";
 import GameController from "./GameController";
-import Encoder from "../network/Encoder.ts";
 import type {Socket} from "net";
 import PlayerNetwork from "../player/PlayerNetwork.ts";
 import database from "../database/drizzle/database.ts";
-import {and, eq} from "drizzle-orm/index";
+import {and, eq, sql} from "drizzle-orm";
 import {servers, users} from "../database/drizzle/schema.ts";
 import ConfigData from "../config/ConfigData.ts";
-import {sql} from "drizzle-orm";
 
 export default class PlayerController {
 
@@ -27,7 +23,7 @@ export default class PlayerController {
             })
             .then((user: User | undefined): void => {
                 if (user === undefined) {
-                    playerNetwork.writeString(`loginResponse`, `false`, `-1`, username, `User Data for '${username}' could not be retrieved. Please contact the staff to resolve the issue.`);
+                    playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `User Data for '${username}' could not be retrieved. Please contact the staff to resolve the issue.`);
 
                     this.removeConnection(username);
                     return;
@@ -41,7 +37,7 @@ export default class PlayerController {
                     .where(eq(users.id, user.id));
 
                 if (!GameController.instance().server.online || (GameController.instance().server.staff && user.access < 40)) {
-                    playerNetwork.writeString(`loginResponse`, `false`, `-1`, username, `A game update/maintenance is currently on-going. Only the staff can enter the server at the moment.`);
+                    playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `A game update/maintenance is currently on-going. Only the staff can enter the server at the moment.`);
 
                     this.removeConnection(username);
                     return;
@@ -50,7 +46,7 @@ export default class PlayerController {
                 const exitingPlayer: Player | undefined = this.findByUsername(username);
 
                 if (exitingPlayer !== undefined) {
-                    playerNetwork.writeString(`loginResponse`, `false`, `-1`, username, `User Data for '${username}' could not be retrieved. Please contact the staff to resolve the issue.`);
+                    playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `User Data for '${username}' could not be retrieved. Please contact the staff to resolve the issue.`);
 
                     this.removeConnection(username);
                 }
@@ -60,13 +56,20 @@ export default class PlayerController {
                 database
                     .update(servers)
                     .set({
-                        online: sql`${servers.count} + 1`
+                        online: sql`${servers.count}
+                        + 1`
                     })
                     .where(eq(servers.name, ConfigData.SERVER_NAME));
 
-                playerNetwork.writeString(`loginResponse`, `true`, player.network.id, user.username, `Message of the day`, `2017-09-30T10:58:57`, GameController.singleton.gameLogin)
+                //["loginResponse","-1","true","25860","KATHLEEN","","2024-03-13T00:46:57","SETTINGS LOGIN","3.00941"]
+                playerNetwork.writeArray(`loginResponse`, `true`, player.network.id, user.username, `Message of the day`, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941");
 
-                userData.changeServer(GameController.SERVER_NAME);
+                database
+                    .update(users)
+                    .set({
+                        current_server_id: null
+                    })
+                    .where(eq(users.id, user.id));
             });
     }
 
@@ -78,6 +81,14 @@ export default class PlayerController {
         }
 
         logger.info(`User ${name} ${(this.findByUsername(name) === undefined ? "Connection still exist" : "Connection Removed")}`);
+    }
+
+    public static add(player: Player): void {
+        this.PLAYERS.set(player.network.id, player);
+    }
+
+    public static remove(player: Player): void {
+        this.PLAYERS.delete(player.network.id);
     }
 
     public static find(id: number): Player | undefined {
@@ -96,7 +107,11 @@ export default class PlayerController {
         return undefined;
     }
 
-    public static Sockets(): Array<Player> {
+    public static players(): IterableIterator<Player> {
+        return this.PLAYERS.values();
+    }
+
+    public static sockets(): Array<Socket> {
         const sockets: Array<Socket> = new Array<Socket>();
 
         for (let player of this.players()) {
@@ -106,21 +121,8 @@ export default class PlayerController {
         return sockets;
     }
 
-    public static add(player: Player): void {
-        this.PLAYERS.set(player.network.id, player);
-    }
-
-    public static remove(player: Player): void {
-        this.PLAYERS.delete(player.network.id);
-    }
-
     public static total(): number {
-        return this.PLAYERS.size();
-    }
-
-
-    public static players() {
-        return this.PLAYERS.values();
+        return this.PLAYERS.size;
     }
 
 }

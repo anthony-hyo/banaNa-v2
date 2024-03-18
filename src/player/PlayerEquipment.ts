@@ -1,5 +1,5 @@
 import Player from "./Player.ts";
-import Users from "../world/Users.ts";
+import PlayerConst from "../world/PlayerConst.ts";
 import {Rank} from "../aqw/Rank.ts";
 import type Item from "../database/interfaces/Item.ts";
 import type Skill from "../database/interfaces/Skill.ts";
@@ -11,7 +11,7 @@ export default class PlayerEquipment {
     constructor(private readonly player: Player, private readonly properties: Map<string, any>) {
     }
 
-    public updateClass(user: Player, item: Item, classPoints: number): void {
+    public updateClass(player: Player, item: Item, classPoints: number): void {
         const updateClass: JSONObject = new JSONObject();
 
         updateClass.put("cmd", "updateClass");
@@ -19,7 +19,7 @@ export default class PlayerEquipment {
         updateClass.put("sClassCat", item.class.category);
         updateClass.put("sDesc", item.class.description);
         updateClass.put("sStats", item.class.statsDescription);
-        updateClass.put("uid", user.networkid());
+        updateClass.put("uid", player.network.id);
 
         if (item.class.manaRegenerationMethods.includes(":")) {
             const aMRM: JSONArray = new JSONArray();
@@ -38,28 +38,27 @@ export default class PlayerEquipment {
         this.player.network.writeObject(updateClass);
 
         // Update User Properties
-        user.properties.set(Users.CLASS_POINTS, classPoints);
-        user.properties.set(Users.CLASS_NAME, item.name);
-        user.properties.set(Users.CLASS_CATEGORY, item.class.category);
+        player.properties.set(PlayerConst.CLASS_POINTS, classPoints);
+        player.properties.set(PlayerConst.CLASS_NAME, item.name);
+        player.properties.set(PlayerConst.CLASS_CATEGORY, item.class.category);
 
-        this.world.sendToRoomButOne(
+        player.room?.writeObjectExcept(
+            player,
             new JSONObject()
                 .element("cmd", "updateClass")
                 .element("iCP", classPoints)
                 .element("sClassCat", item.class.category)
                 .element("sClassName", item.name)
-                .element("uid", user.networkid()),
-            user,
-            this.world.zone.getRoom(user.room.getId())
+                .element("uid", player.network.id)
         );
 
-        this.loadSkills(user, item, classPoints);
+        this.loadSkills(player, item, classPoints);
     }
 
     private loadSkills(user: Player, item: Item, classPoints: number): void {
         const rank: number = Rank.getRankFromPoints(classPoints);
 
-        const skills: Map<string, number> = user.properties.get(Users.SKILLS);
+        const skills: Map<string, number> = user.properties.get(PlayerConst.SKILLS);
 
         const active: JSONArray = new JSONArray();
         const passive: JSONArray = new JSONArray();
@@ -144,7 +143,7 @@ export default class PlayerEquipment {
 
                 if (skill.reference === "aa") {
                     actObj.element("auto", true)
-                        .element("typ", "aa")
+                        .element("typ", "aa");
 
                     active.element(0, actObj);
                 } else if (skill.reference === "a1") {

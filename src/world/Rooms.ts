@@ -7,7 +7,7 @@ import type Room from "../room/Room";
 import Random from "../util/Random";
 import JSONArray from "../util/json/JSONArray";
 import JSONObject from "../util/json/JSONObject";
-import Users from "./Users";
+import PlayerConst from "./PlayerConst.ts";
 import type Player from "../player/Player.ts";
 import GameController from "../controller/GameController.ts";
 
@@ -41,10 +41,10 @@ export class Rooms {
     }
 
     public exit(room: Room, player: Player): void {
-        room.writeStringExcept(player, "exitArea", String(player.networkid()), player.username());
+        room.writeArrayExcept(player, "exitArea", String(player.networkid()), player.username());
 
         if (this.world.areas.get(room.getName().split("-")[0]) != null && this.world.areas.get(room.getName().split("-")[0]).isPvP()) {
-            room.writeStringExcept(player, "server", player.username() + " has left the match.");
+            room.writeArrayExcept(player, "server", player.username() + " has left the match.");
         }
     }
 
@@ -82,7 +82,7 @@ export class Rooms {
 
         if (area.pvp) {
             mta
-                .element("pvpTeam", player.properties.get(Users.PVP_TEAM))
+                .element("pvpTeam", player.properties.get(PlayerConst.PVP_TEAM))
                 .element("PVPFactions", room.properties.get(Rooms.PVP_FACTIONS));
 
             const bs: JSONObject = new JSONObject();
@@ -110,7 +110,7 @@ export class Rooms {
     public basicRoomJoin(player: Player, roomName: string, roomFrame: string = "Enter", roomPad: string = "Spawn"): void {
         const mapName: string = roomName.split("-")[0];
         if (!this.world.areas.containsKey(mapName)) {
-            player.network.writeString("warning", "\"" + mapName + "\" is not a recognized map name.");
+            player.network.writeArray("warning", "\"" + mapName + "\" is not a recognized map name.");
             return;
         }
 
@@ -130,15 +130,15 @@ export class Rooms {
             return;
         }
 
-        player.properties.put(Users.FRAME, frame);
-        player.properties.put(Users.PAD, pad);
-        player.properties.put(Users.TX, 0);
-        player.properties.put(Users.TY, 0);
+        player.properties.put(PlayerConst.FRAME, frame);
+        player.properties.put(PlayerConst.PAD, pad);
+        player.properties.put(PlayerConst.TX, 0);
+        player.properties.put(PlayerConst.TY, 0);
 
         this.helper.joinRoom(player, player.getRoom(), room.getId(), true, "", false, true);
         this.moveToArea(room, player);
 
-        player.network.writeString("server", "You joined \"" + room.getName() + "\"!");
+        player.network.writeArray("server", "You joined \"" + room.getName() + "\"!");
     }
 
     public lookForRoom(name: string): Room {
@@ -184,26 +184,26 @@ export class Rooms {
         const areaName: string = room.getName().split("-")[0].equals("house") ? room.getName() : room.getName().split("-")[0];
         const area: Area = this.world.areas.get(areaName);
 
-        if (area.reqLevel > parseInt(player.properties.get(Users.LEVEL))) {
-            player.network.writeString("warning", "\"" + areaName + "\" requires level " + area.reqLevel + " and above to enter.");
+        if (area.reqLevel > parseInt(player.properties.get(PlayerConst.LEVEL))) {
+            player.network.writeArray("warning", "\"" + areaName + "\" requires level " + area.reqLevel + " and above to enter.");
             return Rooms.ROOM_LEVEL_LIMIT;
         } else if (area.pvp) {
-            player.network.writeString("warning", "\"" + areaName + "\" is locked zone.");
+            player.network.writeArray("warning", "\"" + areaName + "\" is locked zone.");
             return Rooms.ROOM_LOCKED;
         } else if (area.staff && !(player.isAdmin() || player.isModerator())) {
-            player.network.writeString("warning", "\"" + areaName + "\" is not a recognized map name.");
+            player.network.writeArray("warning", "\"" + areaName + "\" is not a recognized map name.");
             return Rooms.ROOM_STAFF_ONLY;
-        } else if (area.upgrade && parseInt(player.properties.get(Users.UPGRADE_DAYS)) <= 0) {
-            player.network.writeString("warning", "\"" + areaName + "\" is member only.");
+        } else if (area.upgrade && parseInt(player.properties.get(PlayerConst.UPGRADE_DAYS)) <= 0) {
+            player.network.writeArray("warning", "\"" + areaName + "\" is member only.");
             return Rooms.ROOM_REQUIRE_UPGRADE;
         } else if (room.contains(player.username())) {
-            player.network.writeString("warning", "Cannot join a room you are currently in!");
+            player.network.writeArray("warning", "Cannot join a room you are currently in!");
             return Rooms.ROOM_USER_INSIDE;
-        } else if (area instanceof Hall && (area as Hall).getGuildId() != parseInt(player.properties.get(Users.GUILD_ID))) {
-            player.network.writeString("warning", "You cannot access other guild halls!");
+        } else if (area instanceof Hall && (area as Hall).getGuildId() != parseInt(player.properties.get(PlayerConst.GUILD_ID))) {
+            player.network.writeArray("warning", "You cannot access other guild halls!");
             return Rooms.ROOM_LOCKED;
         } else if (room.howManyUsers() >= room.getMaxUsers()) {
-            player.network.writeString("warning", "Room join failed, destination room is full.");
+            player.network.writeArray("warning", "Room join failed, destination room is full.");
             return Rooms.ROOM_FULL;
         }
 
@@ -447,7 +447,7 @@ export class Rooms {
                 const users: Set<Player> = new Set<Player>();
 
                 for (const user of room.getAllUsers()) {
-                    if (user.properties.get(Users.PVP_TEAM) === 1) {
+                    if (user.properties.get(PlayerConst.PVP_TEAM) === 1) {
                         users.add(user);
                     }
                 }
@@ -459,7 +459,7 @@ export class Rooms {
                 const users: Set<Player> = new Set<Player>();
 
                 for (const user of room.getAllUsers()) {
-                    if (user.properties.get(Users.PVP_TEAM) === 0) {
+                    if (user.properties.get(PlayerConst.PVP_TEAM) === 0) {
                         users.add(user);
                     }
                 }

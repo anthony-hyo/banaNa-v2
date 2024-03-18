@@ -1,4 +1,4 @@
-import Users from "../Users";
+import PlayerConst from "../PlayerConst.ts";
 
 import type Player from "../../player/Player.ts";
 import type Enhancement from "../../database/interfaces/Enhancement.ts";
@@ -538,9 +538,9 @@ export default class Stats {
     }
 
     private applyCoreStatRatings(): void {
-        const cat: string = this.player.properties.get(Users.CLASS_CATEGORY) as string;
-        const enhancement: Enhancement = this.player.properties.get(Users.ITEM_WEAPON_ENHANCEMENT);
-        const level: number = this.player.properties.get(Users.LEVEL) as number;
+        const cat: string = this.player.properties.get(PlayerConst.CLASS_CATEGORY) as string;
+        const enhancement: Enhancement = this.player.properties.get(PlayerConst.ITEM_WEAPON_ENHANCEMENT);
+        const level: number = this.player.properties.get(PlayerConst.LEVEL) as number;
 
         const wLvl: number = enhancement ? enhancement.level : 1;
         let iDPS: number = enhancement ? enhancement.dps : 100;

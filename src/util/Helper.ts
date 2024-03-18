@@ -35,4 +35,17 @@ export default class Helper {
         return results;
     }
 
+    public static columnsToString(row: Record<string, any>): string {
+        const keyValuePairs: string[] = [];
+
+        for (const columnName in row) {
+            if (Object.prototype.hasOwnProperty.call(row, columnName)) {
+                const value = row[columnName];
+                keyValuePairs.push(`${columnName}=${value}`);
+            }
+        }
+
+        return keyValuePairs.join(',');
+    }
+
 }

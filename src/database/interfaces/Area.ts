@@ -1,8 +1,9 @@
 import type MapMonster from "./MapMonster.ts";
 
 export default interface Area {
-    name: string;
     id: number;
+
+    name: string;
     file: string;
 
     max_players: number;

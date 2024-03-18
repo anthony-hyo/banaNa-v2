@@ -5,12 +5,15 @@ import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {users} from "../database/drizzle/schema.ts";
 import type Area from "../database/interfaces/Area.ts";
+import type RoomData from "./RoomData.ts";
 
 export default class Room implements IDispatchable {
 
     public static readonly NONE: Room = new Room(-1, 1);
 
     private readonly _players: Map<number, Player> = new Map<number, Player>();
+
+    public data!: RoomData;
 
     constructor(
         private readonly _id: number,
@@ -26,7 +29,7 @@ export default class Room implements IDispatchable {
         return this._databaseId;
     }
 
-    public async data(): Promise<Area> {
+    public async dataAsync(): Promise<Area> {
         return (
             await database.query.maps
                 .findFirst({
@@ -52,6 +55,18 @@ export default class Room implements IDispatchable {
         return this._players.size;
     }
 
+    public writeObject(data: JSONObject): void {
+        for (let [, player] of this.players) {
+            player.network.writeObject(data);
+        }
+    }
+
+    public writeArray(...data: any[]): void {
+        for (let [, player] of this.players) {
+            player.network.writeArray(data);
+        }
+    }
+
     public writeExcept(ignored: Player, data: string): void {
         for (let [networkId, player] of this.players) {
             if (networkId !== ignored.network.id) {
@@ -68,23 +83,11 @@ export default class Room implements IDispatchable {
         }
     }
 
-    public writeStringExcept(ignored: Player, ...data: any[]): void {
+    public writeArrayExcept(ignored: Player, ...data: any[]): void {
         for (let [networkId, player] of this.players) {
             if (networkId !== ignored.network.id) {
-                player.network.writeString(data);
+                player.network.writeArray(data);
             }
-        }
-    }
-
-    public writeObject(data: JSONObject): void {
-        for (let [, player] of this.players) {
-            player.network.writeObject(data);
-        }
-    }
-
-    public writeString(...data: any[]): void {
-        for (let [, player] of this.players) {
-            player.network.writeString(data);
         }
     }
 

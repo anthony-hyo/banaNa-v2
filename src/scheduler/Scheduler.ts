@@ -1,25 +1,29 @@
 import schedule from 'node-schedule';
-import logger from "./Logger.ts";
 import type ITask from "../interfaces/ITask.ts";
+import logger from "../util/Logger.ts";
 
 export default class Scheduler {
 
     private static readonly tasks: Array<schedule.Job> = new Array<schedule.Job>;
 
-    public static oneTime(task: ITask, date: Date): void {
+    public static oneTime(task: ITask, seconds: number): schedule.Job {
+        const date: Date = new Date();
+
+        date.setSeconds(date.getSeconds() + seconds);
+
         const newTask: schedule.Job = schedule.scheduleJob(date, task.run);
+
         this.tasks.push(newTask);
+
+        return newTask;
     }
 
-    public static repeated(task: ITask, intervalInSeconds: number): void {
+    public static repeated(task: ITask, intervalInSeconds: number): schedule.Job | undefined {
         const newTask: schedule.Job = schedule.scheduleJob(`*/${intervalInSeconds} * * * * *`, task.run);
 
-        if (!newTask) {
-            logger.error('Failed to schedule the task.');
-            return;
-        }
-
         this.tasks.push(newTask);
+
+        return newTask;
     }
 
     public static cancelAll(): void {

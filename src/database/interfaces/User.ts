@@ -44,7 +44,7 @@ export default interface User {
     dailyQuests2: number;
     monthlyQuests0: number;
     lastArea: string;
-    currentServer: string;
+    current_server_id: number | null;
     houseInfo: string;
     killCount: number;
     deathCount: number;
