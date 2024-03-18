@@ -5,9 +5,19 @@ import PlayerNetwork from "../player/PlayerNetwork";
 
 export default class Network {
 
+    private static _instance: Network;
+
     private readonly server: Server;
 
     private count: number = 0;
+
+    public static instance(): Network {
+        if (!this._instance) {
+            this._instance = new Network();
+        }
+
+        return this._instance;
+    }
 
     constructor() {
         this.server = net.createServer();
