@@ -12,6 +12,7 @@
     "build": "bun build ./index.ts --compile --minify --outfile server"
   },
   "dependencies": {
+    "date-fns": "^3.5.0",
     "drizzle-orm": "^0.29.5",
     "fast-xml-parser": "^4.3.5",
     "mysql2": "^3.9.2",
