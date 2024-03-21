@@ -2007,24 +2007,6 @@ export const users = mysqlTable("users", {
 			.default('bn@banaNa.bn')
 			.notNull(),
 
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
-export const usersRelations = relations(users, ({ many }) => ({
-	userAttribute: many(usersAttributes),
-	userFactions: many(usersFactions),
-	userFriends: many(usersFriends),
-	userInventory: many(usersInventory),
-	userLogs: many(usersLogs),
-}));
-
-export const usersAttributes = mysqlTable("users_attributes", {
-	id: idColumn(),
-
-	userId: userIdColumn(),
-
 	accessId:
 		int("access_id", {
 			unsigned: true
@@ -2105,7 +2087,7 @@ export const usersAttributes = mysqlTable("users_attributes", {
 			.default('yulgar-1|Enter|Spawn')
 			.notNull(),
 
-	current_server_id:
+	currentServerId:
 		int("current_server_id", {
 			unsigned: true
 		})
@@ -2190,7 +2172,7 @@ export const usersAttributes = mysqlTable("users_attributes", {
 			.default(0)
 			.notNull(),
 
-	quests:
+	quests1:
 		char("quests_1", {
 			length: 100
 		})
@@ -2282,27 +2264,32 @@ export const usersAttributes = mysqlTable("users_attributes", {
 	dateCreated: dateCreatedColumn,
 });
 
-export const usersAttributesRelations = relations(usersAttributes, ({ one, many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
 	access: one(accesses, {
-		fields: [usersAttributes.accessId],
+		fields: [users.accessId],
 		references: [accesses.id],
 	}),
 	settingLevel: one(settingsLevels, {
-		fields: [usersAttributes.level],
+		fields: [users.level],
 		references: [settingsLevels.level],
 	}),
 	guild: one(guilds, {
-		fields: [usersAttributes.guildId],
+		fields: [users.guildId],
 		references: [guilds.id],
 	}),
 	currentServer: one(servers, {
-		fields: [usersAttributes.current_server_id],
+		fields: [users.current_server_id],
 		references: [servers.id],
 	}),
 	hair: one(hairs, {
-		fields: [usersAttributes.hairId],
+		fields: [users.hairId],
 		references: [hairs.id],
-	})
+	}),
+
+	userFactions: many(usersFactions),
+	userFriends: many(usersFriends),
+	userInventory: many(usersInventory),
+	userLogs: many(usersLogs),
 }));
 
 export const usersFactions = mysqlTable("users_factions", {

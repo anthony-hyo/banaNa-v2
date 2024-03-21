@@ -1,4 +1,4 @@
-import type ITask from "../../interfaces/ITask";
+import type ITask from "../../interfaces/scheduler/ITask";
 import type Player from "../../player/Player";
 import type Room from "../../room/Room";
 import logger from "../../util/Logger";

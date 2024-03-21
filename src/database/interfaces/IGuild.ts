@@ -1,16 +1,17 @@
 import type IUser from "./IUser.ts";
 
 export default interface IGuild {
-    id: number;
+	id: number;
 
-    name: string;
+	name: string;
 
-    messageOfTheDay: string;
+	messageOfTheDay: string;
 
-    maxMembers: number;
-    hallSize: number;
+	maxMembers: number;
+	hallSize: number;
 
-    lastUpdated: string;
+	dateUpdated: Date;
+	dateCreated: Date;
 
-    members: IUser[];
+	members: IUser[];
 }

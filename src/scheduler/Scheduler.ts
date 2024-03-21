@@ -1,5 +1,5 @@
 import schedule from 'node-schedule';
-import type ITask from "../interfaces/ITask.ts";
+import type ITask from "../interfaces/scheduler/ITask.ts";
 
 export default class Scheduler {
 

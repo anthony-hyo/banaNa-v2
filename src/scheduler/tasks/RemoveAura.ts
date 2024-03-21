@@ -5,7 +5,7 @@ import type Stats from "../../world/stats/Stats";
 import PlayerConst from "../../player/PlayerConst.ts";
 import type Player from "../../player/Player.ts";
 import type ISkillAura from "../../database/interfaces/ISkillAura.ts";
-import type ITask from "../../interfaces/ITask";
+import type ITask from "../../interfaces/scheduler/ITask";
 import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";
 import schedule from "node-schedule";
 

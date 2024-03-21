@@ -67,7 +67,7 @@ export default class PlayerController {
                 database
                     .update(users)
                     .set({
-                        current_server_id: null
+                        currentServerId: null
                     })
                     .where(eq(users.id, user.id));
             });

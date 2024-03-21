@@ -1,5 +1,5 @@
 import type {MonsterAI} from "../../ai/MonsterAI";
-import type ITask from "../../interfaces/ITask";
+import type ITask from "../../interfaces/scheduler/ITask";
 import logger from "../../util/Logger.ts";
 
 export default class MonsterRespawn implements ITask {
