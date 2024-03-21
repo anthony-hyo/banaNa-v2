@@ -1,789 +1,2437 @@
 import {
-    type AnyMySqlColumn,
-    boolean,
-    char,
-    decimal,
-    double,
-    index,
-    int,
-    mediumint,
-    type MySqlColumnBuilderBase,
-    mysqlEnum,
-    mysqlTable,
-    smallint,
-    text,
-    timestamp,
-    tinyint,
-    unique,
-    varchar
+	type AnyMySqlColumn,
+	boolean,
+	char,
+	decimal,
+	double,
+	int,
+	mediumint,
+	type MySqlColumnBuilderBase,
+	mysqlEnum,
+	mysqlTable,
+	smallint,
+	text,
+	timestamp,
+	tinyint,
+	varchar
 } from "drizzle-orm/mysql-core";
-import {relations} from "drizzle-orm";
+import {relations, sql} from "drizzle-orm";
 
 const combatCategory: MySqlColumnBuilderBase = mysqlEnum('category', ['M1', 'M2', 'M3', 'M4', 'C1', 'C2', 'C3', 'S1'])
-    .default("M1")
-    .notNull();
+	.default("M1")
+	.notNull();
 
 const genderEnum: MySqlColumnBuilderBase = mysqlEnum('gender', ['M', 'F'])
-    .default("M")
-    .notNull();
+	.default("M")
+	.notNull();
+
+const targetEnum: MySqlColumnBuilderBase = mysqlEnum('target', ['s', 'h', 'f'])
+	.default("h")
+	.notNull();
+
+const idColumn = (table: string = `id`) => int(table, {
+	unsigned: true
+})
+	.autoincrement()
+	.primaryKey()
+	.notNull();
+
+const userIdColumn = (table: string = `user_id`) => int(table, {
+	unsigned: true
+})
+	.notNull()
+	.references((): AnyMySqlColumn => users.id, {
+		onDelete: "cascade",
+		onUpdate: "cascade"
+	});
+
+const guildIdColumn = int("guild_id", {
+	unsigned: true
+})
+	.notNull()
+	.references((): AnyMySqlColumn => guilds.id, {
+		onDelete: "cascade",
+		onUpdate: "cascade"
+	});
+
+const guildHallIdColumn = int("guild_hall_id", {
+	unsigned: true
+})
+	.notNull()
+	.references((): AnyMySqlColumn => guildsHalls.id, {
+		onDelete: "cascade",
+		onUpdate: "cascade"
+	});
+
+const itemIdColumn = (table: string = `item_id`) => int(table, {
+	unsigned: true
+})
+	.notNull()
+	.default(1)
+	.references((): AnyMySqlColumn => items.id, {
+		onDelete: "cascade",
+		onUpdate: "cascade"
+	});
+
+const enhancementIdColumn = int("enhancement_id", {
+	unsigned: true
+})
+	.notNull()
+	.default(1)
+	.references((): AnyMySqlColumn => enhancements.id, {
+		onDelete: "set default",
+		onUpdate: "cascade"
+	});
+
+const questIdColumn = int("quest_id", {
+	unsigned: true
+})
+	.notNull()
+	.references((): AnyMySqlColumn => quests.id, {
+		onDelete: "cascade",
+		onUpdate: "cascade"
+	});
+
+const mapIdColumn = int("map_id", {
+	unsigned: true
+})
+	.notNull()
+	.default(1)
+	.references((): AnyMySqlColumn => maps.id, {
+		onDelete: "cascade",
+		onUpdate: "cascade"
+	});
+
+const shopIdColumn = int("shop_id", {
+	unsigned: true
+})
+	.notNull()
+	.references((): AnyMySqlColumn => shops.id, {
+		onDelete: "cascade",
+		onUpdate: "cascade"
+	});
+
+const monsterIdColumn = int("monster_id", {
+	unsigned: true
+})
+	.notNull()
+	.references((): AnyMySqlColumn => monsters.id, {
+		onDelete: "cascade",
+		onUpdate: "cascade"
+	});
+
+const levelColumn = (table: string = `level`) => int(table, {
+	unsigned: true
+})
+	.default(1)
+	.notNull()
+	.references((): AnyMySqlColumn => settingsLevels.level, {
+		onDelete: "restrict",
+		onUpdate: "cascade"
+	});
+
+const dateColumn = (table: string) => timestamp(table, {
+	mode: 'date',
+	fsp: 3
+})
+	.defaultNow()
+	.notNull();
+
+const dateUpdatedColumn = timestamp('date_updated', {
+	mode: 'date',
+	fsp: 3
+})
+	.default(sql`CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)`)
+	//.onUpdateNow()
+	.notNull();
+
+const dateCreatedColumn = dateColumn('date_created');
+
+const dateDeletedColumn = dateColumn('date_deleted');
+
+export const accesses = mysqlTable("accesses", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("None")
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
 
 export const classes = mysqlTable("classes", {
-    id: int("id", { unsigned: true })
-        .primaryKey()
-        .autoincrement().notNull(),
+	id: idColumn(),
 
-    itemId: int("item_id", { unsigned: true })
-        .notNull()
-        .references((): AnyMySqlColumn => items.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	itemId: itemIdColumn(),
 
-    category: combatCategory,
+	category: combatCategory,
 
-    description: text("description")
-        .notNull(),
+	description:
+		text("description")
+			.default("")
+			.notNull(),
 
-    manaRegenerationMethods: text("ManaRegenerationMethods")
-        .notNull(),
+	manaRegenerationMethods:
+		text("mana_regeneration_methods")
+			.default("")
+			.notNull(),
 
-    statsDescription: text("StatsDescription")
-        .notNull(),
+	statsDescription:
+		text("stats_description")
+			.default("")
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const countries = mysqlTable("countries", {
+	code:
+		char("code", {
+			length: 2
+		})
+			.primaryKey()
+			.default("XX")
+			.notNull(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("Unknown")
+			.notNull()
 });
 
 export const enhancements = mysqlTable("enhancements", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 32 }).default("None").notNull(),
-    patternId: int("pattern_id", { unsigned: true }).default(1).notNull().references(() => enhancementsPatterns.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    rarity: tinyint("rarity", { unsigned: true }).notNull(),
-    damage_per_second: smallint("damage_per_second", { unsigned: true }).notNull(),
-    level: tinyint("level", { unsigned: true }).default(1).notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("None")
+			.notNull(),
+
+	patternId:
+		int("pattern_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull()
+			.references((): AnyMySqlColumn => enhancementsPatterns.id, {
+				onDelete: "set default",
+				onUpdate: "cascade"
+			}),
+
+	rarity:
+		int("rarity", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	damage_per_second:
+		smallint("damage_per_second", {
+			unsigned: true
+		})
+			.default(100)
+			.notNull(),
+
+	level: levelColumn(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const enhancementsRelations = relations(enhancements, ({ one }) => ({
-    pattern: one(enhancementsPatterns, {
-        fields: [enhancements.patternId],
-        references: [enhancementsPatterns.id],
-    }),
+	pattern: one(enhancementsPatterns, {
+		fields: [enhancements.patternId],
+		references: [enhancementsPatterns.id],
+	}),
 }));
 
 export const enhancementsPatterns = mysqlTable("enhancements_patterns", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 32 }).default("None").notNull(),
-    category: combatCategory,
-    wisdom: tinyint("wisdom", { unsigned: true }).default(10).notNull(),
-    strength: tinyint("strength", { unsigned: true }).default(10).notNull(),
-    luck: tinyint("luck", { unsigned: true }).default(10).notNull(),
-    dexterity: tinyint("dexterity", { unsigned: true }).default(10).notNull(),
-    endurance: tinyint("endurance", { unsigned: true }).default(10).notNull(),
-    intelligence: tinyint("intelligence", { unsigned: true }).default(10).notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("None")
+			.notNull(),
+
+	category: combatCategory,
+
+	wisdom:
+		int("wisdom", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	strength:
+		int("strength", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	luck:
+		int("luck", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	dexterity:
+		int("dexterity", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	endurance:
+		int("endurance", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	intelligence:
+		int("intelligence", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
-export const enhancementsPatternsRelations = relations(enhancementsPatterns, ({ one, many }) => ({
-    enhancements: many(enhancements),
+export const enhancementsPatternsRelations = relations(enhancementsPatterns, ({ many }) => ({
+	enhancements: many(enhancements),
 }));
 
 export const factions = mysqlTable("factions", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 20 }).notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("None")
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const guilds = mysqlTable("guilds", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 64 }).notNull(),
-    messageOfTheDay: varchar("MessageOfTheDay", { length: 512 }).notNull(),
-    maxMembers: tinyint("MaxMembers", { unsigned: true }).default(15).notNull(),
-    hallSize: tinyint("HallSize", { unsigned: true }).default(1).notNull(),
-    lastUpdated: timestamp("LastUpdated", { mode: 'string' }).onUpdateNow().notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("None")
+			.notNull(),
+
+	messageOfTheDay:
+		varchar("message_of_the_day", {
+			length: 512
+		})
+			.default("Welcome to our guild!")
+			.notNull(),
+
+	maxMembers:
+		tinyint("max_members", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	hallSize:
+		tinyint("hall_size", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const guildsRelations = relations(guilds, ({ many }) => ({
-    members: many(users),
+	members: many(users),
+	guildHall: many(guildsHalls),
+	guildInventory: many(guildsInventory),
 }));
 
 export const guildsHalls = mysqlTable("guilds_halls", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    guildId: int("GuildID", { unsigned: true }).notNull().references(() => guilds.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    linkage: varchar("Linkage", { length: 64 }).notNull(),
-    cell: varchar("Cell", { length: 16 }).notNull(),
-    x: double("X", {
-        precision: 7,
-        scale: 2
-    }).notNull(),
-    y: double("Y", {
-        precision: 7,
-        scale: 2
-    }).notNull(),
-    interior: text("Interior").notNull(),
+	id: idColumn(),
+
+	guildId: guildIdColumn,
+
+	linkage:
+		varchar("linkage", {
+			length: 64
+		})
+			.default('fr1')
+			.notNull(),
+
+	cell:
+		varchar("cell", {
+			length: 32
+		})
+			.default('Enter')
+			.notNull(),
+
+	x:
+		double("x_axis", {
+			precision: 7,
+			scale: 2
+		})
+			.default(0)
+			.notNull(),
+
+	y:
+		double("y_axis", {
+			precision: 7,
+			scale: 2
+		})
+			.default(0)
+			.notNull(),
+
+	interior:
+		text("interior")
+			.default('|||')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const guildsHallsRelations = relations(guildsHalls, ({ one, many }) => ({
+	guild: one(guilds, {
+		fields: [guildsHalls.guildId],
+		references: [guilds.id],
+	}),
+
+	guildHallBuildings: many(guildsHallsBuildings),
+	guildHallConnections: many(guildsHallsConnections),
+}));
 
 export const guildsHallsBuildings = mysqlTable("guilds_halls_buildings", {
-    id: int("id", { unsigned: true })
-        .autoincrement()
-        .primaryKey()
-        .notNull(),
+	id: idColumn(),
 
-    hallId: int("HallID", { unsigned: true })
-        .notNull()
-        .references(() => guildsHalls.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	guildHallId: guildHallIdColumn,
 
-    itemId: int("item_id", { unsigned: true })
-        .notNull()
-        .references(() => items.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	itemId: itemIdColumn(),
 
-    slot: tinyint("Slot", { unsigned: true })
-        .default(1)
-        .notNull(),
+	slot:
+		tinyint("slot", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
 
-    size: tinyint("Size", { unsigned: true })
-        .default(1)
-        .notNull(),
+	size:
+		tinyint("size", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const guildsHallsBuildingsRelations = relations(guildsHallsBuildings, ({ one }) => ({
+	guildHall: one(guildsHalls, {
+		fields: [guildsHallsBuildings.guildHallId],
+		references: [guildsHalls.id],
+	}),
+	item: one(items, {
+		fields: [guildsHallsBuildings.itemId],
+		references: [items.id],
+	}),
+}));
 
 export const guildsHallsConnections = mysqlTable("guilds_halls_connections", {
-    id: int("id", { unsigned: true })
-        .autoincrement()
-        .primaryKey()
-        .notNull(),
+	id: idColumn(),
 
-    hallId: int("HallID", { unsigned: true })
-        .notNull()
-        .references(() => guildsHalls.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	guildHallId: guildHallIdColumn,
 
-    pad: varchar("Pad", { length: 16 })
-        .notNull(),
+	pad:
+		varchar("pad", {
+			length: 32
+		})
+			.default('')
+			.notNull(),
 
-    cell: varchar("Cell", { length: 16 })
-        .notNull(),
+	cell:
+		varchar("cell", {
+			length: 32
+		})
+			.default('')
+			.notNull(),
 
-    padPosition: varchar("PadPosition", { length: 16 })
-        .notNull(),
+	padPosition:
+		varchar("pad_position", {
+			length: 32
+		})
+			.default('')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const guildsHallsConnectionsRelations = relations(guildsHallsConnections, ({ one }) => ({
+	guildHall: one(guildsHalls, {
+		fields: [guildsHallsConnections.guildHallId],
+		references: [guildsHalls.id],
+	})
+}));
 
 export const guildsInventory = mysqlTable("guilds_inventory", {
-    id: int("id", { unsigned: true })
-        .autoincrement()
-        .primaryKey()
-        .notNull(),
+	id: idColumn(),
 
-    guildId: int("GuildID", { unsigned: true })
-        .notNull()
-        .references(() => guilds.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	guildId: guildIdColumn,
 
-    itemId: int("item_id", { unsigned: true })
-        .notNull()
-        .references(() => items.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	itemId: itemIdColumn(),
 
-    userId: int("user_id", { unsigned: true })
-        .notNull()
-        .references(() => users.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	userId: userIdColumn(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
+export const guildsInventoryRelations = relations(guildsInventory, ({ one }) => ({
+	guild: one(guilds, {
+		fields: [guildsInventory.guildId],
+		references: [guilds.id],
+	}),
+	item: one(items, {
+		fields: [guildsInventory.itemId],
+		references: [items.id],
+	}),
+	user: one(users, {
+		fields: [guildsInventory.userId],
+		references: [users.id],
+	}),
+}));
+
 export const hairs = mysqlTable("hairs", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    gender: genderEnum,
-    name: varchar("name", { length: 16 }).notNull(),
-    file: varchar("file", { length: 64 }).notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default(`banaNa`)
+			.notNull(),
+
+	file:
+		varchar("file", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	gender: genderEnum,
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const hairsShops = mysqlTable("hairs_shops", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 32 }).default('').notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default(`banaNa`)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const hairsShopsRelations = relations(hairsShops, ({ many }) => ({
+	hairShopItems: many(hairsShopsItems),
+}));
 
 export const hairsShopsItems = mysqlTable("hairs_shops_items", {
-    gender: genderEnum,
-    shopId: int("shop_id", { unsigned: true }).notNull().references(() => hairsShops.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    hairId: int("hair_id", { unsigned: true }).notNull().references(() => hairs.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
+	id: idColumn(),
+
+	hairShopId:
+		int("hair_shop_id", {
+			unsigned: true
+		})
+			.notNull()
+			.references((): AnyMySqlColumn => hairsShops.id, {
+				onDelete: "cascade",
+				onUpdate: "cascade"
+			}),
+
+	hairId:
+		int("hair_id", {
+			unsigned: true
+		})
+			.notNull()
+			.references((): AnyMySqlColumn => hairs.id, {
+				onDelete: "cascade",
+				onUpdate: "cascade"
+			}),
+
+	gender: genderEnum,
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const hairsShopsItemsRelations = relations(hairsShopsItems, ({ one }) => ({
+	hairShop: one(hairsShops, {
+		fields: [hairsShopsItems.hairShopId],
+		references: [hairsShops.id],
+	}),
+	hair: one(hairs, {
+		fields: [hairsShopsItems.hairId],
+		references: [hairs.id],
+	}),
+}));
 
 export const items = mysqlTable("items", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 60 }).notNull(),
-    description: text("description").notNull(),
-    type: varchar("Type", { length: 16 }).notNull(),
-    element: varchar("Element", { length: 16 }).default('None').notNull(),
-    file: varchar("file", { length: 64 }).notNull(),
-    link: varchar("Link", { length: 64 }).notNull(),
-    icon: varchar("Icon", { length: 16 }).notNull(),
-    equipment: varchar("Equipment", { length: 6 }).notNull(),
-    level: tinyint("Level", { unsigned: true }).default(1).notNull(),
-    dps: smallint("DPS", { unsigned: true }).default(100).notNull(),
-    range: smallint("Range", { unsigned: true }).default(100).notNull(),
-    rarity: tinyint("Rarity", { unsigned: true }).default(10).notNull(),
-    cost: int("Cost", { unsigned: true }).default(0).notNull(),
-    quantity: smallint("Quantity", { unsigned: true }).default(1).notNull(),
-    stack: smallint("Stack", { unsigned: true }).default(1).notNull(),
-    coins: boolean("Coins").default(false).notNull(),
-    temporary: boolean("Temporary").default(false).notNull(),
-    upgrade: boolean("Upgrade").default(false).notNull(),
-    staff: boolean("Staff").default(false).notNull(),
-    enhId: int("EnhID", { unsigned: true }).default(0).notNull().references(() => enhancements.id, {
-        onDelete: "restrict",
-        onUpdate: "restrict"
-    }),
-    factionId: int("FactionID", { unsigned: true }).default(1).notNull().references(() => factions.id, {
-        onDelete: "restrict",
-        onUpdate: "restrict"
-    }),
-    reqReputation: mediumint("ReqReputation", { unsigned: true }).notNull(),
-    reqClassId: int("ReqClassID", { unsigned: true }).default(0).notNull().references((): AnyMySqlColumn => classes.id, {
-        onDelete: "restrict",
-        onUpdate: "restrict"
-    }),
-    reqClassPoints: mediumint("ReqClassPoints", { unsigned: true }).notNull(),
-    reqQuests: varchar("ReqQuests", { length: 64 }).default('').notNull(),
-    questStringIndex: tinyint("QuestStringIndex").default(-1).notNull(),
-    questStringValue: tinyint("QuestStringValue").default(0).notNull(),
-    meta: varchar("Meta", { length: 32 }).default('null'),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 128
+		})
+			.default('banaNa')
+			.notNull(),
+
+	description: text("description")
+		.default('Description')
+		.notNull(),
+
+	file:
+		varchar("file", {
+			length: 128
+		})
+			.default('')
+			.notNull(),
+
+	linkage:
+		varchar("linkage", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	icon:
+		varchar("icon", {
+			length: 32
+		})
+			.default('iibag')
+			.notNull(),
+
+	typeItemId:
+		int("type_item_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull()
+			.references((): AnyMySqlColumn => typesItems.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	typeRarityId:
+		int("type_rarity_id", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull()
+			.references((): AnyMySqlColumn => typesRarities.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	typeElementId:
+		int("type_element_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull()
+			.references((): AnyMySqlColumn => typesElements.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	level: levelColumn(),
+
+	range:
+		smallint("range", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	cost:
+		int("cost", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	quantity:
+		smallint("quantity", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	stack:
+		smallint("stack", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	is_coins:
+		boolean("isCoins")
+			.default(false)
+			.notNull(),
+
+	isTemporary:
+		boolean("is_temporary")
+			.default(false)
+			.notNull(),
+
+	isUpgradeOnly:
+		boolean("is_upgrade_only")
+			.default(false)
+			.notNull(),
+
+	isStaffOnly:
+		boolean("is_staff_only")
+			.default(false)
+			.notNull(),
+
+	enhancementId:
+		int("enhancement_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull()
+			.references((): AnyMySqlColumn => enhancements.id, {
+				onDelete: "set default",
+				onUpdate: "cascade"
+			}),
+
+	requiredFactionId:
+		int("required_faction_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull()
+			.references((): AnyMySqlColumn => factions.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	requiredFactionReputation:
+		mediumint("required_faction_reputation", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	requiredClassItemId:
+		int("required_class_item_id", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull()
+			.references((): AnyMySqlColumn => classes.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	requiredClassPoints:
+		mediumint("required_class_points", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	questStringIndex:
+		tinyint("quest_string_index")
+			.default(-1)
+			.notNull(),
+
+	questStringValue:
+		tinyint("quest_stringValue")
+			.default(0)
+			.notNull(),
+
+	meta:
+		varchar("meta", {
+			length: 32
+		})
+			.default('null'),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
+export const itemsRelations = relations(items, ({ one, many }) => ({
+	typeItem: one(typesElements, {
+		fields: [items.typeItemId],
+		references: [typesElements.id],
+	}),
+	typeRarity: one(typesRarities, {
+		fields: [items.typeRarityId],
+		references: [typesRarities.id],
+	}),
+	typeElement: one(typesElements, {
+		fields: [items.typeElementId],
+		references: [typesElements.id],
+	}),
 
-export const itemsRelations = relations(items, ({ many }) => ({
-    requirements: many(itemsRequirements),
+	enhancement: one(enhancements, {
+		fields: [items.enhancementId],
+		references: [enhancements.id],
+	}),
+
+	requiredFaction: one(factions, {
+		fields: [items.requiredFactionId],
+		references: [factions.id],
+	}),
+
+	requiredClassItem: one(items, {
+		fields: [items.requiredClassItemId],
+		references: [items.id],
+	}),
+
+	requirements: many(itemsRequirements),
 }));
 
 export const itemsRequirements = mysqlTable("items_requirements", {
-    itemId: int("item_id", { unsigned: true })
-        .notNull()
-        .references(() => items.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	itemId: itemIdColumn(),
 
-    requiredItemId: int("required_item_id", { unsigned: true })
-        .notNull()
-        .references(() => items.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	requiredItemId: itemIdColumn("required_item_id"),
 
-    quantity: smallint("quantity", { unsigned: true })
-        .notNull(),
+	quantity:
+		int("quantity", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const itemsRequirementsRelations = relations(itemsRequirements, ({ one }) => ({
-    item: one(items, {
-        fields: [itemsRequirements.itemId],
-        references: [items.id],
-    })
+	item: one(items, {
+		fields: [itemsRequirements.itemId],
+		references: [items.id],
+	}),
+	requiredItem: one(items, {
+		fields: [itemsRequirements.requiredItemId],
+		references: [items.id],
+	})
 }));
 
 export const maps = mysqlTable("maps", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 32 }).default("None").notNull(),
-    file: varchar("file", { length: 128 }).notNull(),
-    max_players: tinyint("max_players", { unsigned: true }).default(10).notNull(),
-    required_level: tinyint("required_level", { unsigned: true }).default(0).notNull(),
-    is_upgrade_only: boolean("is_upgrade_only").default(false).notNull(),
-    is_staff_only: boolean("is_staff_only").default(false).notNull(),
-    is_pvp: boolean("is_pvp").default(false).notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("banaNa")
+			.notNull(),
+
+	file:
+		varchar("file", {
+			length: 128
+		})
+			.default('banaNa')
+			.notNull(),
+
+	max_players:
+		tinyint("max_players", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	required_level: levelColumn('required_level'),
+
+	is_upgrade_only:
+		boolean("is_upgrade_only")
+			.default(false)
+			.notNull(),
+
+	is_staff_only:
+		boolean("is_staff_only")
+			.default(false)
+			.notNull(),
+
+	is_pvp:
+		boolean("is_pvp")
+			.default(false)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const mapsRelations = relations(items, ({ many }) => ({
+	mapCells: many(mapsCells),
+	mapItems: many(mapsItems),
+	mapMonsters: many(mapsMonsters),
+}));
 
 export const mapsCells = mysqlTable("maps_cells", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    mapId: int("MapID", { unsigned: true }).notNull().references(() => maps.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    frame: varchar("Frame", { length: 16 }).notNull(),
-    pad: varchar("Pad", { length: 16 }).notNull(),
+	id: idColumn(),
+
+	mapId: mapIdColumn,
+
+	frame:
+		varchar("frame", {
+			length: 32
+		})
+			.default('Enter')
+			.notNull(),
+
+	pad:
+		varchar("pad", {
+			length: 32
+		})
+			.default('Right')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const mapsCellsRelations = relations(mapsCells, ({ one }) => ({
+	map: one(maps, {
+		fields: [mapsCells.mapId],
+		references: [maps.id],
+	})
+}));
 
 export const mapsItems = mysqlTable("maps_items", {
-    mapId: int("MapID", { unsigned: true }).notNull().references(() => maps.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    itemId: int("item_id", { unsigned: true }).notNull().references(() => items.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
+	id: idColumn(),
+
+	mapId: mapIdColumn,
+
+	itemId: itemIdColumn(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const mapsItemsRelations = relations(mapsItems, ({ one }) => ({
+	map: one(maps, {
+		fields: [mapsItems.mapId],
+		references: [maps.id],
+	}),
+	item: one(items, {
+		fields: [mapsItems.itemId],
+		references: [items.id],
+	})
+}));
 
 export const mapsMonsters = mysqlTable("maps_monsters", {
-    mapId: int("MapID", { unsigned: true }).notNull().references(() => maps.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    monsterId: int("MonsterID", { unsigned: true }).notNull().references(() => monsters.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    monMapId: int("MonMapID", { unsigned: true }).notNull(),
-    frame: varchar("Frame", { length: 16 }).notNull(),
+	id: idColumn(),
+
+	mapId: mapIdColumn,
+
+	monsterId: monsterIdColumn,
+
+	monsterMapId:
+		int("monster_map_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	frame:
+		varchar("frame", {
+			length: 32
+		})
+			.default('Enter')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const mapsMonstersRelations = relations(mapsMonsters, ({ one }) => ({
+	map: one(maps, {
+		fields: [mapsMonsters.mapId],
+		references: [maps.id],
+	}),
+	monster: one(monsters, {
+		fields: [mapsMonsters.monsterId],
+		references: [monsters.id],
+	})
+}));
 
 export const monsters = mysqlTable("monsters", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 16 }).notNull(),
-    race: varchar("Race", { length: 16 }).notNull(),
-    file: varchar("file", { length: 128 }).notNull(),
-    linkage: varchar("Linkage", { length: 32 }).notNull(),
-    element: varchar("Element", { length: 8 }).notNull(),
-    level: tinyint("Level", { unsigned: true }).default(1).notNull(),
-    health: int("Health", { unsigned: true }).default(1000).notNull(),
-    mana: int("Mana", { unsigned: true }).default(100).notNull(),
-    gold: int("Gold", { unsigned: true }).default(100).notNull(),
-    experience: int("Experience", { unsigned: true }).default(100).notNull(),
-    reputation: int("Reputation", { unsigned: true }).default(100).notNull(),
-    dps: int("DPS", { unsigned: true }).default(100).notNull(),
-    teamId: tinyint("TeamID", { unsigned: true }).default(0).notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('banaNa')
+			.notNull(),
+
+	file:
+		varchar("file", {
+			length: 128
+		})
+			.default('Mosquito.swf')
+			.notNull(),
+
+	linkage:
+		varchar("linkage", {
+			length: 64
+		})
+			.default('Mosquito')
+			.notNull(),
+
+	typeElementId:
+		int("type_element_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull()
+			.references((): AnyMySqlColumn => typesElements.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	typeRaceId:
+		int("type_race_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull()
+			.references((): AnyMySqlColumn => typesRaces.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	coins:
+		int("coins", {
+			unsigned: true
+		})
+			.default(100)
+			.notNull(),
+
+	gold:
+		int("gold", {
+			unsigned: true
+		})
+			.default(100)
+			.notNull(),
+
+	experience:
+		int("experience", {
+			unsigned: true
+		})
+			.default(100)
+			.notNull(),
+
+	classPoints:
+		int("class_points", {
+			unsigned: true
+		})
+			.default(100)
+			.notNull(),
+
+	level: levelColumn(),
+
+	health:
+		int("health", {
+			unsigned: true
+		})
+			.default(1000)
+			.notNull(),
+
+	mana:
+		int("mana", {
+			unsigned: true
+		})
+			.default(100)
+			.notNull(),
+
+	damagePerSecond:
+		int("damage_per_second", {
+			unsigned: true
+		})
+			.default(100)
+			.notNull(),
+
+	range:
+		smallint("range", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	category: combatCategory,
+
+	wisdom:
+		int("wisdom", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	strength:
+		int("strength", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	luck:
+		int("luck", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	dexterity:
+		int("dexterity", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	endurance:
+		int("endurance", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	intelligence:
+		int("intelligence", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	teamId:
+		int("team_id", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const monstersRelations = relations(monsters, ({ one, many }) => ({
+	typeElement: one(typesElements, {
+		fields: [monsters.typeElementId],
+		references: [typesElements.id],
+	}),
+	typeRace: one(typesRarities, {
+		fields: [monsters.typeRaceId],
+		references: [typesRarities.id],
+	}),
+
+	settingLevel: one(settingsLevels, {
+		fields: [monsters.level],
+		references: [settingsLevels.level],
+	}),
+
+	monsterDrops: many(monstersDrops),
+}));
 
 export const monstersDrops = mysqlTable("monsters_drops", {
-    monsterId: int("MonsterID", { unsigned: true })
-        .notNull()
-        .references(() => monsters.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	id: idColumn(),
 
-    itemId: int("item_id", { unsigned: true })
-        .notNull()
-        .references(() => items.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
+	monsterId: monsterIdColumn,
 
-    chance: decimal("Chance", {
-        precision: 7,
-        scale: 2
-    })
-        .default('1.00')
-        .notNull(),
+	itemId: itemIdColumn(),
 
-    quantity: int("Quantity", { unsigned: true })
-        .default(1)
-        .notNull(),
+	chance:
+		decimal("chance", {
+			precision: 7,
+			scale: 2
+		})
+			.default('1.00')
+			.notNull(),
+
+	quantity:
+		int("quantity", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const monstersDropsRelations = relations(monstersDrops, ({ one }) => ({
+	monster: one(monsters, {
+		fields: [monstersDrops.monsterId],
+		references: [monsters.id],
+	}),
+	item: one(items, {
+		fields: [monstersDrops.itemId],
+		references: [items.id],
+	}),
+}));
 
 export const quests = mysqlTable("quests", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    factionId: int("FactionID", { unsigned: true }).default(1).notNull().references(() => factions.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    reqReputation: int("ReqReputation", { unsigned: true }).default(0).notNull(),
-    reqClassId: int("ReqClassID", { unsigned: true }).default(0).references(() => classes.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    reqClassPoints: int("ReqClassPoints", { unsigned: true }).default(0).notNull(),
-    name: varchar("name", { length: 64 }).notNull(),
-    description: text("description").notNull(),
-    endText: text("EndText").notNull(),
-    experience: int("Experience", { unsigned: true }).default(0).notNull(),
-    gold: int("Gold", { unsigned: true }).default(0).notNull(),
-    reputation: int("Reputation", { unsigned: true }).default(0).notNull(),
-    classPoints: int("ClassPoints", { unsigned: true }).default(0).notNull(),
-    rewardType: char("RewardType", { length: 1 }).default('S').notNull(),
-    level: boolean("Level").default(true).notNull(),
-    upgrade: boolean("Upgrade").default(false).notNull(),
-    once: boolean("Once").default(false).notNull(),
-    slot: int("Slot").default(-1).notNull(),
-    value: int("Value").default(0).notNull(),
-    field: char("Field", { length: 3 }).default('').notNull(),
-    index: int("Index").default(-1).notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('banaNa')
+			.notNull(),
+
+	description:
+		text("description")
+			.default('Retrieve the banaNa')
+			.notNull(),
+
+	descriptionTurnIn:
+		text("description_turn_in")
+			.default('Congratulations!')
+			.notNull(),
+
+	experience:
+		int("experience", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	coins:
+		int("coins", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	gold:
+		int("gold", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	classPoints:
+		int("class_points", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	factionId:
+		int("faction_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull()
+			.references((): AnyMySqlColumn => factions.id, {
+				onDelete: "cascade",
+				onUpdate: "cascade"
+			}),
+
+	factionReputation:
+		int("faction_reputation", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	factionRequiredReputation:
+		int("faction_required_reputation", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	requiredClassId: itemIdColumn('required_class_item_id'),
+
+	requiredClassPoints:
+		int("required_class_points", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	level: levelColumn(),
+
+	isUpgradeOnly:
+		boolean("is_upgrade_only")
+			.default(false)
+			.notNull(),
+
+	isOnce:
+		boolean("is_once")
+			.default(false)
+			.notNull(),
+
+	slot:
+		int("slot")
+			.default(-1)
+			.notNull(),
+
+	value:
+		int("value")
+			.default(0)
+			.notNull(),
+
+	field:
+		char("field", {
+			length: 3
+		})
+			.default('')
+			.notNull(),
+
+	index:
+		int("index")
+			.default(-1)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
+export const questsRelations = relations(quests, ({ one, many }) => ({
+	faction: one(factions, {
+		fields: [quests.factionId],
+		references: [factions.id],
+	}),
+	requiredClass: one(items, {
+		fields: [quests.requiredClassId],
+		references: [items.id],
+	}),
+	settingLevel: one(items, {
+		fields: [quests.level],
+		references: [items.id],
+	}),
+
+	questLocations: many(questsLocations),
+	questRequirements: many(questsRequirements),
+	questRewards: many(questsRewards),
+}));
+
 export const questsChain = mysqlTable("quests_chains", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 32 }).default('').notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default(`banaNa`)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const questsLocations = mysqlTable("quests_locations", {
-    questId: int("QuestID", { unsigned: true }).notNull().references(() => quests.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    mapId: int("MapID", { unsigned: true }).notNull().references(() => maps.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
+	id: idColumn(),
+
+	questId: questIdColumn,
+
+	mapId: mapIdColumn,
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const questsLocationsRelations = relations(questsLocations, ({ one }) => ({
+	quest: one(quests, {
+		fields: [questsLocations.questId],
+		references: [quests.id],
+	}),
+	map: one(maps, {
+		fields: [questsLocations.mapId],
+		references: [maps.id],
+	}),
+}));
 
 export const questsRequirements = mysqlTable("quests_requirements", {
-    questId: int("QuestID", { unsigned: true }).notNull().references(() => quests.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    itemId: int("item_id", { unsigned: true }).notNull().references(() => items.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    quantity: int("Quantity", { unsigned: true }).default(1),
+	id: idColumn(),
+
+	questId: questIdColumn,
+
+	itemId: itemIdColumn(),
+
+	quantity:
+		int("quantity", {
+			unsigned: true
+		})
+			.notNull()
+			.default(1),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const questsRequirementsRelations = relations(questsRequirements, ({ one }) => ({
+	quest: one(quests, {
+		fields: [questsRequirements.questId],
+		references: [quests.id],
+	}),
+	item: one(items, {
+		fields: [questsRequirements.itemId],
+		references: [items.id],
+	}),
+}));
 
 export const questsRewards = mysqlTable("quests_rewards", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    questId: int("QuestID", { unsigned: true }).notNull().references(() => quests.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    itemId: int("item_id", { unsigned: true }).notNull().references(() => items.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    quantity: int("Quantity", { unsigned: true }).default(1).notNull(),
+	id: idColumn(),
+
+	questId: questIdColumn,
+
+	itemId: itemIdColumn(),
+
+	rewardType:
+		mysqlEnum('reward_type', ['s', 'c', 'r'])
+			.default("s")
+			.notNull(),
+
+	quantity:
+		int("quantity", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
+export const questsRewardsRelations = relations(questsRewards, ({ one }) => ({
+	quest: one(quests, {
+		fields: [questsRewards.questId],
+		references: [quests.id],
+	}),
+	item: one(items, {
+		fields: [questsRewards.itemId],
+		references: [items.id],
+	}),
+}));
+
 export const servers = mysqlTable("servers", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    name: varchar("name", { length: 64 }).default('Server').notNull(),
-    ip: char("IP", { length: 15 }).default('0.0.0.0').notNull(),
-    online: boolean("Online").default(false).notNull(),
-    upgrade: boolean("Upgrade").default(false).notNull(),
-    chat: tinyint("Chat", { unsigned: true }).default(2).notNull(),
-    count: mediumint("Count", { unsigned: true }).notNull(),
-    max: mediumint("Max", { unsigned: true }).default(500).notNull(),
-    motd: text("MOTD").notNull(),
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+
+		})
+			.default('banaNa')
+			.notNull(),
+
+	ip:
+		char("ip", {
+			length: 128
+		})
+			.default('0.0.0.0')
+			.notNull(),
+
+	message_of_the_day:
+		text("messageOfTheDay")
+			.notNull(),
+
+	playerCount:
+		mediumint("player_count", {
+			unsigned: true
+		})
+			.notNull(),
+
+	playerHighestCount:
+		mediumint("player_highest_count", {
+			unsigned: true
+		})
+			.notNull(),
+
+	maximum:
+		mediumint("player_maximum", {
+			unsigned: true
+		})
+			.default(500)
+			.notNull(),
+
+	isOnline:
+		boolean("is_online")
+			.default(false)
+			.notNull(),
+
+	isUpgradeOnly:
+		boolean("is_upgrade_only")
+			.default(false)
+			.notNull(),
+
+	chatType:
+		tinyint("chat_type", {
+			unsigned: true
+		})
+			.default(2)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const settingsLogin = mysqlTable("settings_login", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
+	id: idColumn(),
 
-    name: varchar("name", { length: 64 })
-        .default('')
-        .notNull(),
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
 
-    value: varchar("value", { length: 64 })
-        .default('')
-        .notNull(),
+	value:
+		varchar("value", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const settingsCoreValues = mysqlTable("settings_core_values", {
-    id: int("id", { unsigned: true })
-        .autoincrement()
-        .primaryKey()
-        .notNull(),
+	id: idColumn(),
 
-    name: varchar("name", { length: 64 })
-        .default('None')
-        .notNull(),
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('None')
+			.notNull(),
 
-    value: decimal("value", {
-        precision: 7,
-        scale: 2
-    })
-        .default('1')
-        .notNull(),
+	value:
+		decimal("value", {
+			precision: 7,
+			scale: 2
+		})
+			.default('1')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const settingsLevels = mysqlTable("settingsLevels", {
+	level: idColumn(`level`),
+
+	requiredExperience:
+		int("required_experience", {
+			unsigned: true
+		})
+			.default(10000)
+			.notNull(),
+
+	health:
+		int("health", {
+			unsigned: true
+		})
+			.default(1500)
+			.notNull(),
+
+	mana:
+		int("mana", {
+			unsigned: true
+		})
+			.default(100)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const shops = mysqlTable("shops", {
-    id: int("id", { unsigned: true })
-        .autoincrement()
-        .primaryKey()
-        .notNull(),
+	id: idColumn(),
 
-    name: varchar("name", { length: 32 }).default("None").notNull(),
-    house: boolean("House").default(false).notNull(),
-    upgrade: boolean("Upgrade").default(false).notNull(),
-    staff: boolean("Staff").default(false).notNull(),
-    limited: boolean("Limited").default(false).notNull(),
-    field: varchar("Field", { length: 8 }).default('').notNull(),
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("None")
+			.notNull(),
+
+	isLimited:
+		boolean("is_limited")
+			.default(false)
+			.notNull(),
+
+	isHouseType:
+		boolean("is_house_type")
+			.default(false)
+			.notNull(),
+
+	isUpgradeOnly:
+		boolean("is_upgrade_only")
+			.default(false)
+			.notNull(),
+
+	isStaffOnly:
+		boolean("is_staff_only")
+			.default(false)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const shopsRelations = relations(shops, ({ many }) => ({
+	shopItems: many(shopsItems),
+	shopLocations: many(shopsLocations),
+}));
 
 export const shopsItems = mysqlTable("shops_items", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    shopId: int("shop_id", { unsigned: true }).notNull().references(() => shops.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    itemId: int("item_id", { unsigned: true })
-        .notNull()
-        .references(() => items.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
-    quantityRemain: int("QuantityRemain", { unsigned: true }).default(0).notNull(),
+	id: idColumn(),
+
+	shopId: shopIdColumn,
+
+	itemId: itemIdColumn(),
+
+	quantityRemain:
+		int("quantity_remain", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const shopsItemsRelations = relations(shopsItems, ({ one }) => ({
+	shop: one(shops, {
+		fields: [shopsItems.shopId],
+		references: [shops.id],
+	}),
+	item: one(items, {
+		fields: [shopsItems.itemId],
+		references: [items.id],
+	}),
+}));
 
 export const shopsLocations = mysqlTable("shops_locations", {
-    shopId: int("shop_id", { unsigned: true }).notNull().references(() => shops.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    mapId: int("MapID", { unsigned: true }).notNull().references(() => maps.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
+	id: idColumn(),
+
+	shopId: shopIdColumn,
+
+	mapId: mapIdColumn,
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const shopsLocationsRelations = relations(shopsLocations, ({ one }) => ({
+	shop: one(shops, {
+		fields: [shopsLocations.shopId],
+		references: [shops.id],
+	}),
+	map: one(maps, {
+		fields: [shopsLocations.mapId],
+		references: [maps.id],
+	}),
+}));
 
 export const skills = mysqlTable("skills", {
-        id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-        itemId: int("item_id", { unsigned: true }).notNull().references(() => items.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
-        auraId: int("AuraID", { unsigned: true }).notNull().references(() => skillsAuras.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
-        name: varchar("name", { length: 32 }).default("None").notNull(),
-        animation: varchar("Animation", { length: 64 }).notNull(),
-        description: text("description").notNull(),
-        damage: decimal("Damage", {
-            precision: 7,
-            scale: 2
-        }).default('1.00').notNull(),
-        mana: smallint("Mana", { unsigned: true }).notNull(),
-        icon: varchar("Icon", { length: 32 }).notNull(),
-        range: smallint("Range", { unsigned: true }).default(808).notNull(),
-        dsrc: varchar("Dsrc", { length: 16 }).notNull(),
-        reference: char("Reference", { length: 2 }).notNull(),
-        target: char("Target", { length: 1 }).notNull(),
-        effects: char("Effects", { length: 1 }).notNull(),
-        type: varchar("Type", { length: 7 }).notNull(),
-        strl: varchar("Strl", { length: 32 }).notNull(),
-        cooldown: int("Cooldown", { unsigned: true }).notNull(),
-        hitTargets: tinyint("HitTargets", { unsigned: true }).default(1).notNull(),
-    },
-    (table) => {
-        return {
-            fkSkillsClassid: index("fk_skills_classid").on(table.itemId),
-        };
-    });
+	id: idColumn(),
 
-export const skillsAuras = mysqlTable("skills_auras", {
-    id: int("id", { unsigned: true })
-        .autoincrement()
-        .primaryKey()
-        .notNull(),
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("banaNa")
+			.notNull(),
 
-    name: varchar("name", { length: 32 })
-        .notNull(),
+	animation:
+		varchar("animation", {
+			length: 64
+		})
+			.default('Attack1,PetAttack1,Attack2')
+			.notNull(),
 
-    duration: tinyint("Duration", { unsigned: true })
-        .default(6)
-        .notNull(),
+	description:
+		text("description")
+			.default('A basic attack, taught to all adventurers.')
+			.notNull(),
 
-    category: varchar("Category", { length: 8 })
-        .notNull(),
+	damage:
+		decimal("damage", {
+			precision: 7,
+			scale: 2
+		})
+			.default('2.00')
+			.notNull(),
 
-    damageIncrease: decimal("DamageIncrease", {
-        precision: 7,
-        scale: 2
-    })
-        .default('0.00')
-        .notNull(),
+	mana:
+		smallint("mana", {
+			unsigned: true
+		})
+			.default(25)
+			.notNull(),
 
-    damageTakenDecrease: decimal("DamageTakenDecrease", {
-        precision: 7,
-        scale: 2
-    })
-        .default('0.00')
-        .notNull(),
+	icon:
+		varchar("icon", {
+			length: 64
+		})
+			.default('iwd1')
+			.notNull(),
+
+	range:
+		smallint("range", {
+			unsigned: true
+		})
+			.default(100)
+			.notNull(),
+
+	reference:
+		mysqlEnum('reference', ['aa', 'a1', 'a2', 'a3', 'a4', 'p1', 'p2', 'i1'])
+			.default("aa")
+			.notNull(),
+
+	target: targetEnum,
+
+	effect:
+		mysqlEnum('effect', ['', 'w', 'p', 'c'])
+			.default("")
+			.notNull(),
+
+	type:
+		mysqlEnum('type', ['aa', 'passive', 'i', 'p', 'm', 'mp', 'pm'])
+			.default("p")
+			.notNull(),
+
+	strl:
+		varchar("strl", {
+			length: 32
+		})
+			.default("")
+			.notNull(),
+
+	cooldown:
+		int("cooldown", {
+			unsigned: true
+		})
+			.default(10000)
+			.notNull(),
+
+	hitTargets:
+		tinyint("hit_targets", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
+export const skillsRelations = relations(skills, ({ many }) => ({
+	skillAuras: many(skillsAuras),
+}));
+
+export const skillsAuras = mysqlTable("skills_auras", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('banaNa')
+			.notNull(),
+
+	skillId:
+		int("skill_id", {
+			unsigned: true
+		})
+			.notNull()
+			.references((): AnyMySqlColumn => skills.id, {
+				onDelete: "cascade",
+				onUpdate: "cascade"
+			}),
+
+	maxStack:
+		tinyint("max_stack", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	duration:
+		int("duration", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const skillsAurasRelations = relations(skillsAuras, ({ one, many }) => ({
+	skill: one(skills, {
+		fields: [skillsAuras.skillId],
+		references: [skills.id],
+	}),
+
+	skillAuraEffects: many(skillsAurasEffects),
+}));
+
 export const skillsAurasEffects = mysqlTable("skills_auras_effects", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    auraId: int("AuraID", { unsigned: true }).notNull().references(() => skillsAuras.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    stat: char("Stat", { length: 3 }).notNull(),
-    value: decimal("Value", {
-        precision: 7,
-        scale: 2
-    }).default('0.00').notNull(),
-    type: char("Type", { length: 1 }).default('+').notNull(),
+	id: idColumn(),
+
+	skillAuraId:
+		int("skill_aura_id", {
+			unsigned: true
+		})
+			.notNull()
+			.references((): AnyMySqlColumn => skillsAuras.id, {
+				onDelete: "cascade",
+				onUpdate: "cascade"
+			}),
+
+	typeStatId:
+		int("type_stat_id", {
+			unsigned: true
+		})
+			.notNull()
+			.references((): AnyMySqlColumn => typesStats.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	value:
+		decimal("value", {
+			precision: 7,
+			scale: 2
+		})
+			.default('0.00')
+			.notNull(),
+
+	type:
+		mysqlEnum('type', ['+', '-', '*'])
+			.default("+")
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const skillsAurasEffectsRelations = relations(skillsAurasEffects, ({ one }) => ({
+	skillAura: one(skills, {
+		fields: [skillsAurasEffects.skillAuraId],
+		references: [skills.id],
+	}),
+	typeStat: one(typesStats, {
+		fields: [skillsAurasEffects.typeStatId],
+		references: [typesStats.id],
+	})
+}));
+
+export const typesItems = mysqlTable("types_items", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const typesElements = mysqlTable("types_elements", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const typesRarities = mysqlTable("types_rarities", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const typesRaces = mysqlTable("types_races", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const typesStats = mysqlTable("types_stats", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	stat:
+		char("stat", {
+			length: 3
+		})
+			.default('')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const users = mysqlTable("users", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    username: varchar("username", { length: 32 }).default("None").notNull(),
-    password: varchar("username", { length: 64 }).notNull(),
-    token: varchar("username", { length: 64 }),
-    hairId: int("hair_id", { unsigned: true }).notNull().references(() => hairs.id, {
-        onDelete: "restrict",
-        onUpdate: "cascade"
-    }),
-    access: tinyint("Access", { unsigned: true }).default(1).notNull(),
-    activationFlag: tinyint("ActivationFlag", { unsigned: true }).default(5).notNull(),
-    permamuteFlag: boolean("PermamuteFlag").default(false).notNull(),
-    country: char("Country", { length: 2 }).default('xx').notNull(),
-    age: tinyint("Age", { unsigned: true }).notNull(),
-    gender: genderEnum,
-    email: varchar("Email", { length: 64 }).notNull(),
-    level: tinyint("Level", { unsigned: true }).default(1).notNull(),
-    gold: int("Gold", { unsigned: true }).default(0).notNull(),
-    coins: int("Coins", { unsigned: true }).default(0).notNull(),
-    exp: int("Exp", { unsigned: true }).default(0).notNull(),
-    colorHair: char("ColorHair", { length: 6 }).default('000000').notNull(),
-    colorSkin: char("ColorSkin", { length: 6 }).default('000000').notNull(),
-    colorEye: char("ColorEye", { length: 6 }).default('000000').notNull(),
-    colorBase: char("ColorBase", { length: 6 }).default('000000').notNull(),
-    colorTrim: char("ColorTrim", { length: 6 }).default('000000').notNull(),
-    colorAccessory: char("ColorAccessory", { length: 6 }).default('000000').notNull(),
-    slotsBag: smallint("SlotsBag", { unsigned: true }).default(40).notNull(),
-    slotsBank: smallint("SlotsBank", { unsigned: true }).notNull(),
-    slotsHouse: smallint("SlotsHouse", { unsigned: true }).default(20).notNull(),
-    dateCreated: timestamp('DateCreated', {
-        mode: 'date',
-        fsp: 3
-    }).defaultNow().notNull(),
-    lastLogin: timestamp('LastLogin', {
-        mode: 'date',
-        fsp: 3
-    }).defaultNow().notNull(),
-    cpBoostExpire: timestamp('CpBoostExpire', {
-        mode: 'date',
-        fsp: 3
-    }).defaultNow().notNull(),
-    repBoostExpire: timestamp('RepBoostExpire', {
-        mode: 'date',
-        fsp: 3
-    }).defaultNow().notNull(),
-    goldBoostExpire: timestamp('GoldBoostExpire', {
-        mode: 'date',
-        fsp: 3
-    }).defaultNow().notNull(),
-    expBoostExpire: timestamp('ExpBoostExpire', {
-        mode: 'date',
-        fsp: 3
-    }).defaultNow().notNull(),
-    upgradeExpire: timestamp('UpgradeExpire', {
-        mode: 'date',
-        fsp: 3
-    }).defaultNow().notNull(),
-    upgradeDays: smallint("UpgradeDays", { unsigned: true }).notNull(),
-    upgraded: boolean("Upgraded").default(false).notNull(),
-    achievement: smallint("Achievement", { unsigned: true }).notNull(),
-    settings: smallint("Settings", { unsigned: true }).notNull(),
-    quests: char("Quests", { length: 100 }).default('0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000').notNull(),
-    quests2: char("Quests2", { length: 100 }).default('0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000').notNull(),
-    dailyQuests0: smallint("DailyQuests0", { unsigned: true }).notNull(),
-    dailyQuests1: smallint("DailyQuests1", { unsigned: true }).notNull(),
-    dailyQuests2: smallint("DailyQuests2", { unsigned: true }).notNull(),
-    monthlyQuests0: smallint("MonthlyQuests0", { unsigned: true }).notNull(),
-    lastArea: varchar("LastArea", { length: 64 }).default('faroff-1|Enter|Spawn').notNull(),
-    current_server_id: int("current_server_id").references(() => hairs.id, {
-        onDelete: "restrict",
-        onUpdate: "cascade"
-    }),
-    houseInfo: text("HouseInfo").notNull(),
-    killCount: int("KillCount", { unsigned: true }).default(0).notNull(),
-    deathCount: int("DeathCount", { unsigned: true }).default(0).notNull(),
+	id: idColumn(),
+
+	username:
+		varchar("username", {
+			length: 32
+		})
+			.default("banaNa")
+			.notNull(),
+
+	password:
+		varchar("username", {
+			length: 64
+		})
+			.notNull(),
+
+	token:
+		varchar("username", {
+			length: 64
+		})
+			.default('null'),
+
+	email:
+		varchar("email", {
+			length: 64
+		})
+			.default('bn@banaNa.bn')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
+export const usersRelations = relations(users, ({ many }) => ({
+	userAttribute: many(usersAttributes),
+	userFactions: many(usersFactions),
+	userFriends: many(usersFriends),
+	userInventory: many(usersInventory),
+	userLogs: many(usersLogs),
+}));
+
+export const usersAttributes = mysqlTable("users_attributes", {
+	id: idColumn(),
+
+	userId: userIdColumn(),
+
+	accessId:
+		int("access_id", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull()
+			.references((): AnyMySqlColumn => accesses.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	countryCode:
+		char("country_code", {
+			length: 2
+		})
+			.default('XX')
+			.notNull()
+			.references((): AnyMySqlColumn => countries.code, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	level: levelColumn(),
+
+	coins:
+		int("coins", {
+			unsigned: false
+		})
+			.default(0)
+			.notNull(),
+
+	gold:
+		int("gold", {
+			unsigned: false
+		})
+			.default(0)
+			.notNull(),
+
+	experience:
+		int("experience", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	guildId: guildIdColumn,
+
+	guildRank:
+		tinyint("guild_rank", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	activationFlag:
+		tinyint("activation_flag", {
+			unsigned: true
+		})
+			.default(5)
+			.notNull(),
+
+	isPermanentMute:
+		boolean("is_permanent_mute")
+			.default(false)
+			.notNull(),
+
+	lastArea:
+		varchar("last_area", {
+			length: 64
+		})
+			.default('yulgar-1|Enter|Spawn')
+			.notNull(),
+
+	currentArea:
+		varchar("current_area", {
+			length: 64
+		})
+			.default('yulgar-1|Enter|Spawn')
+			.notNull(),
+
+	current_server_id:
+		int("current_server_id", {
+			unsigned: true
+		})
+			.default(sql`null`)
+			.references((): AnyMySqlColumn => servers.id, {
+				onDelete: "set null",
+
+				onUpdate: "cascade"
+			}),
+
+	gender: genderEnum,
+
+	hairId:
+		int("hair_id", {
+			unsigned: true
+		})
+			.notNull()
+			.references((): AnyMySqlColumn => hairs.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
+	colorSkin:
+		char("color_skin", {
+			length: 6
+		})
+			.default('eacd8a')
+			.notNull(),
+
+	colorEye:
+		char("color_eye", {
+			length: 6
+		})
+			.default('1649e')
+			.notNull(),
+
+	colorHair:
+		char("color_hair", {
+			length: 6
+		})
+			.default('5e4f37')
+			.notNull(),
+
+	colorBase:
+		char("color_base", {
+			length: 6
+		})
+			.default('000000')
+			.notNull(),
+
+	colorTrim:
+		char("color_trim", {
+			length: 6
+		})
+			.default('000000')
+			.notNull(),
+
+	colorAccessory:
+		char("color_accessory", {
+			length: 6
+		})
+			.default('000000')
+			.notNull(),
+
+	slotsBag:
+		smallint("slots_bag", {
+			unsigned: true
+		})
+			.default(30)
+			.notNull(),
+
+	slotsBank:
+		smallint("slots_bank", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+	slotsHouse:
+		smallint("slots_house", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	quests:
+		char("quests_1", {
+			length: 100
+		})
+			.default('0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
+			.notNull(),
+
+	quests2:
+		char("quests_2", {
+			length: 100
+		})
+			.default('0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
+			.notNull(),
+
+	dailyQuests0:
+		smallint("daily_quests_0", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	dailyQuests1:
+		smallint("daily_quests_1", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	dailyQuests2:
+		smallint("daily_quests_2", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	monthlyQuests0:
+		smallint("monthly_quests_0", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	achievement:
+		smallint("achievement", {
+			unsigned: true
+		})
+			.notNull(),
+
+	settings:
+		smallint("settings", {
+			unsigned: true
+		})
+			.notNull(),
+
+	houseInfo:
+		text("house_info")
+			.default('')
+			.notNull(),
+
+	killCount:
+		int("kill_count", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	deathCount:
+		int("death_count", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	dateClassPointBoostExpire: dateColumn('date_class_point_boost_expire'),
+
+	dateReputationBoostExpire: dateColumn('date_reputation_boost_expire'),
+
+	dateCoinsBoostExpire: dateColumn('date_coins_boost_expire'),
+
+	dateGoldBoostExpire: dateColumn('date_gold_boost_expire'),
+
+	dateExperienceBoostExpire: dateColumn('date_experience_boost_expire'),
+
+	dateUpgradeExpire: dateColumn('date_upgrade_expire'),
+
+	dateLastLogin: dateColumn('date_last_login'),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const usersAttributesRelations = relations(usersAttributes, ({ one, many }) => ({
+	access: one(accesses, {
+		fields: [usersAttributes.accessId],
+		references: [accesses.id],
+	}),
+	settingLevel: one(settingsLevels, {
+		fields: [usersAttributes.level],
+		references: [settingsLevels.level],
+	}),
+	guild: one(guilds, {
+		fields: [usersAttributes.guildId],
+		references: [guilds.id],
+	}),
+	currentServer: one(servers, {
+		fields: [usersAttributes.current_server_id],
+		references: [servers.id],
+	}),
+	hair: one(hairs, {
+		fields: [usersAttributes.hairId],
+		references: [hairs.id],
+	})
+}));
+
 export const usersFactions = mysqlTable("users_factions", {
-        id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-        userId: int("user_id", { unsigned: true }).notNull().references(() => users.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
-        factionId: int("FactionID", { unsigned: true }).notNull().references(() => factions.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
-        reputation: mediumint("Reputation", { unsigned: true }).notNull(),
-    },
-    (table) => {
-        return {
-            userId: unique("user_id").on(table.userId, table.factionId),
-        };
-    });
+	id: idColumn(),
+
+	userId: userIdColumn(),
+
+	factionId:
+		int("faction_id", {
+			unsigned: true
+		})
+			.notNull()
+			.references((): AnyMySqlColumn => factions.id, {
+				onDelete: "cascade",
+				onUpdate: "cascade"
+			}),
+
+	reputation:
+		mediumint("reputation", {
+			unsigned: true
+		})
+			.default(0)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const usersFactionsRelations = relations(usersFactions, ({ one }) => ({
+	user: one(users, {
+		fields: [usersFactions.userId],
+		references: [users.id],
+	}),
+	faction: one(factions, {
+		fields: [usersFactions.factionId],
+		references: [factions.id],
+	}),
+}));
 
 export const usersFriends = mysqlTable("users_friends", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    userId: int("user_id", { unsigned: true }).notNull().references(() => users.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    friendId: int("FriendID", { unsigned: true }).notNull().references(() => users.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
+	id: idColumn(),
+
+	userId: userIdColumn(),
+
+	friendId: userIdColumn(`friend_id`),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
 export const usersFriendsRelations = relations(usersFriends, ({ one }) => ({
-    user: one(users, {
-        fields: [usersFriends.userId],
-        references: [users.id],
-    }),
-    friend: one(users, {
-        fields: [usersFriends.friendId],
-        references: [users.id],
-    }),
+	user: one(users, {
+		fields: [usersFriends.userId],
+		references: [users.id],
+	}),
+	friend: one(users, {
+		fields: [usersFriends.friendId],
+		references: [users.id],
+	}),
 }));
 
-export const usersGuilds = mysqlTable("users_guilds", {
-    guildId: int("GuildID", { unsigned: true }).notNull().references(() => guilds.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    userId: int("user_id", { unsigned: true }).notNull().references(() => users.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    rank: tinyint("Rank", { unsigned: true }).default(1).notNull(),
+export const usersInventory = mysqlTable("users_inventory", {
+	id: idColumn(),
+
+	userId: userIdColumn(),
+
+	itemId: itemIdColumn(),
+
+	enhancementId: enhancementIdColumn,
+
+	quantity:
+		mediumint("quantity", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	is_equipped:
+		boolean("is_equipped")
+			.default(false)
+			.notNull(),
+
+	is_on_bank:
+		boolean("is_on_bank")
+			.default(false)
+			.notNull(),
+
+	dateDeleted: dateDeletedColumn,
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
 
-export const usersItems = mysqlTable("users_items", {
-        id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-        userId: int("user_id", { unsigned: true }).notNull().references(() => users.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
-        itemId: int("item_id", { unsigned: true }).notNull().references(() => items.id, {
-            onDelete: "cascade",
-            onUpdate: "cascade"
-        }),
-        enhId: int("EnhID", { unsigned: true }).notNull().references(() => enhancements.id, {
-            onDelete: "restrict",
-            onUpdate: "restrict"
-        }),
-        equipped: boolean("Equipped").notNull(),
-        quantity: mediumint("Quantity", { unsigned: true }).notNull(),
-        bank: boolean("Bank").notNull(),
-        datePurchased: timestamp('DatePurchased', {
-            mode: 'date',
-            fsp: 3
-        }).defaultNow().notNull(),
-    },
-    (table) => {
-        return {
-            uidItemid: index("uid_itemid").on(table.itemId, table.userId),
-        };
-    });
+export const usersInventoryRelations = relations(usersInventory, ({ one }) => ({
+	user: one(users, {
+		fields: [usersInventory.userId],
+		references: [users.id],
+	}),
+	item: one(items, {
+		fields: [usersInventory.itemId],
+		references: [items.id],
+	}),
+	enhancement: one(enhancements, {
+		fields: [usersInventory.enhancementId],
+		references: [enhancements.id],
+	}),
+}));
 
 export const usersLogs = mysqlTable("users_logs", {
-    id: int("id", { unsigned: true }).autoincrement().primaryKey().notNull(),
-    userId: int("user_id", { unsigned: true }).notNull().references(() => users.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade"
-    }),
-    violation: varchar("Violation", { length: 64 }).notNull(),
-    details: text("Details").notNull(),
+	id: idColumn(),
+
+	userId: userIdColumn(),
+
+	details:
+		text("details")
+			.default('None')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const usersLogsRelations = relations(usersLogs, ({ one }) => ({
+	user: one(users, {
+		fields: [usersLogs.userId],
+		references: [users.id],
+	}),
+}));
