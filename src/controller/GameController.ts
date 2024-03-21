@@ -20,6 +20,7 @@ export default class GameController implements IDispatchable {
 	public static GOLD_RATE: number;
 	public static REP_RATE: number;
 	public static CP_RATE: number;
+	public static DROP_RATE: number;
 
 	private static _instance: GameController;
 

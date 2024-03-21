@@ -3,7 +3,7 @@ import {Socket} from "net";
 import logger from "../util/Logger";
 import {DELIMITER} from "../util/Const";
 import Decoder from "../network/Decoder";
-import type IDispatchable from "../interfaces/IDispatchable.ts";
+import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 
 export default class PlayerNetwork implements IDispatchable {
@@ -11,17 +11,21 @@ export default class PlayerNetwork implements IDispatchable {
 	public readonly decoder: Decoder = new Decoder(this);
 
 	public player: Player | undefined;
-	public readonly socket: Socket;
 	private chunk: string = "";
-	private readonly _id: number;
 
-	constructor(count: number, socket: Socket) {
-		this._id = count;
-		this.socket = socket;
+	constructor(
+		private readonly _id: number,
+		private readonly _name: string,
+		public readonly socket: Socket
+	) {
 	}
 
 	public get id(): number {
 		return this._id;
+	}
+
+	public get name(): string {
+		return this._name;
 	}
 
 	public loginFail() {

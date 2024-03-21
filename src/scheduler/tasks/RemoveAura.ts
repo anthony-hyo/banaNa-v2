@@ -1,4 +1,4 @@
-import type {MonsterAI} from "../../ai/MonsterAI";
+import type {Monster} from "../../monster/Monster.ts";
 import JSONArray from "../../util/json/JSONArray";
 import JSONObject from "../../util/json/JSONObject";
 import type Stats from "../../world/stats/Stats";
@@ -18,7 +18,7 @@ export default class RemoveAura implements ITask {
 	constructor(
 		private aura: ISkillAura,
 		private player: Player | undefined,
-		private ai: MonsterAI | undefined
+		private monster: Monster | undefined
 	) {
 	}
 
@@ -44,8 +44,8 @@ export default class RemoveAura implements ITask {
 
 		if (this.player !== null) {
 			auraRemove.element("tInf", "p:" + this.player!.network.id);
-		} else if (this.ai !== null) {
-			auraRemove.element("tInf", "m:" + this.ai!.mapId);
+		} else if (this.monster !== null) {
+			auraRemove.element("tInf", "m:" + this.monster!.mapId);
 		}
 
 		aura.add(auraRemove);
@@ -73,9 +73,9 @@ export default class RemoveAura implements ITask {
 			}
 
 			this.player!.network.writeObject(ct);
-		} else if (this.ai !== null) {
-			this.ai!.removeAura(this);
-			this.ai!.writeObject(ct);
+		} else if (this.monster !== null) {
+			this.monster!.removeAura(this);
+			this.monster!.writeObject(ct);
 		}
 
 		// if (this.dot !== null) {

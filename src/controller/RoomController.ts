@@ -1,59 +1,93 @@
-import Room from "../room/Room.ts";
+import type Room from "../room/Room.ts";
 import type Player from "../player/Player.ts";
-import JSONObject from "../util/json/JSONObject.ts";
 import Helper from "../util/Helper.ts";
 
-export default class RoomController {
+export class RoomController {
 
-	private static _instance: RoomController | null = null;
-	private readonly rooms: Map<number, Room> = new Map<number, Room>();
+	private static roomList: Map<number, Room> = new Map<number, Room>;
 
-	public static instance(): RoomController {
-		if (!this._instance) {
-			this._instance = new RoomController();
+	public static addRoom(rm: Room): void {
+		if (RoomController.roomList.has(rm.id)) {
+			return;
 		}
 
-		return this._instance;
+		RoomController.roomList.set(rm.id, rm);
 	}
 
-	public static find(name: string): Room {
-		return new Room(99, 88);
+	public static removeRoom(id: number): void {
+		RoomController.roomList.delete(id);
 	}
 
-	public join(player: Player, room: Room) {
-		if (player.room) {
-			// noinspection HtmlUnknownAttribute
-			player.room.writeExcept(player, `<msg t='sys'><body action='userGone' r='${room.id}'><user id='${player.network.id}' /></body></msg>`);
-			player.room.writeArrayExcept(player, "exitArea", player.network.id, player.network);
-			player.room.removePlayer(player);
-			//TODO: remove room if room count <= 0
+	public static getRoom(roomId: number): Room | null {
+		const room: Room | undefined = RoomController.roomList.get(roomId);
+		return room !== undefined ? room : null;
+	}
+
+	public static getList(): Map<number, Room> {
+		return RoomController.roomList;
+	}
+
+	public static getRoomByName(name: string): Room | null {
+		let found: Room | null = null;
+
+		for (let room of RoomController.roomList.values()) {
+			if (room.name !== name) {
+				continue;
+			}
+
+			found = room;
 		}
 
-		room.addPlayer(player);
+		return found;
+	}
 
-		room.writeObjectExcept(
-			player,
-			new JSONObject()
-				.element('cmd', 'uotls')
-				.element('o', player.properties)
-				.element('unm', player.username)
-		);
+	public static joinRoom(player: Player, newRoom: Room): void {
+		if (player.room !== undefined) {
+			let oldRoom: Room | null = player.room;
 
-		let response: string = Helper.joinOK(room.id);
+			if (oldRoom !== null) {
+				// noinspection HtmlUnknownAttribute
+				oldRoom.writeExcept(player, "<msg t='sys'><body action='userGone' r='" + oldRoom.id + "'><user id='" + player.network.id + "' /></body></msg>");
+				oldRoom.writeArrayExcept(player, "exitArea", player.network.id, player.network.name);
 
-		let i: number = 1;
+				oldRoom.removePlayer(player);
 
-		room.players.forEach((target: Player) => {
+				if (oldRoom.playersCount <= 0) {
+					RoomController.removeRoom(oldRoom.id);
+				}
+			}
+		}
+
+		if (newRoom !== null) {
+			newRoom.addPlayer(player);
+
+			player.network.writeObject(
+				player.getProperties()
+					.element('cmd', 'uotls')
+			);
+
+			let response: string = Helper.joinOK(newRoom.id);
+
+			let i: number = 1;
+
+			newRoom.players
+				.forEach((target: Player) => {
+					// noinspection HtmlUnknownAttribute
+					response += `<u i='${target.network.id}' m='0' s='0' p='${i}'><n><![CDATA[${target.username}]]></n><vars></vars></u>`;
+					i++;
+				});
+
+			response += `</uLs></body></msg>`;
+
+			player.network.write(response);
+
 			// noinspection HtmlUnknownAttribute
-			response += `<u i='${target.network.id}' m='0' s='0' p='${i}'><n><![CDATA[${target.username}]]></n><vars></vars></u>`;
-			i++;
-		});
+			newRoom.writeExcept(player, `<msg t='sys'><body action='uER' r='${newRoom.id}'><u i ='${player.network.id}' m='0'><n><![CDATA[${newRoom.name}]]></n><vars></vars></u></body></msg>`);
+		}
+	}
 
-		response += `</uLs></body></msg>`;
-
-		player.network.write(response);
-
-		//TODO: send to room except player -> `<msg t='sys'><body action='uER' r='${room.id}'><u i ='${player.network.id}' m='0'><n><![CDATA[${room.name}]]></n><vars></vars></u></body></msg>`
+	public static getRoomCount(): number {
+		return RoomController.roomList.size;
 	}
 
 }

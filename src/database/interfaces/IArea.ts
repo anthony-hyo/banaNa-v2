@@ -4,6 +4,7 @@ export default interface IArea {
 	id: number;
 
 	name: string;
+
 	file: string;
 
 	max_players: number;
@@ -12,6 +13,9 @@ export default interface IArea {
 	is_upgrade_only: boolean;
 	is_staff_only: boolean;
 	is_pvp: boolean;
+
+	dateUpdated: Date;
+	dateCreated: Date;
 
 	monsters?: Array<IMapMonster>;
 }

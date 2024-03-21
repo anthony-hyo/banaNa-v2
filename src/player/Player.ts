@@ -63,15 +63,6 @@ export default class Player {
 		return this._preferences;
 	}
 
-	public async data(): Promise<IUser> {
-		return (
-			await database.query.users
-				.findFirst({
-					where: eq(users.id, this.databaseId)
-				})
-		)!;
-	}
-
 	public log(violation: string, details: string): void {
 		database
 			.insert(usersLogs)
@@ -88,7 +79,6 @@ export default class Player {
 	public disconnect(): void {
 
 	}
-
 
 	public sendUotls(showHp: boolean, showHpMax: boolean, showMp: boolean, showMpMax: boolean, showLevel: boolean, showState: boolean): void {
 		const uotls: JSONObject = new JSONObject().element("cmd", "uotls");
@@ -363,26 +353,26 @@ export default class Player {
 
 	public getProperties(): JSONObject {
 		const userProperties: JSONObject = new JSONObject()
-			.element("afk", this.properties.get(PlayerConst.AFK) as boolean)
+			.element("afk", this.properties.get(PlayerConst.AFK))
 			.element("entID", this.network.id)
 			.element("entType", "p")
-			.element("intHP", this.properties.get(PlayerConst.HP) as number)
-			.element("intHPMax", this.properties.get(PlayerConst.HP_MAX) as number)
-			.element("intLevel", this.properties.get(PlayerConst.LEVEL) as number)
-			.element("intMP", this.properties.get(PlayerConst.MP) as number)
-			.element("intMPMax", this.properties.get(PlayerConst.MP_MAX) as number)
-			.element("intState", this.properties.get(PlayerConst.STATE) as number)
+			.element("intHP", this.properties.get(PlayerConst.HP))
+			.element("intHPMax", this.properties.get(PlayerConst.HP_MAX))
+			.element("intLevel", this.properties.get(PlayerConst.LEVEL))
+			.element("intMP", this.properties.get(PlayerConst.MP))
+			.element("intMPMax", this.properties.get(PlayerConst.MP_MAX))
+			.element("intState", this.properties.get(PlayerConst.STATE))
 			.element("showCloak", true)
 			.element("showHelm", true)
-			.element("strFrame", this.properties.get(PlayerConst.FRAME) as string)
-			.element("strPad", this.properties.get(PlayerConst.PAD) as string)
-			.element("strUsername", this.properties.get(PlayerConst.USERNAME) as string)
-			.element("tx", this.properties.get(PlayerConst.TX) as number)
-			.element("ty", this.properties.get(PlayerConst.TY) as number)
+			.element("strFrame", this.properties.get(PlayerConst.FRAME))
+			.element("strPad", this.properties.get(PlayerConst.PAD))
+			.element("strUsername", this.properties.get(PlayerConst.USERNAME))
+			.element("tx", this.properties.get(PlayerConst.TX))
+			.element("ty", this.properties.get(PlayerConst.TY))
 			.element("uoName", this.username);
 
 		if (this.room!.data.name.includes("house") && this.room!.data.is_pvp) {
-			userProperties.element("pvpTeam", this.properties.get(PlayerConst.PVP_TEAM) as number);
+			userProperties.element("pvpTeam", this.properties.get(PlayerConst.PVP_TEAM));
 		}
 
 		return userProperties;
@@ -906,7 +896,7 @@ export default class Player {
 		this.sendUotls(true, false, true, false, false, true);
 	}
 
-	public die(user: Player): void {
+	public die(): void {
 		this.properties.set(PlayerConst.HP, 0);
 		this.properties.set(PlayerConst.MP, 0);
 		this.properties.set(PlayerConst.STATE, PlayerConst.STATE_DEAD);

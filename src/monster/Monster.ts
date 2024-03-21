@@ -2,25 +2,23 @@ import type IMapMonster from "../database/interfaces/IMapMonster.ts";
 import type IMonster from "../database/interfaces/IMonster.ts";
 import type IMonsterDrop from "../database/interfaces/IMonsterDrop.ts";
 import type ISkillAura from "../database/interfaces/ISkillAura.ts";
-import ExtensionHelper from "../examples/ExtensionHelper";
-import type Player from "../player/Player";
-import Player from "../player/Player";
-import type Room from "../room/Room";
-import Room from "../room/Room";
 import MonsterRespawn from "../scheduler/tasks/MonsterRespawn";
 import Random from "../util/Random";
 import JSONArray from "../util/json/JSONArray";
 import JSONObject from "../util/json/JSONObject";
 import PlayerConst from "../player/PlayerConst.ts";
-import type Stats from "../world/stats/Stats";
-import Stats from "../world/stats/Stats";
-import type IDispatchable from "../interfaces/IDispatchable.ts";
 import schedule from "node-schedule";
-import type RemoveAura from "../scheduler/tasks/RemoveAura.ts";
+import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
+import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
+import type Player from "../player/Player.ts";
+import type Room from "../room/Room.ts";
+import type Stats from "../world/stats/Stats.ts";
+import Scheduler from "../scheduler/Scheduler.ts";
+import GameController from "../controller/GameController.ts";
 
-export class MonsterAI implements IDispatchable {
+export class Monster implements IDispatchable {
 
-	public attacking: ScheduledTask | null;
+	public attacking: schedule.Job | undefined;
 
 	public monsterId: number;
 	public mapId: number;
@@ -32,7 +30,6 @@ export class MonsterAI implements IDispatchable {
 	public auras: Set<RemoveAura>;
 	public rand: Random;
 	public room: Room;
-
 
 	constructor(mapMon: IMapMonster, room: Room) {
 		this.monsterId = mapMon.monsterId;
@@ -105,7 +102,7 @@ export class MonsterAI implements IDispatchable {
 		player.properties.set(PlayerConst.STATE, PlayerConst.STATE_COMBAT);
 
 		if (player.properties.get(PlayerConst.HP) <= 0) {
-			this.world.users.die(player);
+			player.die();
 			this.removeTarget(userId);
 			this.cancel();
 		}
@@ -183,7 +180,7 @@ export class MonsterAI implements IDispatchable {
 		this.writeObject(mtls);
 	}
 
-	public die(): void {
+	public async die(): Promise<void> {
 		if (this.state === 0) {
 			return;
 		}
@@ -200,14 +197,14 @@ export class MonsterAI implements IDispatchable {
 		this.mana = 0;
 		this.state = 0;
 
-		schedule(new MonsterRespawn(this.world, this), 20, TimeUnit.SECONDS);
+		Scheduler.oneTime(new MonsterRespawn(this), 4);
 
 		const mon: IMonster = this.world.monsters.get(this.monsterId)!;
 
 		const drops: Set<IMonsterDrop> = new Set<IMonsterDrop>();
 
 		for (const md of mon.monstersDrops) {
-			if (Math.random() <= md.chance * this.world.DROP_RATE) {
+			if (Math.random() <= md.chance * GameController.DROP_RATE) {
 				drops.add(md);
 			}
 		}
@@ -216,10 +213,10 @@ export class MonsterAI implements IDispatchable {
 			const user: Player | null = ExtensionHelper.instance().getUserById(userId);
 			if (user) {
 				for (const md of drops) {
-					this.world.users.dropItem(user, md.itemId, md.quantity);
+					user.dropItem(md.itemId, md.quantity);
 				}
 
-				this.world.users.giveRewards(user, mon.experience, mon.gold, mon.reputation, 0, -1, this.mapId, "m");
+				await user.giveRewards(mon.experience, mon.gold, mon.reputation, 0, -1, this.mapId, "m");
 			}
 		}
 	}
@@ -239,8 +236,9 @@ export class MonsterAI implements IDispatchable {
 	}
 
 	public applyAura(aura: ISkillAura): RemoveAura {
-		const ra: RemoveAura = new RemoveAura(this.world, aura, this);
-		ra.setRunning(this.world.scheduleTask(ra, aura.duration, TimeUnit.SECONDS));
+		const ra: RemoveAura = new RemoveAura(aura, undefined, this);
+
+		ra.setRunning(Scheduler.oneTime(ra, aura.duration));
 
 		this.auras.add(ra);
 
@@ -294,7 +292,7 @@ export class MonsterAI implements IDispatchable {
 		return this.room;
 	}
 
-	public setAttacking(attacking: ScheduledTask): void {
+	public setAttacking(attacking: schedule.Job): void {
 		if (!this.attacking || this.attacking.cancelled) {
 			this.state = 2;
 			this.attacking = attacking;
