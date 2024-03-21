@@ -1,6 +1,6 @@
 export default interface IMonsterDrop {
-    monsterId: number;
-    itemId: number;
-    chance: number;
-    quantity: number;
+	monsterId: number;
+	itemId: number;
+	chance: number;
+	quantity: number;
 }

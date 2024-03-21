@@ -3,29 +3,29 @@ import type IMapMonster from "../database/interfaces/IMapMonster.ts";
 
 export default class RoomData implements IArea {
 
-    id: number;
-    name: string;
-    file: string;
-    max_players: number;
-    required_level: number;
-    is_upgrade_only: boolean;
-    is_staff_only: boolean;
-    is_pvp: boolean;
-    monsters?: Array<IMapMonster>;
+	id: number;
+	name: string;
+	file: string;
+	max_players: number;
+	required_level: number;
+	is_upgrade_only: boolean;
+	is_staff_only: boolean;
+	is_pvp: boolean;
+	monsters?: Array<IMapMonster>;
 
-    constructor(id: number, name: string, file: string, max_players: number, required_level: number, is_upgrade_only: boolean, is_staff_only: boolean, is_pvp: boolean, monsters?: Array<IMapMonster>) {
-        this.id = id;
+	constructor(id: number, name: string, file: string, max_players: number, required_level: number, is_upgrade_only: boolean, is_staff_only: boolean, is_pvp: boolean, monsters?: Array<IMapMonster>) {
+		this.id = id;
 
-        this.name = name;
-        this.file = file;
+		this.name = name;
+		this.file = file;
 
-        this.max_players = max_players;
-        this.required_level = required_level;
+		this.max_players = max_players;
+		this.required_level = required_level;
 
-        this.is_upgrade_only = is_upgrade_only;
-        this.is_staff_only = is_staff_only;
-        this.is_pvp = is_pvp;
+		this.is_upgrade_only = is_upgrade_only;
+		this.is_staff_only = is_staff_only;
+		this.is_pvp = is_pvp;
 
-        this.monsters = monsters;
-    }
+		this.monsters = monsters;
+	}
 }

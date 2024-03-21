@@ -1,11 +1,11 @@
 export default interface IUserFaction {
-    id: number;
+	id: number;
 
-    userId: number;
-    factionId: number;
+	userId: number;
+	factionId: number;
 
-    reputation: number;
+	reputation: number;
 
-    dateUpdated: Date;
-    dateCreated: Date;
+	dateUpdated: Date;
+	dateCreated: Date;
 }

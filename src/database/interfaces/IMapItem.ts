@@ -1,4 +1,4 @@
 export default interface IMapItem {
-    mapId: number;
-    itemId: number;
+	mapId: number;
+	itemId: number;
 }

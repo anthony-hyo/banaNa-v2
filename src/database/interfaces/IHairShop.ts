@@ -1,5 +1,5 @@
 export default interface IHairShop {
-    id: number;
-    name: string;
-    location: string;
+	id: number;
+	name: string;
+	location: string;
 }

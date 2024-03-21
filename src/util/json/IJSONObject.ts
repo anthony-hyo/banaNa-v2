@@ -1,3 +1,3 @@
 export default interface IJSONObject {
-    [key: string]: any;
+	[key: string]: any;
 }

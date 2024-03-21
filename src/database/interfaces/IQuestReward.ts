@@ -1,6 +1,6 @@
 export default interface IQuestReward {
-    id: number;
-    questId: number;
-    itemId: number;
-    quantity: number;
+	id: number;
+	questId: number;
+	itemId: number;
+	quantity: number;
 }

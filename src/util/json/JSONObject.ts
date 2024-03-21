@@ -3,75 +3,75 @@ import JSONArray from "./JSONArray.ts";
 
 export default class JSONObject {
 
-    private readonly properties: IJSONObject;
+	private readonly properties: IJSONObject;
 
-    constructor(properties: IJSONObject = {}) {
-        this.properties = properties;
-    }
+	constructor(properties: IJSONObject = {}) {
+		this.properties = properties;
+	}
 
-    public put(key: string, value: any): void {
-        this.properties[key] = value;
-    }
+	public put(key: string, value: any): void {
+		this.properties[key] = value;
+	}
 
-    public element(key: string, value: any): this {
-        this.properties[key] = value;
-        return this;
-    }
+	public element(key: string, value: any): this {
+		this.properties[key] = value;
+		return this;
+	}
 
-    public has(key: string): boolean {
-        return key in this.properties;
-    }
+	public has(key: string): boolean {
+		return key in this.properties;
+	}
 
-    public get(key: string): any {
-        return this.properties[key];
-    }
+	public get(key: string): any {
+		return this.properties[key];
+	}
 
-    public getJSONObject(key: string): JSONObject | null {
-        const value: any = this.properties[key];
+	public getJSONObject(key: string): JSONObject | null {
+		const value: any = this.properties[key];
 
-        if (value instanceof JSONObject) {
-            return value;
-        }
+		if (value instanceof JSONObject) {
+			return value;
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    public getJSONArray(key: string): JSONArray | null {
-        const value: any = this.properties[key];
+	public getJSONArray(key: string): JSONArray | null {
+		const value: any = this.properties[key];
 
-        if (value instanceof JSONArray) {
-            return value;
-        }
+		if (value instanceof JSONArray) {
+			return value;
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    public getInt(key: string): number | null {
-        const value = this.properties[key];
+	public getInt(key: string): number | null {
+		const value = this.properties[key];
 
-        if (typeof value === 'number') {
-            return value;
-        }
+		if (typeof value === 'number') {
+			return value;
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    public getString(key: string): string | null {
-        const value = this.properties[key];
+	public getString(key: string): string | null {
+		const value = this.properties[key];
 
-        if (typeof value === 'string') {
-            return value;
-        }
+		if (typeof value === 'string') {
+			return value;
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    public toJSON(): IJSONObject {
-        return this.properties;
-    }
+	public toJSON(): IJSONObject {
+		return this.properties;
+	}
 
-    public isEmpty(): boolean {
-        return Object.keys(this.properties).length === 0;
-    }
+	public isEmpty(): boolean {
+		return Object.keys(this.properties).length === 0;
+	}
 
 }

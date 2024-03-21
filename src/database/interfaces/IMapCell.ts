@@ -1,6 +1,6 @@
 export default interface IMapCell {
-    id: number;
-    mapId: number;
-    frame: string;
-    pad: string;
+	id: number;
+	mapId: number;
+	frame: string;
+	pad: string;
 }

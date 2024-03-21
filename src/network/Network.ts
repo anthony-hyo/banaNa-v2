@@ -5,44 +5,44 @@ import PlayerNetwork from "../player/PlayerNetwork";
 
 export default class Network {
 
-    private static _instance: Network;
+	private static _instance: Network;
 
-    private readonly server: Server;
+	private readonly server: Server;
 
-    private count: number = 0;
+	private count: number = 0;
 
-    public static instance(): Network {
-        if (!this._instance) {
-            this._instance = new Network();
-        }
+	constructor() {
+		this.server = net.createServer();
 
-        return this._instance;
-    }
+		this.server.addListener('connection', (socket: Socket): void => {
+			socket.setEncoding('utf-8');
 
-    constructor() {
-        this.server = net.createServer();
+			logger.warn(`[Network] new connection from: ${socket.remoteAddress}`);
 
-        this.server.addListener('connection', (socket: Socket): void => {
-            socket.setEncoding('utf-8');
+			this.count++;
 
-            logger.warn(`[Network] new connection from: ${socket.remoteAddress}`);
+			const playerNetwork: PlayerNetwork = new PlayerNetwork(this.count, socket);
 
-            this.count++;
+			socket.on('data', (data: any): void => playerNetwork.data(data));
 
-            const playerNetwork: PlayerNetwork = new PlayerNetwork(this.count, socket);
+			socket.on('close', (): void => {
+				logger.debug(`Disconnected`);
+			});
+		});
 
-            socket.on('data', (data: any): void => playerNetwork.data(data));
+		this.server.listen({
+			port: 5588,
+			backlog: 10,
+			exclusive: false
+		}, () => logger.silly(`Server online`));
+	}
 
-            socket.on('close', (): void => {
-                logger.debug(`Disconnected`);
-            });
-        });
+	public static instance(): Network {
+		if (!this._instance) {
+			this._instance = new Network();
+		}
 
-        this.server.listen({
-            port: 5588,
-            backlog: 10,
-            exclusive: false
-        }, () => logger.silly(`Server online`));
-    }
+		return this._instance;
+	}
 
 }

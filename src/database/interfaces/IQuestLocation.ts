@@ -1,4 +1,4 @@
 export default interface IQuestLocation {
-    questId: number;
-    mapId: number;
+	questId: number;
+	mapId: number;
 }

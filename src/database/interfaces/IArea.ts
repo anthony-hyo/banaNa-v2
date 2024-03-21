@@ -1,18 +1,18 @@
 import type IMapMonster from "./IMapMonster.ts";
 
 export default interface IArea {
-    id: number;
+	id: number;
 
-    name: string;
-    file: string;
+	name: string;
+	file: string;
 
-    max_players: number;
-    required_level: number;
+	max_players: number;
+	required_level: number;
 
-    is_upgrade_only: boolean;
-    is_staff_only: boolean;
-    is_pvp: boolean;
+	is_upgrade_only: boolean;
+	is_staff_only: boolean;
+	is_pvp: boolean;
 
-    monsters?: Array<IMapMonster>;
+	monsters?: Array<IMapMonster>;
 }
 

@@ -16,92 +16,94 @@ import logger from "../util/Logger.ts";
 
 export default class GameController implements IDispatchable {
 
-    public static EXP_RATE: number;
-    public static GOLD_RATE: number;
-    public static REP_RATE: number;
-    public static CP_RATE: number;
+	public static EXP_RATE: number;
+	public static GOLD_RATE: number;
+	public static REP_RATE: number;
+	public static CP_RATE: number;
 
-    private static _instance: GameController;
+	private static _instance: GameController;
 
-    private _settings: string = ``;
-    private _server!: IServer;
-    private _network!: Network;
+	private _settings: string = ``;
 
-    public static instance(): GameController {
-        if (!this._instance) {
-            this._instance = new GameController();
-        }
+	public get settings(): string {
+		return this._settings;
+	}
 
-        return this._instance;
-    }
+	private set settings(value: string) {
+		this._settings = value;
+	}
 
-    public get settings(): string {
-        return this._settings;
-    }
+	private _server!: IServer;
 
-    private set settings(value: string) {
-        this._settings = value;
-    }
+	public get server(): any {
+		return this._server;
+	}
 
-    public get network(): Network {
-        return this._network;
-    }
+	public set server(value: any) {
+		this._server = value;
+	}
 
-    private set network(value: Network) {
-        this._network = value;
-    }
+	private _network!: Network;
 
-    public get server(): any {
-        return this._server;
-    }
+	public get network(): Network {
+		return this._network;
+	}
 
-    public set server(value: any) {
-        this._server = value;
-    }
+	private set network(value: Network) {
+		this._network = value;
+	}
 
-    public async init(): Promise<void> {
-        logger.info(`settings initialized.`);
+	public static instance(): GameController {
+		if (!this._instance) {
+			this._instance = new GameController();
+		}
 
-        this.settings = (await database.query.settingsLogin.findMany())
-            .map(Helper.columnsToString)
-            .join(',');
+		return this._instance;
+	}
 
-        logger.info(`server initialized.`);
+	public async init(): Promise<void> {
+		logger.info(`settings initialized.`);
 
-        this.server = await database.query.servers
-            .findFirst({
-                where: eq(servers.id, Config.SERVER_ID)
-            });
+		this.settings = (await database.query.settingsLogin.findMany())
+			.map(Helper.columnsToString)
+			.join(',');
 
-        logger.info(`network initialized.`);
-        this.network = new Network();
+		logger.info(`server initialized.`);
 
-        logger.info(`scheduler initialized.`);
+		this.server = await database.query.servers
+			.findFirst({
+				where: eq(servers.id, Config.SERVER_ID)
+			});
 
-        Scheduler.repeated(new WarzoneQueue(), 5);
-        Scheduler.repeated(new ACGiveaway(), 1800);
-    }
+		logger.info(`network initialized.`);
+		this.network = new Network();
 
-    public serverMessage(message: String): void {
-        this.writeObject(new JSONObject()
-            .element("cmd", "umsg")
-            .element("s", message)
-        );
-    }
+		logger.info(`scheduler initialized.`);
 
-    public writeExcept(ignored: Player, data: string): void {
-    }
+		Scheduler.repeated(new WarzoneQueue(), 5);
+		Scheduler.repeated(new ACGiveaway(), 1800);
+	}
 
-    public writeObject(data: JSONObject): void {
-    }
+	public serverMessage(message: String): void {
+		this.writeObject(new JSONObject()
+			.element("cmd", "umsg")
+			.element("s", message)
+		);
+	}
 
-    public writeObjectExcept(ignored: Player, data: JSONObject): void {
-    }
+	public writeExcept(ignored: Player, data: string): void {
+	}
 
-    public writeArray(...data: any[]): void {
-    }
+	public writeObject(data: JSONObject): void {
+	}
 
-    public writeArrayExcept(ignored: Player, ...data: any[]): void {
-    }
+	public writeObjectExcept(ignored: Player, data: JSONObject): void {
+	}
+
+	public writeArray(...data: any[]): void {
+	}
+
+	public writeArrayExcept(ignored: Player, ...data: any[]): void {
+	}
 
 }

@@ -1,22 +1,22 @@
 export default interface IServer {
-    id: number;
+	id: number;
 
-    name: string;
+	name: string;
 
-    ip: string;
+	ip: string;
 
-    message_of_the_day: string;
+	message_of_the_day: string;
 
-    playerCount: number;
-    playerHighestCount: number;
+	playerCount: number;
+	playerHighestCount: number;
 
-    maximum: number;
+	maximum: number;
 
-    isOnline: boolean;
-    isUpgradeOnly: boolean;
+	isOnline: boolean;
+	isUpgradeOnly: boolean;
 
-    chatType: number;
+	chatType: number;
 
-    dateUpdated: Date;
-    dateCreated: Date;
+	dateUpdated: Date;
+	dateCreated: Date;
 }

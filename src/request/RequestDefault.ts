@@ -5,10 +5,10 @@ import type IRequest from "../interfaces/request/IRequest.ts";
 
 export default class RequestDefault implements IRequest {
 
-    name: string = 'default';
+	name: string = 'default';
 
-    public async handler(player: Player, args: RequestArg): Promise<void> {
-        logger.warn(`${player.username}(${player.network.id}) default request called`, args.list());
-    }
+	public async handler(player: Player, args: RequestArg): Promise<void> {
+		logger.warn(`${player.username}(${player.network.id}) default request called`, args.list());
+	}
 
 }

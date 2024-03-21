@@ -1,4 +1,4 @@
 export default interface IShopLocation {
-    shopId: number;
-    mapId: number;
+	shopId: number;
+	mapId: number;
 }

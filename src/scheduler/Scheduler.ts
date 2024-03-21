@@ -3,30 +3,30 @@ import type ITask from "../interfaces/scheduler/ITask.ts";
 
 export default class Scheduler {
 
-    private static readonly tasks: Array<schedule.Job> = new Array<schedule.Job>;
+	private static readonly tasks: Array<schedule.Job> = new Array<schedule.Job>;
 
-    public static oneTime(task: ITask, seconds: number): schedule.Job {
-        const date: Date = new Date();
+	public static oneTime(task: ITask, seconds: number): schedule.Job {
+		const date: Date = new Date();
 
-        date.setSeconds(date.getSeconds() + seconds);
+		date.setSeconds(date.getSeconds() + seconds);
 
-        const newTask: schedule.Job = schedule.scheduleJob(date, task.run);
+		const newTask: schedule.Job = schedule.scheduleJob(date, task.run);
 
-        this.tasks.push(newTask);
+		this.tasks.push(newTask);
 
-        return newTask;
-    }
+		return newTask;
+	}
 
-    public static repeated(task: ITask, intervalInSeconds: number): schedule.Job | undefined {
-        const newTask: schedule.Job = schedule.scheduleJob(`*/${intervalInSeconds} * * * * *`, task.run);
+	public static repeated(task: ITask, intervalInSeconds: number): schedule.Job | undefined {
+		const newTask: schedule.Job = schedule.scheduleJob(`*/${intervalInSeconds} * * * * *`, task.run);
 
-        this.tasks.push(newTask);
+		this.tasks.push(newTask);
 
-        return newTask;
-    }
+		return newTask;
+	}
 
-    public static cancelAll(): void {
-        this.tasks.forEach((task: schedule.Job) => task.cancel());
-    }
+	public static cancelAll(): void {
+		this.tasks.forEach((task: schedule.Job) => task.cancel());
+	}
 
 }

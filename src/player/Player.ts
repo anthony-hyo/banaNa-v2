@@ -1,13 +1,6 @@
 import Room from "../room/Room";
 import PlayerNetwork from "./PlayerNetwork";
-import {
-	guilds,
-	users,
-	usersFactions,
-	usersFriends,
-	usersInventory,
-	usersLogs
-} from "../database/drizzle/schema";
+import {guilds, users, usersFactions, usersFriends, usersInventory, usersLogs} from "../database/drizzle/schema";
 import database from "../database/drizzle/database";
 import {and, eq, sql} from "drizzle-orm";
 import type IUser from "../database/interfaces/IUser.ts";
@@ -30,7 +23,6 @@ import type ISkillAuraEffect from "../database/interfaces/ISkillAuraEffect.ts";
 import PlayerConst from "./PlayerConst.ts";
 import GameController from "../controller/GameController.ts";
 import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
-import ConfigData from "../config/ConfigData.ts";
 import {format} from "date-fns";
 import type IUserFriend from "../database/interfaces/IUserFriend.ts";
 import PlayerController from "../controller/PlayerController.ts";
@@ -602,7 +594,7 @@ export default class Player {
 	}
 
 	public async setAchievement(field: string, index: number, value: number, user: Player): Promise<void> {
-		let update: object | undefined= undefined;
+		let update: object | undefined = undefined;
 
 		switch (field) {
 			case "ia0":
