@@ -88,8 +88,8 @@ export default interface IUser {
 	currentServer?: IServer | null;
 	hair?: IHair;
 
-	userFactions?: Array<IUserFaction>;
-	userFriends?: Array<IUserFriend>;
-	userInventory?: Array<IUserInventory>;
-	userLogs?: Array<IUserLog>;
+	actions?: Array<IUserFaction>;
+	friends?: Array<IUserFriend>;
+	inventory?: Array<IUserInventory>;
+	logs?: Array<IUserLog>;
 }

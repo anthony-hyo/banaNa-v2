@@ -1,4 +1,6 @@
-import type IMapMonster from "./IMapMonster.ts";
+import type IAreaMonster from "./IAreaMonster.ts";
+import type IAreaCell from "./IAreaCell.ts";
+import type IAreaItem from "./IAreaItem.ts";
 
 export default interface IArea {
 	id: number;
@@ -17,6 +19,8 @@ export default interface IArea {
 	dateUpdated: Date;
 	dateCreated: Date;
 
-	monsters?: Array<IMapMonster>;
+	cells?: Array<IAreaCell>;
+	items?: Array<IAreaItem>;
+	monsters?: Array<IAreaMonster>;
 }
 

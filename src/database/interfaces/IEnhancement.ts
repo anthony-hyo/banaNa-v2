@@ -8,5 +8,5 @@ export default interface IEnhancement {
 	dps: number;
 	level: number;
 
-	pattern: IEnhancementPattern;
+	pattern?: IEnhancementPattern;
 }
