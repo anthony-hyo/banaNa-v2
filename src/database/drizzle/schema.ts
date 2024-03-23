@@ -218,9 +218,9 @@ export const areas = mysqlTable("areas", {
 }));
 
 export const areasRelations = relations(areas, ({ many }) => ({
-	areaCells: many(areasCells),
-	areaItems: many(areasItems),
-	areaMonsters: many(areasMonsters),
+	cells: many(areasCells),
+	items: many(areasItems),
+	monsters: many(areasMonsters),
 }));
 
 export const areasCells = mysqlTable("areas_cells", {
@@ -536,8 +536,8 @@ export const guilds = mysqlTable("guilds", {
 
 export const guildsRelations = relations(guilds, ({ many }) => ({
 	members: many(users),
-	guildHall: many(guildsHalls),
-	guildInventory: many(guildsInventory),
+	halls: many(guildsHalls),
+	inventory: many(guildsInventory),
 }));
 
 export const guildsHalls = mysqlTable("guilds_halls", {
@@ -591,8 +591,8 @@ export const guildsHallsRelations = relations(guildsHalls, ({ one, many }) => ({
 		references: [guilds.id],
 	}),
 
-	guildHallBuildings: many(guildsHallsBuildings),
-	guildHallConnections: many(guildsHallsConnections),
+	buildings: many(guildsHallsBuildings),
+	connections: many(guildsHallsConnections),
 }));
 
 export const guildsHallsBuildings = mysqlTable("guilds_halls_buildings", {
@@ -748,7 +748,7 @@ export const hairsShops = mysqlTable("hairs_shops", {
 }));
 
 export const hairsShopsRelations = relations(hairsShops, ({ many }) => ({
-	hairShopItems: many(hairsShopsItems),
+	shopItems: many(hairsShopsItems),
 }));
 
 export const hairsShopsItems = mysqlTable("hairs_shops_items", {
@@ -1215,7 +1215,7 @@ export const monstersRelations = relations(monsters, ({ one, many }) => ({
 		references: [settingsLevels.level],
 	}),
 
-	monsterDrops: many(monstersDrops),
+	drops: many(monstersDrops),
 }));
 
 export const monstersDrops = mysqlTable("monsters_drops", {
@@ -1391,9 +1391,9 @@ export const questsRelations = relations(quests, ({ one, many }) => ({
 		references: [items.id],
 	}),
 
-	questAreas: many(questsAreas),
-	questRequirements: many(questsRequirements),
-	questRewards: many(questsRewards),
+	areas: many(questsAreas),
+	requirements: many(questsRequirements),
+	rewards: many(questsRewards),
 }));
 
 export const questsAreas = mysqlTable("quests_areas", {
@@ -1692,8 +1692,8 @@ export const shops = mysqlTable("shops", {
 }));
 
 export const shopsRelations = relations(shops, ({ many }) => ({
-	shopItems: many(shopsItems),
-	shopLocations: many(shopsAreas),
+	items: many(shopsItems),
+	areas: many(shopsAreas),
 }));
 
 export const shopsAreas = mysqlTable("shops_areas", {
@@ -1848,7 +1848,7 @@ export const skills = mysqlTable("skills", {
 });
 
 export const skillsRelations = relations(skills, ({ many }) => ({
-	skillAuras: many(skillsAuras),
+	auras: many(skillsAuras),
 }));
 
 export const skillsAuras = mysqlTable("skills_auras", {
@@ -1896,7 +1896,7 @@ export const skillsAurasRelations = relations(skillsAuras, ({ one, many }) => ({
 		references: [skills.id],
 	}),
 
-	skillAuraEffects: many(skillsAurasEffects),
+	auraEffects: many(skillsAurasEffects),
 }));
 
 export const skillsAurasEffects = mysqlTable("skills_auras_effects", {
@@ -2363,10 +2363,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 		references: [hairs.id],
 	}),
 
-	userFactions: many(usersFactions),
-	userFriends: many(usersFriends),
-	userInventory: many(usersInventory),
-	userLogs: many(usersLogs),
+	factions: many(usersFactions),
+	friends: many(usersFriends),
+	inventory: many(usersInventory),
+	logs: many(usersLogs),
 }));
 
 export const usersFactions = mysqlTable("users_factions", {
