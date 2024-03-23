@@ -4,6 +4,7 @@ import {
 	char,
 	decimal,
 	double,
+	index,
 	int,
 	mediumint,
 	type MySqlColumnBuilderBase,
@@ -13,6 +14,8 @@ import {
 	text,
 	timestamp,
 	tinyint,
+	unique,
+	uniqueIndex,
 	varchar
 } from "drizzle-orm/mysql-core";
 import {relations, sql} from "drizzle-orm";
@@ -92,12 +95,12 @@ const questIdColumn = int("quest_id", {
 		onUpdate: "cascade"
 	});
 
-const mapIdColumn = int("map_id", {
+const areaIdColumn = int("area_id", {
 	unsigned: true
 })
 	.notNull()
 	.default(1)
-	.references((): AnyMySqlColumn => maps.id, {
+	.references((): AnyMySqlColumn => areas.id, {
 		onDelete: "cascade",
 		onUpdate: "cascade"
 	});
@@ -162,12 +165,161 @@ export const accesses = mysqlTable("accesses", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
+}, (table) => ({
+	unique: unique().on(table.name),
+}));
+
+export const areas = mysqlTable("areas", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default("banaNa")
+			.notNull(),
+
+	file:
+		varchar("file", {
+			length: 128
+		})
+			.default('banaNa')
+			.notNull(),
+
+	max_players:
+		tinyint("max_players", {
+			unsigned: true
+		})
+			.default(10)
+			.notNull(),
+
+	required_level: levelColumn('required_level'),
+
+	is_upgrade_only:
+		boolean("is_upgrade_only")
+			.default(false)
+			.notNull(),
+
+	is_staff_only:
+		boolean("is_staff_only")
+			.default(false)
+			.notNull(),
+
+	is_pvp:
+		boolean("is_pvp")
+			.default(false)
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+}, (table) => ({
+	uniqueIndex: uniqueIndex("areas_name_unique_index").on(table.name),
+}));
+
+export const areasRelations = relations(areas, ({ many }) => ({
+	areaCells: many(areasCells),
+	areaItems: many(areasItems),
+	areaMonsters: many(areasMonsters),
+}));
+
+export const areasCells = mysqlTable("areas_cells", {
+	id: idColumn(),
+
+	areaId: areaIdColumn,
+
+	frame:
+		varchar("frame", {
+			length: 32
+		})
+			.default('Enter')
+			.notNull(),
+
+	pad:
+		varchar("pad", {
+			length: 32
+		})
+			.default('Right')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
 });
+
+export const areasCellsRelations = relations(areasCells, ({ one }) => ({
+	area: one(areas, {
+		fields: [areasCells.areaId],
+		references: [areas.id],
+	})
+}));
+
+export const areasItems = mysqlTable("areas_items", {
+	id: idColumn(),
+
+	areaId: areaIdColumn,
+
+	itemId: itemIdColumn(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+}, (table) => ({
+	unique: unique().on(table.areaId, table.itemId),
+}));
+
+export const areasItemsRelations = relations(areasItems, ({ one }) => ({
+	area: one(areas, {
+		fields: [areasItems.areaId],
+		references: [areas.id],
+	}),
+	item: one(items, {
+		fields: [areasItems.itemId],
+		references: [items.id],
+	})
+}));
+
+export const areasMonsters = mysqlTable("areas_monsters", {
+	id: idColumn(),
+
+	areaId: areaIdColumn,
+
+	monsterId: monsterIdColumn,
+
+	monsterAreaId:
+		int("monster_area_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
+
+	frame:
+		varchar("frame", {
+			length: 32
+		})
+			.default('Enter')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+}, (table) => ({
+	unique: unique().on(table.areaId, table.monsterAreaId),
+}));
+
+export const areasMonstersRelations = relations(areasMonsters, ({ one }) => ({
+	area: one(areas, {
+		fields: [areasMonsters.areaId],
+		references: [areas.id],
+	}),
+	monster: one(monsters, {
+		fields: [areasMonsters.monsterId],
+		references: [monsters.id],
+	})
+}));
 
 export const classes = mysqlTable("classes", {
 	id: idColumn(),
-
-	itemId: itemIdColumn(),
 
 	category: combatCategory,
 
@@ -206,7 +358,9 @@ export const countries = mysqlTable("countries", {
 		})
 			.default("Unknown")
 			.notNull()
-});
+}, (table) => ({
+	unique: unique().on(table.code, table.name),
+}));
 
 export const enhancements = mysqlTable("enhancements", {
 	id: idColumn(),
@@ -248,7 +402,10 @@ export const enhancements = mysqlTable("enhancements", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name),
+}));
+
 
 export const enhancementsRelations = relations(enhancements, ({ one }) => ({
 	pattern: one(enhancementsPatterns, {
@@ -314,7 +471,9 @@ export const enhancementsPatterns = mysqlTable("enhancements_patterns", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
 export const enhancementsPatternsRelations = relations(enhancementsPatterns, ({ many }) => ({
 	enhancements: many(enhancements),
@@ -333,7 +492,9 @@ export const factions = mysqlTable("factions", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
 export const guilds = mysqlTable("guilds", {
 	id: idColumn(),
@@ -369,7 +530,9 @@ export const guilds = mysqlTable("guilds", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
 export const guildsRelations = relations(guilds, ({ many }) => ({
 	members: many(users),
@@ -456,7 +619,9 @@ export const guildsHallsBuildings = mysqlTable("guilds_halls_buildings", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.guildHallId, table.itemId)
+}));
 
 export const guildsHallsBuildingsRelations = relations(guildsHallsBuildings, ({ one }) => ({
 	guildHall: one(guildsHalls, {
@@ -519,7 +684,9 @@ export const guildsInventory = mysqlTable("guilds_inventory", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.guildId, table.itemId, table.userId)
+}));
 
 export const guildsInventoryRelations = relations(guildsInventory, ({ one }) => ({
 	guild: one(guilds, {
@@ -558,7 +725,10 @@ export const hairs = mysqlTable("hairs", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name, table.gender),
+	unique2: unique().on(table.file),
+}));
 
 export const hairsShops = mysqlTable("hairs_shops", {
 	id: idColumn(),
@@ -573,7 +743,9 @@ export const hairsShops = mysqlTable("hairs_shops", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
 export const hairsShopsRelations = relations(hairsShops, ({ many }) => ({
 	hairShopItems: many(hairsShopsItems),
@@ -607,7 +779,9 @@ export const hairsShopsItems = mysqlTable("hairs_shops_items", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.hairShopId, table.hairId)
+}));
 
 export const hairsShopsItemsRelations = relations(hairsShopsItems, ({ one }) => ({
 	hairShop: one(hairsShops, {
@@ -719,7 +893,7 @@ export const items = mysqlTable("items", {
 			.notNull(),
 
 	is_coins:
-		boolean("isCoins")
+		boolean("is_coins")
 			.default(false)
 			.notNull(),
 
@@ -863,149 +1037,6 @@ export const itemsRequirementsRelations = relations(itemsRequirements, ({ one })
 	requiredItem: one(items, {
 		fields: [itemsRequirements.requiredItemId],
 		references: [items.id],
-	})
-}));
-
-export const maps = mysqlTable("maps", {
-	id: idColumn(),
-
-	name:
-		varchar("name", {
-			length: 64
-		})
-			.default("banaNa")
-			.notNull(),
-
-	file:
-		varchar("file", {
-			length: 128
-		})
-			.default('banaNa')
-			.notNull(),
-
-	max_players:
-		tinyint("max_players", {
-			unsigned: true
-		})
-			.default(10)
-			.notNull(),
-
-	required_level: levelColumn('required_level'),
-
-	is_upgrade_only:
-		boolean("is_upgrade_only")
-			.default(false)
-			.notNull(),
-
-	is_staff_only:
-		boolean("is_staff_only")
-			.default(false)
-			.notNull(),
-
-	is_pvp:
-		boolean("is_pvp")
-			.default(false)
-			.notNull(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
-export const mapsRelations = relations(items, ({ many }) => ({
-	mapCells: many(mapsCells),
-	mapItems: many(mapsItems),
-	mapMonsters: many(mapsMonsters),
-}));
-
-export const mapsCells = mysqlTable("maps_cells", {
-	id: idColumn(),
-
-	mapId: mapIdColumn,
-
-	frame:
-		varchar("frame", {
-			length: 32
-		})
-			.default('Enter')
-			.notNull(),
-
-	pad:
-		varchar("pad", {
-			length: 32
-		})
-			.default('Right')
-			.notNull(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
-export const mapsCellsRelations = relations(mapsCells, ({ one }) => ({
-	map: one(maps, {
-		fields: [mapsCells.mapId],
-		references: [maps.id],
-	})
-}));
-
-export const mapsItems = mysqlTable("maps_items", {
-	id: idColumn(),
-
-	mapId: mapIdColumn,
-
-	itemId: itemIdColumn(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
-export const mapsItemsRelations = relations(mapsItems, ({ one }) => ({
-	map: one(maps, {
-		fields: [mapsItems.mapId],
-		references: [maps.id],
-	}),
-	item: one(items, {
-		fields: [mapsItems.itemId],
-		references: [items.id],
-	})
-}));
-
-export const mapsMonsters = mysqlTable("maps_monsters", {
-	id: idColumn(),
-
-	mapId: mapIdColumn,
-
-	monsterId: monsterIdColumn,
-
-	monsterMapId:
-		int("monster_map_id", {
-			unsigned: true
-		})
-			.default(1)
-			.notNull(),
-
-	frame:
-		varchar("frame", {
-			length: 32
-		})
-			.default('Enter')
-			.notNull(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
-export const mapsMonstersRelations = relations(mapsMonsters, ({ one }) => ({
-	map: one(maps, {
-		fields: [mapsMonsters.mapId],
-		references: [maps.id],
-	}),
-	monster: one(monsters, {
-		fields: [mapsMonsters.monsterId],
-		references: [monsters.id],
 	})
 }));
 
@@ -1360,12 +1391,37 @@ export const questsRelations = relations(quests, ({ one, many }) => ({
 		references: [items.id],
 	}),
 
-	questLocations: many(questsLocations),
+	questAreas: many(questsAreas),
 	questRequirements: many(questsRequirements),
 	questRewards: many(questsRewards),
 }));
 
-export const questsChain = mysqlTable("quests_chains", {
+export const questsAreas = mysqlTable("quests_areas", {
+	id: idColumn(),
+
+	questId: questIdColumn,
+
+	areaId: areaIdColumn,
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+}, (table) => ({
+	unique: unique().on(table.questId, table.areaId),
+}));
+
+export const questsAreasRelations = relations(questsAreas, ({ one }) => ({
+	quest: one(quests, {
+		fields: [questsAreas.questId],
+		references: [quests.id],
+	}),
+	area: one(areas, {
+		fields: [questsAreas.areaId],
+		references: [areas.id],
+	}),
+}));
+
+export const questsChains = mysqlTable("quests_chains", {
 	id: idColumn(),
 
 	name:
@@ -1378,29 +1434,8 @@ export const questsChain = mysqlTable("quests_chains", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
-
-export const questsLocations = mysqlTable("quests_locations", {
-	id: idColumn(),
-
-	questId: questIdColumn,
-
-	mapId: mapIdColumn,
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
-export const questsLocationsRelations = relations(questsLocations, ({ one }) => ({
-	quest: one(quests, {
-		fields: [questsLocations.questId],
-		references: [quests.id],
-	}),
-	map: one(maps, {
-		fields: [questsLocations.mapId],
-		references: [maps.id],
-	}),
+}, (table) => ({
+	unique: unique().on(table.name),
 }));
 
 export const questsRequirements = mysqlTable("quests_requirements", {
@@ -1486,8 +1521,15 @@ export const servers = mysqlTable("servers", {
 			.default('0.0.0.0')
 			.notNull(),
 
+	port:
+		int("port", {
+			unsigned: true
+		})
+			.default(5588)
+			.notNull(),
+
 	message_of_the_day:
-		text("messageOfTheDay")
+		text("message_of_the_day")
 			.notNull(),
 
 	playerCount:
@@ -1529,29 +1571,10 @@ export const servers = mysqlTable("servers", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
-
-export const settingsLogin = mysqlTable("settings_login", {
-	id: idColumn(),
-
-	name:
-		varchar("name", {
-			length: 64
-		})
-			.default('')
-			.notNull(),
-
-	value:
-		varchar("value", {
-			length: 64
-		})
-			.default('')
-			.notNull(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name),
+	unique2: unique().on(table.ip, table.port),
+}));
 
 export const settingsCoreValues = mysqlTable("settings_core_values", {
 	id: idColumn(),
@@ -1574,9 +1597,11 @@ export const settingsCoreValues = mysqlTable("settings_core_values", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
-export const settingsLevels = mysqlTable("settingsLevels", {
+export const settingsLevels = mysqlTable("settings_levels", {
 	level: idColumn(`level`),
 
 	requiredExperience:
@@ -1604,6 +1629,30 @@ export const settingsLevels = mysqlTable("settingsLevels", {
 
 	dateCreated: dateCreatedColumn,
 });
+
+export const settingsLogin = mysqlTable("settings_login", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	value:
+		varchar("value", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
 export const shops = mysqlTable("shops", {
 	id: idColumn(),
@@ -1638,11 +1687,38 @@ export const shops = mysqlTable("shops", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
 export const shopsRelations = relations(shops, ({ many }) => ({
 	shopItems: many(shopsItems),
-	shopLocations: many(shopsLocations),
+	shopLocations: many(shopsAreas),
+}));
+
+export const shopsAreas = mysqlTable("shops_areas", {
+	id: idColumn(),
+
+	shopId: shopIdColumn,
+
+	areaId: areaIdColumn,
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+}, (table) => ({
+	unique: unique().on(table.shopId, table.areaId)
+}));
+
+export const shopsAreasRelations = relations(shopsAreas, ({ one }) => ({
+	shop: one(shops, {
+		fields: [shopsAreas.shopId],
+		references: [shops.id],
+	}),
+	area: one(areas, {
+		fields: [shopsAreas.areaId],
+		references: [areas.id],
+	}),
 }));
 
 export const shopsItems = mysqlTable("shops_items", {
@@ -1662,7 +1738,9 @@ export const shopsItems = mysqlTable("shops_items", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.shopId, table.itemId)
+}));
 
 export const shopsItemsRelations = relations(shopsItems, ({ one }) => ({
 	shop: one(shops, {
@@ -1672,29 +1750,6 @@ export const shopsItemsRelations = relations(shopsItems, ({ one }) => ({
 	item: one(items, {
 		fields: [shopsItems.itemId],
 		references: [items.id],
-	}),
-}));
-
-export const shopsLocations = mysqlTable("shops_locations", {
-	id: idColumn(),
-
-	shopId: shopIdColumn,
-
-	mapId: mapIdColumn,
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
-export const shopsLocationsRelations = relations(shopsLocations, ({ one }) => ({
-	shop: one(shops, {
-		fields: [shopsLocations.shopId],
-		references: [shops.id],
-	}),
-	map: one(maps, {
-		fields: [shopsLocations.mapId],
-		references: [maps.id],
 	}),
 }));
 
@@ -1896,21 +1951,6 @@ export const skillsAurasEffectsRelations = relations(skillsAurasEffects, ({ one 
 	})
 }));
 
-export const typesItems = mysqlTable("types_items", {
-	id: idColumn(),
-
-	name:
-		varchar("name", {
-			length: 64
-		})
-			.default('')
-			.notNull(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
 export const typesElements = mysqlTable("types_elements", {
 	id: idColumn(),
 
@@ -1924,9 +1964,11 @@ export const typesElements = mysqlTable("types_elements", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
-export const typesRarities = mysqlTable("types_rarities", {
+export const typesItems = mysqlTable("types_items", {
 	id: idColumn(),
 
 	name:
@@ -1936,10 +1978,19 @@ export const typesRarities = mysqlTable("types_rarities", {
 			.default('')
 			.notNull(),
 
+	equipment:
+		varchar("equipment", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name, table.equipment)
+}));
 
 export const typesRaces = mysqlTable("types_races", {
 	id: idColumn(),
@@ -1954,7 +2005,26 @@ export const typesRaces = mysqlTable("types_races", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
+
+export const typesRarities = mysqlTable("types_rarities", {
+	id: idColumn(),
+
+	name:
+		varchar("name", {
+			length: 64
+		})
+			.default('')
+			.notNull(),
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
 export const typesStats = mysqlTable("types_stats", {
 	id: idColumn(),
@@ -1976,7 +2046,9 @@ export const typesStats = mysqlTable("types_stats", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.name)
+}));
 
 export const users = mysqlTable("users", {
 	id: idColumn(),
@@ -1989,13 +2061,13 @@ export const users = mysqlTable("users", {
 			.notNull(),
 
 	password:
-		varchar("username", {
+		varchar("password", {
 			length: 64
 		})
 			.notNull(),
 
 	token:
-		varchar("username", {
+		varchar("token", {
 			length: 64
 		})
 			.default('null'),
@@ -2262,7 +2334,12 @@ export const users = mysqlTable("users", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	index: index("users_username_token_index").on(table.username, table.token),
+	index2: index("users_username_password_index").on(table.username, table.password),
+	index3: index("users_email_index").on(table.email),
+	uniqueIndex: uniqueIndex("users_username_unique_index").on(table.username),
+}));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
 	access: one(accesses, {
@@ -2278,7 +2355,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 		references: [guilds.id],
 	}),
 	currentServer: one(servers, {
-		fields: [users.current_server_id],
+		fields: [users.currentServerId],
 		references: [servers.id],
 	}),
 	hair: one(hairs, {
@@ -2317,7 +2394,9 @@ export const usersFactions = mysqlTable("users_factions", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique("users_factions_user_id_faction_id_index").on(table.userId, table.factionId),
+}));
 
 export const usersFactionsRelations = relations(usersFactions, ({ one }) => ({
 	user: one(users, {
@@ -2340,7 +2419,9 @@ export const usersFriends = mysqlTable("users_friends", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.userId, table.friendId),
+}));
 
 export const usersFriendsRelations = relations(usersFriends, ({ one }) => ({
 	user: one(users, {
@@ -2384,7 +2465,9 @@ export const usersInventory = mysqlTable("users_inventory", {
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
-});
+}, (table) => ({
+	unique: unique().on(table.userId, table.itemId),
+}));
 
 export const usersInventoryRelations = relations(usersInventory, ({ one }) => ({
 	user: one(users, {
