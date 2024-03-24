@@ -1,8 +1,16 @@
-import type Room from "../room/Room.ts";
+import Room from "../room/Room.ts";
 import type Player from "../player/Player.ts";
 import Helper from "../util/Helper.ts";
+import type IArea from "../database/interfaces/IArea.ts";
+import database from "../database/drizzle/database.ts";
+import {eq} from "drizzle-orm";
+import {areas} from "../database/drizzle/schema.ts";
+import JSONArray from "../util/json/JSONArray.ts";
+import JSONObject from "../util/json/JSONObject.ts";
 
 export class RoomController {
+
+	private static count: number = 0;
 
 	private static roomList: Map<number, Room> = new Map<number, Room>;
 
@@ -27,8 +35,8 @@ export class RoomController {
 		return RoomController.roomList;
 	}
 
-	public static getRoomByName(name: string): Room | null {
-		let found: Room | null = null;
+	public static getRoomByName(name: string): Room | undefined {
+		let found: Room | undefined = undefined;
 
 		for (let room of RoomController.roomList.values()) {
 			if (room.name !== name) {
@@ -52,7 +60,7 @@ export class RoomController {
 
 				oldRoom.removePlayer(player);
 
-				if (oldRoom.playersCount <= 0) {
+				if (oldRoom.players.size <= 0) {
 					RoomController.removeRoom(oldRoom.id);
 				}
 			}
@@ -88,6 +96,78 @@ export class RoomController {
 
 	public static getRoomCount(): number {
 		return RoomController.roomList.size;
+	}
+
+	public static async look(name: string): Promise<Room | undefined> {
+		for (let i: number = 0; i < 20; i++) {
+			const room: Room | undefined = RoomController.getRoomByName(`${name}-${i}`);
+
+			if (!room) {
+				break;
+			}
+
+			if (room.isNotFull) {
+				return room;
+			}
+		}
+
+		return RoomController.createRoom(name);
+	}
+
+	public static async createRoom(name: string): Promise<Room | undefined> {
+		const mapName: string = name.split("-")[0] == "house" ? name : name.split("-")[0];
+
+		const data: IArea | undefined = await database.query.areas.findFirst({
+			where: eq(areas.name, mapName),
+			with: {
+				cells: true,
+				items: {
+					with: {
+						item: true
+					}
+				},
+				monsters: {
+					with: {
+						monster: true,
+					}
+				},
+			}
+		});
+
+		if (!data) {
+			///player.network.writeArray("warning", "\"" + mapName + "\" is not a recognized map name.");
+			return undefined;
+		}
+
+		const room: Room = new Room(data, RoomController.count++, "");
+
+		if (room.data.is_pvp) {
+			room.isPvPDone = false;
+
+			room.blueTeamScore = 0;
+			room.redTeamScore = 0;
+
+			room.blueTeamName = "Team Blue";
+			room.redTeamName = "Team Red";
+
+			const PVPFactions: JSONArray = new JSONArray();
+
+			PVPFactions.add(
+				new JSONObject()
+					.element("id", 8)
+					.element("sName", "Blue")
+			);
+
+			PVPFactions.add(
+				new JSONObject()
+					.element("id", 7)
+					.element("sName", "Red")
+			);
+
+			room.pvpFactions = PVPFactions;
+		}
+
+		return room;
 	}
 
 }
