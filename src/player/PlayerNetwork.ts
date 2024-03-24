@@ -13,9 +13,10 @@ export default class PlayerNetwork implements IDispatchable {
 	public player: Player | undefined;
 	private chunk: string = "";
 
+	private _name!: string;
+
 	constructor(
 		private readonly _id: number,
-		private readonly _name: string,
 		public readonly socket: Socket
 	) {
 	}
@@ -26,15 +27,6 @@ export default class PlayerNetwork implements IDispatchable {
 
 	public get name(): string {
 		return this._name;
-	}
-
-	public loginFail() {
-		this.writeObject(
-			new JSONObject()
-				.element("cmd", "loginResponse")
-				.element("success", false)
-				.element("message", `User data for '${this.player?.username}' could not be retrieved.<br>Please contact the development staff to resolve the issue.`)
-		);
 	}
 
 	public data(data: any): void {
@@ -50,7 +42,7 @@ export default class PlayerNetwork implements IDispatchable {
 
 				this.decoder.decode(string);
 			} catch (error) {
-				logger.error(`[PlayerNetwork] received error ${error}`);
+				logger.error(`[PlayerNetwork] received error`, error);
 			}
 
 			this.chunk = this.chunk.substring(d_index + DELIMITER.length);
@@ -86,12 +78,27 @@ export default class PlayerNetwork implements IDispatchable {
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
+		if (ignored.network.id == this.id) {
+			return;
+		}
+
+		this.write(data);
 	}
 
 	public writeObjectExcept(ignored: Player, data: JSONObject): void {
+		if (ignored.network.id == this.id) {
+			return;
+		}
+
+		this.writeObject(data);
 	}
 
 	public writeArrayExcept(ignored: Player, ...data: any[]): void {
+		if (ignored.network.id == this.id) {
+			return;
+		}
+
+		this.writeArray(data);
 	}
 
 }

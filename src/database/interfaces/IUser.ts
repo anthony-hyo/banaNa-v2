@@ -29,7 +29,7 @@ export default interface IUser {
 
 	experience: number;
 
-	guildId: number;
+	guildId: number | null;
 	guildRank: number;
 
 	activationFlag: number;

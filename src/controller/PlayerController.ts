@@ -5,9 +5,8 @@ import GameController from "./GameController";
 import type {Socket} from "net";
 import PlayerNetwork from "../player/PlayerNetwork.ts";
 import database from "../database/drizzle/database.ts";
-import {and, eq, sql} from "drizzle-orm";
-import {servers, users} from "../database/drizzle/schema.ts";
-import ConfigData from "../config/ConfigData.ts";
+import {eq} from "drizzle-orm";
+import {users} from "../database/drizzle/schema.ts";
 
 export default class PlayerController {
 
@@ -15,15 +14,16 @@ export default class PlayerController {
 
 	public static login(playerNetwork: PlayerNetwork, username: string, token: string): void {
 		database.query.users
-			.findFirst({
+			/*.findFirst({
 				where: and(
 					eq(users.username, username),
 					eq(users.token, token)
 				)
-			})
+			})*/
+			.findFirst()
 			.then((user: IUser | undefined): void => {
 				if (user === undefined) {
-					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `User Data for '${username}' could not be retrieved. Please contact the staff to resolve the issue.`);
+					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `Player Data for '${username}' could not be retrieved.<br>Please contact the staff to resolve the issue.`);
 
 					this.removeConnection(username);
 					return;
@@ -36,8 +36,11 @@ export default class PlayerController {
 					})
 					.where(eq(users.id, user.id));
 
-				if (!GameController.instance().server.online || (GameController.instance().server.staff && user.access < 40)) {
-					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `A game update/maintenance is currently on-going. Only the staff can enter the server at the moment.`);
+				console.log(GameController.instance().server.isOnline);
+				console.log((GameController.instance().server.isStaffOnly && user.accessId < 40));
+
+				if (!GameController.instance().server.isOnline || (GameController.instance().server.isStaffOnly && user.accessId < 40)) {
+					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `A game update/maintenance is currently ongoing.<br>Only the staff can enter the server at the moment.`);
 
 					this.removeConnection(username);
 					return;
@@ -46,20 +49,12 @@ export default class PlayerController {
 				const exitingPlayer: Player | undefined = this.findByUsername(username);
 
 				if (exitingPlayer !== undefined) {
-					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `User Data for '${username}' could not be retrieved. Please contact the staff to resolve the issue.`);
+					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `You logged in from a different location.`);
 
 					this.removeConnection(username);
 				}
 
 				const player: Player = new Player(user, playerNetwork);
-
-				database
-					.update(servers)
-					.set({
-						online: sql`${servers.count}
-                        + 1`
-					})
-					.where(eq(servers.name, ConfigData.SERVER_NAME));
 
 				//["loginResponse","-1","true","25860","KATHLEEN","","2024-03-13T00:46:57","SETTINGS LOGIN","3.00941"]
 				playerNetwork.writeArray(`loginResponse`, `true`, player.network.id, user.username, `Message of the day`, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941");
@@ -67,7 +62,7 @@ export default class PlayerController {
 				database
 					.update(users)
 					.set({
-						currentServerId: null
+						currentServerId: 1
 					})
 					.where(eq(users.id, user.id));
 			});
