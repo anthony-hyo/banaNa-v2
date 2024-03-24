@@ -10,7 +10,7 @@ export default class Scheduler {
 
 		date.setSeconds(date.getSeconds() + seconds);
 
-		const newTask: schedule.Job = schedule.scheduleJob(date, task.run);
+		const newTask: schedule.Job = schedule.scheduleJob(date, task.run.bind(task));
 
 		this.tasks.push(newTask);
 
@@ -18,7 +18,7 @@ export default class Scheduler {
 	}
 
 	public static repeated(task: ITask, intervalInSeconds: number): schedule.Job | undefined {
-		const newTask: schedule.Job = schedule.scheduleJob(`*/${intervalInSeconds} * * * * *`, task.run);
+		const newTask: schedule.Job = schedule.scheduleJob(`*/${intervalInSeconds} * * * * *`, task.run.bind(task));
 
 		this.tasks.push(newTask);
 
