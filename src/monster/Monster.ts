@@ -1,4 +1,4 @@
-import type IMapMonster from "../database/interfaces/IMapMonster.ts";
+import type IAreaMonster from "../database/interfaces/IAreaMonster.ts";
 import type IMonster from "../database/interfaces/IMonster.ts";
 import type IMonsterDrop from "../database/interfaces/IMonsterDrop.ts";
 import type ISkillAura from "../database/interfaces/ISkillAura.ts";
@@ -15,6 +15,8 @@ import type Room from "../room/Room.ts";
 import type Stats from "../world/stats/Stats.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
 import GameController from "../controller/GameController.ts";
+import type IMonsterData from "../interfaces/monster/IMonsterData.ts";
+import type AvatarStatus from "../avatar/AvatarStatus.ts";
 
 export class Monster implements IDispatchable {
 
@@ -31,7 +33,10 @@ export class Monster implements IDispatchable {
 	public rand: Random;
 	public room: Room;
 
-	constructor(mapMon: IMapMonster, room: Room) {
+	public readonly data: IMonsterData;
+	public readonly status: AvatarStatus;
+
+	constructor(mapMon: IAreaMonster, room: Room) {
 		this.monsterId = mapMon.monsterId;
 		this.mapId = mapMon.monMapId;
 		this.frame = mapMon.frame;
@@ -266,26 +271,6 @@ export class Monster implements IDispatchable {
 
 	public getState(): number {
 		return this.state;
-	}
-
-	public getMapId(): number {
-		return this.mapId;
-	}
-
-	public getFrame(): string {
-		return this.frame;
-	}
-
-	public getMonsterId(): number {
-		return this.monsterId;
-	}
-
-	public getHealth(): number {
-		return this.health;
-	}
-
-	public getMana(): number {
-		return this.mana;
 	}
 
 	public getRoom(): Room {
