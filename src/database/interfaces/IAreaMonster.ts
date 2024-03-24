@@ -7,7 +7,7 @@ export default interface IAreaMonster {
 	areaId: number;
 	monsterId: number;
 
-	monsterMapId: number;
+	monsterAreaId: number;
 
 	frame: string;
 
