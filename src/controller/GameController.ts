@@ -1,18 +1,16 @@
-import type IDispatchable from "../interfaces/IDispatchable.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 import database from "../database/drizzle/database.ts";
-import Helper from "../util/Helper.ts";
 import {eq} from "drizzle-orm";
 import {servers} from "../database/drizzle/schema.ts";
 import Config from "../config/Config.ts";
 import type Player from "../player/Player.ts";
-import Player from "../player/Player.ts";
 import WarzoneQueue from "../scheduler/tasks/WarzoneQueue.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
 import {ACGiveaway} from "../scheduler/tasks/ACGiveaway.ts";
 import Network from "../network/Network.ts";
 import type IServer from "../database/interfaces/IServer.ts";
 import logger from "../util/Logger.ts";
+import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
 
 export default class GameController implements IDispatchable {
 
@@ -63,26 +61,40 @@ export default class GameController implements IDispatchable {
 	}
 
 	public async init(): Promise<void> {
-		logger.info(`settings initialized.`);
-
-		this.settings = (await database.query.settingsLogin.findMany())
-			.map(Helper.columnsToString)
+		this.settings = (await database.query.settingsLogin.findMany({
+			columns: {
+				name: true,
+				value: true
+			}
+		}))
+			.map(({ name, value }) => `${name}=${value}`)
 			.join(',');
 
-		logger.info(`server initialized.`);
+		logger.info(`Settings initialized.`);
+
+		await database
+			.update(servers)
+			.set({
+				isOnline: true
+			})
+			.where(eq(servers.id, Config.SERVER_ID));
 
 		this.server = await database.query.servers
 			.findFirst({
 				where: eq(servers.id, Config.SERVER_ID)
 			});
 
-		logger.info(`network initialized.`);
-		this.network = new Network();
+		logger.info(`Server initialized.`);
 
-		logger.info(`scheduler initialized.`);
+		this.network = await new Network()
+			.init();
+
+		logger.info(`Network initialized.`);
 
 		Scheduler.repeated(new WarzoneQueue(), 5);
 		Scheduler.repeated(new ACGiveaway(), 1800);
+
+		logger.info(`Scheduler initialized.`);
 	}
 
 	public serverMessage(message: String): void {
@@ -93,18 +105,23 @@ export default class GameController implements IDispatchable {
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
+		logger.info(`writeExcept.`, data);
 	}
 
 	public writeObject(data: JSONObject): void {
+		logger.info(`writeObject.`, data);
 	}
 
 	public writeObjectExcept(ignored: Player, data: JSONObject): void {
+		logger.info(`writeObjectExcept.`, data);
 	}
 
 	public writeArray(...data: any[]): void {
+		logger.info(`writeArray.`, data);
 	}
 
 	public writeArrayExcept(ignored: Player, ...data: any[]): void {
+		logger.info(`writeArrayExcept.`, data);
 	}
 
 }

@@ -1564,6 +1564,11 @@ export const servers = mysqlTable("servers", {
 			.default(false)
 			.notNull(),
 
+	isStaffOnly:
+		boolean("is_staff_only")
+			.default(false)
+			.notNull(),
+
 	chatType:
 		tinyint("chat_type", {
 			unsigned: true

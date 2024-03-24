@@ -5,16 +5,12 @@ import PlayerNetwork from "../player/PlayerNetwork";
 
 export default class Network {
 
-	private static _instance: Network;
-
-	private readonly server: Server;
-
 	private count: number = 0;
 
-	constructor() {
-		this.server = net.createServer();
+	public async init(): Promise<this> {
+		const server: Server = net.createServer();
 
-		this.server.addListener('connection', (socket: Socket): void => {
+		server.addListener('connection', (socket: Socket): void => {
 			socket.setEncoding('utf-8');
 
 			logger.warn(`[Network] new connection from: ${socket.remoteAddress}`);
@@ -30,19 +26,13 @@ export default class Network {
 			});
 		});
 
-		this.server.listen({
+		server.listen({
 			port: 5588,
 			backlog: 10,
 			exclusive: false
-		}, () => logger.silly(`Server online`));
-	}
+		});
 
-	public static instance(): Network {
-		if (!this._instance) {
-			this._instance = new Network();
-		}
-
-		return this._instance;
+		return this;
 	}
 
 }
