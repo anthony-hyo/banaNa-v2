@@ -1,32 +1,41 @@
-const winston = require('winston');
+import type ILogger from "../interfaces/util/ILogger.ts";
 
-const logger = winston.createLogger({
-	level: 'debug',
-	transports: [
-		new winston.transports.File({
-			handleExceptions: true,
-			filename: `./log/server.log`,
-			format: winston.format.simple()
-		}),
-		new winston.transports.Console({
-			handleExceptions: true,
-			colorize: true,
-			format: winston.format.combine(
-				winston.format.colorize({
-					all: true
-				}),
-				winston.format.timestamp({
-					format: "YY-MM-DD HH:MM:SS"
-				}),
-				winston.format.printf((info: {
-					label: any;
-					timestamp: any;
-					level: any;
-					message: any
-				}): string => `(${info.timestamp}) ${info.level} : ${info.message}`)
-			),
-		}),
-	],
-});
+const logger: ILogger = {
+	info: (...args: any[]) => {
+		console.log('\x1b[36m%s\x1b[0m %s', `[${new Date().toLocaleString()}]`, ...args);
+
+		if (args.length > 0 && args[args.length - 1] instanceof Error) {
+			console.error((args[args.length - 1] as Error).stack);
+		}
+	},
+	error: (...args: any[]) => {
+		console.error('\x1b[31m%s\x1b[0m %s', `[${new Date().toLocaleString()}]`, ...args);
+
+		if (args.length > 0 && args[args.length - 1] instanceof Error) {
+			console.error((args[args.length - 1] as Error).stack);
+		}
+	},
+	warn: (...args: any[]) => {
+		console.warn('\x1b[33m%s\x1b[0m %s', `[${new Date().toLocaleString()}]`, ...args);
+
+		if (args.length > 0 && args[args.length - 1] instanceof Error) {
+			console.error((args[args.length - 1] as Error).stack);
+		}
+	},
+	silly: (...args: any[]) => {
+		console.log('\x1b[35m%s\x1b[0m %s', `[${new Date().toLocaleString()}]`, ...args);
+
+		if (args.length > 0 && args[args.length - 1] instanceof Error) {
+			console.error((args[args.length - 1] as Error).stack);
+		}
+	},
+	debug: (...args: any[]) => {
+		console.debug('\x1b[34m%s\x1b[0m %s', `[${new Date().toLocaleString()}]`, ...args);
+
+		if (args.length > 0 && args[args.length - 1] instanceof Error) {
+			console.error((args[args.length - 1] as Error).stack);
+		}
+	},
+};
 
 export default logger;

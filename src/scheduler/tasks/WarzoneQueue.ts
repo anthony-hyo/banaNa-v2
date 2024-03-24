@@ -43,7 +43,7 @@ export default class WarzoneQueue implements ITask {
 				}
 			}
 		} catch (error: any) {
-			logger.warn(error);
+			logger.error(error);
 		}
 	}
 

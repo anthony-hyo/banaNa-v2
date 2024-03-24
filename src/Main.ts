@@ -10,6 +10,8 @@ export class Main {
 	public static SINGLETON: Main;
 
 	constructor() {
+		logger.info(`starting..`);
+
 		this.init()
 			.then(() => logger.info(`>>> >>> started! <<< <<<`));
 
