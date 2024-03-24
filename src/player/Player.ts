@@ -29,6 +29,7 @@ import PlayerController from "../controller/PlayerController.ts";
 import PartyController from "../party/PartyController.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
 import type IGuild from "../database/interfaces/IGuild.ts";
+import {RoomController} from "../controller/RoomController.ts";
 
 export default class Player {
 
@@ -972,6 +973,52 @@ export default class Player {
 				.element("cmd", "aura+p")
 				.element("tInf", "p:" + this.network.id),
 		);
+	}
+
+	public checkLimits(room: Room): boolean {
+		const areaName: string = room.name.split("-")[0] == "house" ? room.name : room.name.split("-")[0];
+
+		if (room.data.required_level > parseInt(this.properties.get(PlayerConst.LEVEL))) {
+			this.network.writeArray("warning", "\"" + areaName + "\" requires level " + room.data.required_level + " and above to enter.");
+			return false;
+		} else if (room.data.is_pvp) {
+			this.network.writeArray("warning", "\"" + areaName + "\" is locked zone.");
+			return true;
+		} /*else if (room.data.is_staff_only && !(this.isAdmin() || this.isModerator())) {
+			this.network.writeArray("warning", "\"" + areaName + "\" is not a recognized map name.");
+			return false;
+		}*/ else if (room.data.is_upgrade_only && parseInt(this.properties.get(PlayerConst.UPGRADE_DAYS)) <= 0) {
+			this.network.writeArray("warning", "\"" + areaName + "\" is member only.");
+			return false;
+		} else if (room.players.has(this.network.id)) {
+			this.network.writeArray("warning", "Cannot join a room you are currently in!");
+			return false;
+		} /*else if (area instanceof Hall && (area as Hall).getGuildId() != parseInt(this.properties.get(PlayerConst.GUILD_ID))) {
+			this.network.writeArray("warning", "You cannot access other guild halls!");
+			return false
+		}*/ else if (room.players.size >= room.data.max_players) {
+			this.network.writeArray("warning", "Room join failed, destination room is full.");
+			return false;
+		}
+
+		return true;
+	}
+
+	public joinRoom(player: Player, frame: string = "Enter", pad: string = "Spawn"): void {
+		if (player == null) {
+			return;
+		}
+
+		player.properties.set(PlayerConst.FRAME, frame);
+		player.properties.set(PlayerConst.PAD, pad);
+		player.properties.set(PlayerConst.TX, 0);
+		player.properties.set(PlayerConst.TY, 0);
+
+		RoomController.joinRoom(player, this.room!);
+
+		this.room!.moveToArea(player);
+
+		player.network.writeArray("server", "You joined \"" + this.room!.name + "\"!");
 	}
 
 }

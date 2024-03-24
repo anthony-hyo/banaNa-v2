@@ -3,29 +3,38 @@ import JSONObject from "../util/json/JSONObject.ts";
 import type Player from "../player/Player.ts";
 import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
-import {maps, users} from "../database/drizzle/schema.ts";
+import {users} from "../database/drizzle/schema.ts";
 import type IArea from "../database/interfaces/IArea.ts";
-import type RoomData from "./RoomData.ts";
 import PlayerConst from "../player/PlayerConst.ts";
 import {Monster} from "../monster/Monster.ts";
 import JSONArray from "../util/json/JSONArray.ts";
-import IMonster from "../database/interfaces/IMonster.ts";
 import GameController from "../controller/GameController.ts";
-import RoomConst from "./RoomConst.ts";
 
 export default class Room implements IDispatchable {
 
-	public static readonly NONE: Room = new Room(-1, 1);
-	public data!: RoomData;
 	private readonly _players: Map<number, Player> = new Map<number, Player>();
+	private readonly _monsters: Map<number, Monster> = new Map<number, Monster>();
 
-	public properties: Map<string, any> = new Map<string, any>();
+	public isPvPDone: any;
+
+	public blueTeamName: any;
+	public redTeamName: any;
+
+	public blueTeamScore: any;
+	public redTeamScore: any;
+
+	public pvpFactions: any;
 
 	constructor(
+		public readonly data: IArea,
 		private readonly _id: number,
-		private readonly _databaseId: number,
-		private readonly _name: string
+		private readonly _name: string,
 	) {
+		if (this.data.monsters) {
+			for (const monster of this.data.monsters) {
+				this.monsters.set(monster.monsterAreaId, new Monster(monster, this));
+			}
+		}
 	}
 
 	public get id(): number {
@@ -33,7 +42,7 @@ export default class Room implements IDispatchable {
 	}
 
 	public get databaseId(): number {
-		return this._databaseId;
+		return this.data.id;
 	}
 
 	public get name(): string {
@@ -44,18 +53,31 @@ export default class Room implements IDispatchable {
 		return this._players;
 	}
 
-	public get playersCount(): number {
-		return this._players.size;
+	public get monsters(): Map<number, Monster> {
+		return this._monsters;
 	}
 
 	public async dataAsync(): Promise<IArea> {
 		return (
-			await database.query.maps
+			await database.query.areas
 				.findFirst({
 					where: eq(users.id, this.databaseId)
 				})
 		)!;
 	}
+
+
+	public get isFull(): boolean {
+		return this.players.size >= this.data.max_players;
+	}
+
+	public get isNotFull(): boolean {
+		return !this.isFull;
+	}
+
+
+
+
 
 	public addPlayer(player: Player): void {
 		this._players.set(player.network.id, player);
@@ -66,342 +88,129 @@ export default class Room implements IDispatchable {
 		this._players.delete(player.network.id);
 	}
 
-
 	public exit(player: Player): void {
-		this.writeArrayExcept(player, "exitArea", String(player.networkid()), player.username());
+		this.writeArrayExcept(player, "exitArea", String(player.network.id), player.username);
 
-		if (this.world.areas.get(this.getName().split("-")[0]) != null && this.world.areas.get(this.getName().split("-")[0]).isPvP()) {
-			this.writeArrayExcept(player, "server", player.username() + " has left the match.");
+		if (this.data.is_pvp) {
+			this.writeArrayExcept(player, "server", player.username + " has left the match.");
 		}
-	}
-
-	public basicRoomJoin(player: Player, roomName: string, roomFrame: string = "Enter", roomPad: string = "Spawn"): void {
-		const mapName: string = roomName.split("-")[0];
-		if (!this.world.areas.containsKey(mapName)) {
-			player.network.writeArray("warning", "\"" + mapName + "\" is not a recognized map name.");
-			return;
-		}
-
-		let roomToJoin: Room = this.lookForRoom(roomName);
-
-		if (roomToJoin == null) {
-			roomToJoin = this.generateRoom(roomName);
-		}
-
-		if (this.checkLimits(roomToJoin, player) == RoomConst.ROOM_OK) {
-			this.joinRoom(roomToJoin, player, roomFrame, roomPad);
-		}
-	}
-
-	public joinRoom(player: Player, frame: string = "Enter", pad: string = "Spawn"): void {
-		if (player == null) {
-			return;
-		}
-
-		player.properties.set(PlayerConst.FRAME, frame);
-		player.properties.set(PlayerConst.PAD, pad);
-		player.properties.set(PlayerConst.TX, 0);
-		player.properties.set(PlayerConst.TY, 0);
-
-		this.helper.joinRoom(player, player.room, this.getId(), true, "", false, true);
-
-		this.moveToArea(player);
-
-		player.network.writeArray("server", "You joined \"" + this.getName() + "\"!");
-	}
-
-	public lookForRoom(name: string): Room { //TODO delete
-		let room: Room = this.zone.getRoomByName(name);
-
-		if (room != null) {
-			return room;
-		} else {
-			const arr: string[] = name.split("-");
-			const areaName: string = arr[0];
-
-			if (arr.length > 1) {
-				try {
-					const roomKey: number = parseInt(arr[1]);
-
-					if (roomKey > 90000) {
-						return this.generateRoom(name);
-					}
-				} catch (nre) {
-				}
-			}
-
-			for (let i: number = 1; i < 1000; i++) {
-				const search: string = areaName + "-" + i;
-				const test: Room = this.zone.getRoomByName(search);
-
-				if (test != null) {
-					if (test.getMaxUsers() > test.howManyUsers()) {
-						return test;
-					}
-				}
-			}
-		}
-
-		return null;
-	}
-
-	public checkLimits(player: Player): number {
-		const areaName: string = this.getName().split("-")[0].equals("house") ? this.getName() : this.getName().split("-")[0];
-
-		if (this.data.required_level > parseInt(player.properties.get(PlayerConst.LEVEL))) {
-			player.network.writeArray("warning", "\"" + areaName + "\" requires level " + this.data.required_level + " and above to enter.");
-			return RoomConst.ROOM_LEVEL_LIMIT;
-		} else if (this.data.is_pvp) {
-			player.network.writeArray("warning", "\"" + areaName + "\" is locked zone.");
-			return RoomConst.ROOM_LOCKED;
-		} else if (this.data.is_staff_only && !(player.isAdmin() || player.isModerator())) {
-			player.network.writeArray("warning", "\"" + areaName + "\" is not a recognized map name.");
-			return RoomConst.ROOM_STAFF_ONLY;
-		} else if (this.data.is_upgrade_only && parseInt(player.properties.get(PlayerConst.UPGRADE_DAYS)) <= 0) {
-			player.network.writeArray("warning", "\"" + areaName + "\" is member only.");
-			return RoomConst.ROOM_REQUIRE_UPGRADE;
-		} else if (this.players.has(player.network.id)) {
-			player.network.writeArray("warning", "Cannot join a room you are currently in!");
-			return RoomConst.ROOM_USER_INSIDE;
-		} else if (area instanceof Hall && (area as Hall).getGuildId() != parseInt(player.properties.get(PlayerConst.GUILD_ID))) {
-			player.network.writeArray("warning", "You cannot access other guild halls!");
-			return RoomConst.ROOM_LOCKED;
-		} else if (this.playersCount >= this.data.max_players) {
-			player.network.writeArray("warning", "Room join failed, destination room is full.");
-			return RoomConst.ROOM_FULL;
-		}
-
-		return RoomConst.ROOM_OK;
-	}
-
-	public generateRoom(name: string): Room { //TODO: delete
-		if (name.includes("-")) {
-			try {
-				const roomKey: number = parseInt(name.split("-")[1]);
-				if (roomKey >= 90000) {
-					const generatedName: string = name.split("-")[0] + "-" + (this.privKeyGenerator.nextInt(9999) + 90000);
-					return this.createRoom(generatedName);
-				} else if (roomKey >= 1000) {
-					const generatedName: string = name.split("-")[0] + "-" + roomKey;
-					return this.createRoom(generatedName);
-				}
-			} catch (nre) {
-			}
-		}
-
-		const areaName: string = name.split("-")[0];
-		for (let i: number = 1; i < 1000; i++) {
-			const search: string = areaName + "-" + i;
-			const test: Room = this.zone.getRoomByName(search);
-			if (test == null) {
-				return this.createRoom(search);
-			}
-		}
-
-		return null;
-	}
-
-	public static async createRoom(name: string): Promise<Room> {//TODO: move
-		const map: Map<string, string> = new Map<string, string>();
-
-		const mapName: string = name.split("-")[0] == "house" ? name : name.split("-")[0];
-
-		const data: IArea | undefined = await database.query.maps.findFirst({
-			where: eq(maps.name, mapName),
-			with: {
-				mapCells: true,
-				mapItems: {
-					with: {
-						item: true
-					}
-				},
-				mapMonsters: {
-					with: {
-						monster: true,
-					}
-				},
-			}
-		});
-
-		map.set("isGame", "false");
-		map.set("maxU", room.data.max_players);
-		map.set("name", name);
-		map.set("uCount", "false");
-
-		const room: Room = room.helper.createRoom(room.zone, map, null, false, true);
-
-		const monsters: Map<number, Monster> = new Map<number, Monster>();
-
-		if (room.data.monsters!.length != 0) {
-			for (const mapMonster of room.data.monsters!) {
-				monsters.set(mapMonster.monMapId, new Monster(mapMonster, room));
-			}
-		}
-
-		if (room.data.is_pvp) {
-			room.properties.set(RoomConst.PVP_DONE, false);
-			room.properties.set(RoomConst.BLUE_TEAM_SCORE, 0);
-			room.properties.set(RoomConst.RED_TEAM_SCORE, 0);
-
-			room.properties.set(RoomConst.BLUE_TEAM_NAME, "Team Blue");
-
-			room.properties.set(RoomConst.RED_TEAM_NAME, "Team Red\"");
-
-			const PVPFactions: JSONArray = new JSONArray();
-
-			PVPFactions.add(
-				new JSONObject()
-					.element("id", 8)
-					.element("sName", "Blue")
-			);
-
-			PVPFactions.add(
-				new JSONObject()
-					.element("id", 7)
-					.element("sName", "Red")
-			);
-
-			room.properties.set(RoomConst.PVP_FACTIONS, PVPFactions);
-		}
-
-		room.properties.set(RoomConst.MONSTERS, monsters);
-
-		return room;
 	}
 
 	public addPvPScore(score: number, teamId: number): void {
-		if (this.properties.get(RoomConst.PVP_DONE) as boolean) {
+		if (this.isPvPDone) {
 			return;
 		}
 
-		const rScore: number = this.properties.get(RoomConst.RED_TEAM_SCORE) as number;
-		const bScore: number = this.properties.get(RoomConst.BLUE_TEAM_SCORE) as number;
 		switch (teamId) {
 			case 0:
-				this.properties.set(RoomConst.BLUE_TEAM_SCORE, score + bScore >= 1000 ? 1000 : score + bScore);
+				this.blueTeamScore = score + this.blueTeamScore >= 1000 ? 1000 : score + this.blueTeamScore;
 				break;
 			case 1:
-				this.properties.set(RoomConst.RED_TEAM_SCORE, score + rScore >= 1000 ? 1000 : score + rScore);
+				this.redTeamScore = score + this.redTeamScore >= 1000 ? 1000 : score + this.redTeamScore;
 				break;
 			default:
 				break;
 		}
 	}
 
-	public relayPvPEvent(ai: Monster, teamId: number): void {
-		const monster: IMonster = this.world.monsters.get(ai.monsterId);
-		const monName: string = monster.name;
-		const room: Room = ai.getRoom();
-
+	public relayPvPEvent(monster: Monster, teamId: number): void {
 		const pvpe: JSONObject = new JSONObject()
 			.element("cmd", "PVPE")
 			.element("typ", "kill")
 			.element("team", teamId);
 
-		if (monName.includes("Restorer")) {
+		if (monster.data.monster!.name.includes("Restorer")) {
 			pvpe.element("val", "Restorer");
-			this.addPvPScore(room, 50, teamId);
-		} else if (monName.includes("Brawler")) {
+			this.addPvPScore(50, teamId);
+		} else if (monster.data.monster!.name.includes("Brawler")) {
 			pvpe.element("val", "Brawler");
-			this.addPvPScore(room, 25, teamId);
-		} else if (monName.includes("Captain")) {
+			this.addPvPScore(25, teamId);
+		} else if (monster.data.monster!.name.includes("Captain")) {
 			pvpe.element("val", "Captain");
-			this.addPvPScore(room, 1000, teamId);
-		} else if (monName.includes("General")) {
+			this.addPvPScore(1000, teamId);
+		} else if (monster.data.monster!.name.includes("General")) {
 			pvpe.element("val", "General");
-			this.addPvPScore(room, 100, teamId);
-		} else if (monName.includes("Knight")) {
+			this.addPvPScore(100, teamId);
+		} else if (monster.data.monster!.name.includes("Knight")) {
 			pvpe.element("val", "Knight");
-			this.addPvPScore(room, 100, teamId);
+			this.addPvPScore(100, teamId);
 		} else {
-			this.addPvPScore(room, monster.level, teamId);
+			this.addPvPScore(monster.data.monster!.level, teamId);
 		}
 
 		if (pvpe.has("val")) {
-			this.world.send(pvpe, this.getChannellList());
+			this.writeObject(pvpe);
 		}
 	}
 
 	public getPvPResult(room: Room): JSONObject {
-		const pvpcmd: JSONObject = new JSONObject()
+		const pvp: JSONObject = new JSONObject()
 			.element("cmd", "PVPS");
 
-		const bs: JSONObject = new JSONObject();
-		const rs: JSONObject = new JSONObject();
+		if (!this.isPvPDone && (this.redTeamScore >= 1000 || this.blueTeamScore >= 1000)) {
+			pvp.element("cmd", "PVPC");
 
-		const redScore: number = this.properties.get(RoomConst.RED_TEAM_SCORE) as number;
-		const blueScore: number = this.properties.get(RoomConst.BLUE_TEAM_SCORE) as number;
+			let winnerTeamId;
 
-		rs.put("v", redScore);
-		bs.put("v", blueScore);
+			if (this.redTeamScore >= 1000) {
+				winnerTeamId = 1;
 
-		if (!(this.properties.get(RoomConst.PVP_DONE) as boolean) && (redScore >= 1000 || blueScore >= 1000)) {
-			pvpcmd.put("cmd", "PVPC");
+				GameController.instance().serverMessage(`<font color="#ffffff"><a href="http://augoeides.org/?profile=${this.redTeamName}" target="_blank">${this.redTeamName}</a></font> won the match against <font color="#ffffff"><a href="http://infinityarts.co/?profile=${this.blueTeamName}" target="_blank">${this.blueTeamName}</a></font>`);
+			} else if (this.blueTeamScore >= 1000) {
+				winnerTeamId = 0;
 
-			const rName: string = this.properties.get(RoomConst.RED_TEAM_NAME) as string;
-			const bName: string = this.properties.get(RoomConst.BLUE_TEAM_NAME) as string;
-
-			if (redScore >= 1000) {
-				GameController.instance().serverMessage(`<font color="#ffffff"><a href="http://augoeides.org/?profile=${rName}" target="_blank">${rName}</a></font> won the match against <font color="#ffffff"><a href="http://infinityarts.co/?profile=${bName}" target="_blank">${bName}</a></font>`);
-
-				const users: Set<Player> = new Set<Player>();
-
-				for (const user of this.getAllUsers()) {
-					if (user.properties.get(PlayerConst.PVP_TEAM) === 1) {
-						users.add(user);
-					}
-				}
-
-				this.world.scheduleTask(new WarpUser(this.world, users), 5, TimeUnit.SECONDS);
-			} else if (blueScore >= 1000) {
-				GameController.instance().serverMessage(`<font color="#ffffff"><a href="http://augoeides.org/?profile=${bName}" target="_blank">${bName}</a></font> won the match against <font color="#ffffff"><a href="http://infinityarts.co/?profile=${rName}" target="_blank">${rName}</a></font>`);
-
-				const users: Set<Player> = new Set<Player>();
-
-				for (const user of this.getAllUsers()) {
-					if (user.properties.get(PlayerConst.PVP_TEAM) === 0) {
-						users.add(user);
-					}
-				}
-
-				this.world.scheduleTask(new WarpUser(this.world, users), 9, TimeUnit.SECONDS);
+				GameController.instance().serverMessage(`<font color="#ffffff"><a href="http://augoeides.org/?profile=${this.blueTeamName}" target="_blank">${this.blueTeamName}</a></font> won the match against <font color="#ffffff"><a href="http://infinityarts.co/?profile=${this.redTeamName}" target="_blank">${this.redTeamName}</a></font>`);
 			}
 
-			this.properties.set(RoomConst.PVP_DONE, true);
+			//TODO: Optimize
+			const players: Set<Player> = new Set<Player>();
+
+			for (const user of this.players.values()) {
+				if (user.properties.get(PlayerConst.PVP_TEAM) === winnerTeamId) {
+					players.add(user);
+				}
+			}
+
+			//TODO: room warp with players
+
+			this.isPvPDone = true;
 		}
 
 		const pvpScore: JSONArray = new JSONArray();
 
-		pvpScore.add(bs);
-		pvpScore.add(rs);
+		pvpScore.add(
+			new JSONObject()
+				.element("v", this.blueTeamScore)
+		);
 
-		pvpcmd.put("pvpScore", pvpScore);
+		pvpScore.add(
+			new JSONObject()
+				.element("v", this.redTeamScore)
+		);
 
-		return pvpcmd;
+		return pvp
+			.element("pvpScore", pvpScore);
 	}
 
-	private moveToArea(player: Player): void {
-		const mta: JSONObject = new JSONObject();
-		const mapName: string = this.getName().split("-")[0].equals("house") ? this.getName() : this.getName().split("-")[0];
-		const area: IArea = this.world.areas.get(mapName);
+	public moveToArea(player: Player): void {
+		const mapName: string = this.name.split("-")[0] == "house" ? this.name : this.name.split("-")[0];
+
 		const uoBranch: JSONArray = new JSONArray();
 
-		const users: Player[] = this.getAllUsers();
-
-		for (const userInRoom of users) {
-			const userObj: JSONObject = this.world.users.getProperties(userInRoom, room);
-			uoBranch.add(userObj);
+		for (const player of this.players.values()) {
+			uoBranch.add(player.getProperties());
 		}
 
-		mta.element("cmd", "moveToArea");
-		mta.element("areaId", this.getId());
-		mta.element("areaName", this.getName());
-		mta.element("sExtra", "");
-		mta.element("strMapFileName", area.file);
-		mta.element("strMapName", mapName);
-		mta.element("uoBranch", uoBranch);
-		mta.element("monBranch", this.getMonBranch(room, area));
-		mta.element("intType", 2);
+		const moveToArea: JSONObject = new JSONObject()
+			.element("cmd", "moveToArea")
+			.element("areaId", this.id)
+			.element("areaName", this.name)
+			.element("sExtra", "")
+			.element("strMapFileName", this.data.file)
+			.element("strMapName", mapName)
+			.element("uoBranch", uoBranch)
+			.element("monBranch", this.getMonBranch())
+			.element("intType", 2);
 
 		/*if (area instanceof House) {
 			mta.element("houseData", (area as House).getData());
@@ -412,100 +221,95 @@ export default class Room implements IDispatchable {
 			mta.element("strMapName", "guildhall");
 		}*/
 
-		if (area.pvp) {
-			mta
+		if (this.data.is_pvp) {
+			moveToArea
 				.element("pvpTeam", player.properties.get(PlayerConst.PVP_TEAM))
-				.element("PVPFactions", this.properties.get(RoomConst.PVP_FACTIONS));
-
-			const bs: JSONObject = new JSONObject();
-			bs.put("v", this.properties.get(RoomConst.BLUE_TEAM_SCORE));
-
-			const rs: JSONObject = new JSONObject();
-			rs.put("v", this.properties.get(RoomConst.RED_TEAM_SCORE));
+				.element("PVPFactions", this.pvpFactions);
 
 			const pvpScore: JSONArray = new JSONArray();
-			pvpScore.add(bs);
-			pvpScore.add(rs);
 
-			mta.element("pvpScore", pvpScore);
+			pvpScore.add(
+				new JSONObject()
+					.element("v", this.blueTeamScore)
+			);
+
+			pvpScore.add(
+				new JSONObject()
+					.element("v", this.redTeamScore)
+			);
+
+			moveToArea.element("pvpScore", pvpScore);
 		}
 
-		if (area.monsters.length != 0) {
-			mta
-				.element("mondef", this.getMonsterDefinition(area))
-				.element("monmap", this.getMonMap(area));
+		if (this.data.monsters) {
+			moveToArea
+				.element("mondef", this.getMonsterDefinition())
+				.element("monmap", this.getMonMap());
 		}
 
-		player.network.writeObject(mta);
+		player.network.writeObject(moveToArea);
 	}
 
-	private getMonMap(area: IArea): JSONArray {
+	private getMonMap(): JSONArray {
 		const monMap: JSONArray = new JSONArray();
-		for (const mapMonster of area.monsters) {
-			const monInfo: JSONObject = new JSONObject();
 
-			monInfo.put("MonID", String(mapMonster.monsterId));
-			monInfo.put("MonMapID", String(mapMonster.getMonMapId()));
-			monInfo.put("bRed", 0);
-			monInfo.put("intRSS", String(-1));
-			monInfo.put("strFrame", mapMonster.getFrame());
-
-			monMap.add(monInfo);
+		for (const monster of this.monsters.values()) {
+			monMap.add(new JSONObject()
+				.element("MonID", monster.monsterId)
+				.element("MonMapID", monster.data.monsterAreaId)
+				.element("bRed", 0)
+				.element("intRSS", -1)
+				.element("strFrame", monster.data.frame)
+			);
 		}
+
 		return monMap;
 	}
 
-	private getMonsterDefinition(area: IArea): JSONArray {
+	private getMonsterDefinition(): JSONArray {
 		const monDef: JSONArray = new JSONArray();
 
-		for (const mapMonster of area.monsters) {
-			const monInfo: JSONObject = new JSONObject();
-
-			const monster: IMonster = this.world.monsters.get(mapMonster.monsterId);
-
-			monInfo.put("MonID", String(mapMonster.monsterId));
-			monInfo.put("intHP", monster.health);
-			monInfo.put("intHPMax", monster.health);
-			monInfo.put("intLevel", monster.level);
-			monInfo.put("intMP", monster.mana);
-			monInfo.put("intMPMax", monster.mana);
-			monInfo.put("sRace", monster.race);
-			monInfo.put("strBehave", "walk");
-			monInfo.put("strElement", monster.element);
-			monInfo.put("strLinkage", monster.linkage);
-			monInfo.put("strMonFileName", monster.file);
-			monInfo.put("strMonName", monster.name);
-
-			monDef.add(monInfo);
+		for (const monster of this.monsters.values()) {
+			monDef.add(
+				new JSONObject()
+					.element("MonID", monster.monsterId)
+					.element("intHP", monster.status.health)
+					.element("intHPMax", monster.status.healthMax)
+					.element("intLevel", monster.data.monster!.level)
+					.element("intMP", monster.status.mana)
+					.element("intMPMax", monster.status.manaMax)
+					.element("sRace", monster.data.monster!.typeRace!.name)
+					.element("strBehave", "walk")
+					.element("strElement", monster.data.monster!.typeElement!.name)
+					.element("strLinkage", monster.data.monster!.linkage)
+					.element("strMonFileName", monster.data.monster!.file)
+					.element("strMonName", monster.data.monster!.name)
+			);
 		}
 
 		return monDef;
 	}
 
-	private getMonBranch(area: IArea): JSONArray {
+	private getMonBranch(): JSONArray {
 		const monBranch: JSONArray = new JSONArray();
-		const monsters: Map<number, Monster> = this.properties.get(RoomConst.MONSTERS) as Map<number, Monster>;
 
-		for (const actMon of monsters.values()) {
-			const mon: JSONObject = new JSONObject();
+		for (const monster of this.monsters.values()) {
+			const mon: JSONObject = new JSONObject()
+				.element("MonID", String(monster.data.monsterId))
+				.element("MonMapID", String(monster.data.monsterAreaId))
+				.element("bRed", "0")
+				.element("iLvl", monster.data.monster!.level)
+				.element("intHP", monster.status.health)
+				.element("intHPMax", monster.status.healthMax)
+				.element("intMP", monster.status.mana)
+				.element("intMPMax", monster.status.manaMax)
+				.element("intState", monster.getState())
+				.element("wDPS", monster.data.monster!.damagePerSecond);
 
-			const monster: IMonster = this.world.monsters.get(actMon.monsterId);
-
-			mon.put("MonID", String(actMon.monsterId));
-			mon.put("MonMapID", String(actMon.getMapId()));
-			mon.put("bRed", "0");
-			mon.put("iLvl", monster.level);
-			mon.put("intHP", actMon.health);
-			mon.put("intHPMax", monster.health);
-			mon.put("intMP", actMon.mana);
-			mon.put("intMPMax", monster.mana);
-			mon.put("intState", actMon.getState());
-			mon.put("wDPS", monster.damage_per_second);
-
-			if (area.pvp) {
+			if (this.data.is_pvp) {
 				const react: JSONArray = new JSONArray();
 
-				if (monster.teamId > 0) {
+				if (monster.data.monster!.teamId > 0) {
 					react.add(0);
 					react.add(1);
 				} else {
@@ -513,7 +317,7 @@ export default class Room implements IDispatchable {
 					react.add(0);
 				}
 
-				mon.put("react", react);
+				mon.element("react", react);
 			}
 
 			monBranch.add(mon);
@@ -521,7 +325,6 @@ export default class Room implements IDispatchable {
 
 		return monBranch;
 	}
-
 
 	public writeObject(data: JSONObject): void {
 		for (let [, player] of this.players) {
