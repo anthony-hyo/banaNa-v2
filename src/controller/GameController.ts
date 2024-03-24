@@ -4,7 +4,7 @@ import {eq} from "drizzle-orm";
 import {servers} from "../database/drizzle/schema.ts";
 import Config from "../config/Config.ts";
 import type Player from "../player/Player.ts";
-import WarzoneQueue from "../scheduler/tasks/WarzoneQueue.ts";
+import WarZoneQueue from "../scheduler/tasks/WarZoneQueue.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
 import {ACGiveaway} from "../scheduler/tasks/ACGiveaway.ts";
 import Network from "../network/Network.ts";
@@ -91,7 +91,7 @@ export default class GameController implements IDispatchable {
 
 		logger.info(`Network initialized.`);
 
-		Scheduler.repeated(new WarzoneQueue(), 5);
+		Scheduler.repeated(new WarZoneQueue(), 5);
 		Scheduler.repeated(new ACGiveaway(), 1800);
 
 		logger.info(`Scheduler initialized.`);
