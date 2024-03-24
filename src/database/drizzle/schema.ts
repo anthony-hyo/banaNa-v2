@@ -892,7 +892,7 @@ export const items = mysqlTable("items", {
 			.default(1)
 			.notNull(),
 
-	is_coins:
+	isCoins:
 		boolean("is_coins")
 			.default(false)
 			.notNull(),
@@ -981,9 +981,9 @@ export const items = mysqlTable("items", {
 });
 
 export const itemsRelations = relations(items, ({ one, many }) => ({
-	typeItem: one(typesElements, {
+	typeItem: one(typesItems, {
 		fields: [items.typeItemId],
-		references: [typesElements.id],
+		references: [typesItems.id],
 	}),
 	typeRarity: one(typesRarities, {
 		fields: [items.typeRarityId],
@@ -1530,18 +1530,21 @@ export const servers = mysqlTable("servers", {
 
 	message_of_the_day:
 		text("message_of_the_day")
+			.default("Welcome to banaNa!")
 			.notNull(),
 
 	playerCount:
 		mediumint("player_count", {
 			unsigned: true
 		})
+			.default(0)
 			.notNull(),
 
 	playerHighestCount:
 		mediumint("player_highest_count", {
 			unsigned: true
 		})
+			.default(0)
 			.notNull(),
 
 	maximum:
@@ -2124,7 +2127,14 @@ export const users = mysqlTable("users", {
 			.default(0)
 			.notNull(),
 
-	guildId: guildIdColumn,
+	guildId:
+		int("guild_id", {
+			unsigned: true
+		})
+			.references((): AnyMySqlColumn => guilds.id, {
+				onDelete: "set default",
+				onUpdate: "cascade"
+			}),
 
 	guildRank:
 		tinyint("guild_rank", {
@@ -2290,12 +2300,14 @@ export const users = mysqlTable("users", {
 		smallint("achievement", {
 			unsigned: true
 		})
+			.default(0)
 			.notNull(),
 
 	settings:
 		smallint("settings", {
 			unsigned: true
 		})
+			.default(0)
 			.notNull(),
 
 	houseInfo:
