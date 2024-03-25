@@ -46,6 +46,8 @@ export default class Player {
 		this._databaseId = user.id;
 		this._username = user.username;
 		this._network = network;
+
+		this._network.player = this;
 	}
 
 	public get databaseId(): number {
@@ -1004,21 +1006,17 @@ export default class Player {
 		return true;
 	}
 
-	public joinRoom(player: Player, frame: string = "Enter", pad: string = "Spawn"): void {
-		if (player == null) {
-			return;
-		}
+	public joinRoom(room: Room, frame: string = "Enter", pad: string = "Spawn"): void {
+		this.properties.set(PlayerConst.FRAME, frame);
+		this.properties.set(PlayerConst.PAD, pad);
+		this.properties.set(PlayerConst.TX, 0);
+		this.properties.set(PlayerConst.TY, 0);
 
-		player.properties.set(PlayerConst.FRAME, frame);
-		player.properties.set(PlayerConst.PAD, pad);
-		player.properties.set(PlayerConst.TX, 0);
-		player.properties.set(PlayerConst.TY, 0);
+		RoomController.joinRoom(this, room);
 
-		RoomController.joinRoom(player, this.room!);
+		this.room!.moveToArea(this);
 
-		this.room!.moveToArea(player);
-
-		player.network.writeArray("server", "You joined \"" + this.room!.name + "\"!");
+		this.network.writeArray("server", "You joined \"" + this.room!.name + "\"!");
 	}
 
 }
