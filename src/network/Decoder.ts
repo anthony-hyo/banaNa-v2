@@ -4,6 +4,7 @@ import type PlayerNetwork from "../player/PlayerNetwork.ts";
 import PlayerController from "../controller/PlayerController.ts";
 import Request from "../request/Request.ts";
 import RequestArg from "../request/RequestArg.ts";
+import logger from "../util/Logger.ts";
 
 export default class Decoder {
 
@@ -50,7 +51,8 @@ export default class Decoder {
 				break;
 			case DecoderType.XT:
 				if (!this.playerNetwork.player) {
-					//TODO: Kick or Ban
+					logger.silly("Kick or Ban");
+					//TODO:
 					return;
 				}
 
@@ -65,10 +67,14 @@ export default class Decoder {
 					args.push(params[i]);
 				}
 
-				Request.instance()
-					.request(params[1])
-					.handler(this.playerNetwork.player, RequestArg.parse(args))
-					.catch(console.error);
+				const request = Request.request(params[1]);
+
+				if (!request) {
+					logger.warn(`${this.playerNetwork.player.username}(${this.playerNetwork.player.databaseId})#${this.playerNetwork.id} default request called`, JSON.stringify(data));
+					return;
+				}
+
+				request.handler(this.playerNetwork.player, RequestArg.parse(args)).catch(logger.error);
 				break;
 			default:
 			case DecoderType.NONE:
