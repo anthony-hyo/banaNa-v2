@@ -1,7 +1,6 @@
-import Player from "./Player.ts";
-import Settings from "../aqw/Settings.ts";
-import PlayerConst from "../player/PlayerConst.ts";
-import JSONObject from "../util/json/JSONObject.ts";
+import {Achievement} from "../aqw/Achievement.ts";
+import Preference from "../aqw/Preference.ts";
+import type Player from "./Player.ts";
 
 export default class PlayerPreference {
 
@@ -10,59 +9,44 @@ export default class PlayerPreference {
 	) {
 	}
 
-	public sendPreferences(preference: string): void {
-		const value: boolean = Settings.getPreferences(preference, this.player.properties.get(PlayerConst.SETTINGS));
-		const messageType: string = value ? "server" : "warning";
-
-		switch (preference) {
-			case Settings.PARTY:
-				this.player.network.writeArray([messageType, value ? Settings.PARTY_MESSAGE_ON : Settings.PARTY_MESSAGE_OFF]);
-				break;
-			case Settings.GOTO:
-				this.player.network.writeArray([messageType, value ? Settings.GOTO_MESSAGE_ON : Settings.GOTO_MESSAGE_OFF]);
-				break;
-			case Settings.FRIEND:
-				this.player.network.writeArray([messageType, value ? Settings.FRIEND_MESSAGE_ON : Settings.FRIEND_MESSAGE_OFF]);
-				break;
-			case Settings.WHISPER:
-				this.player.network.writeArray([messageType, value ? Settings.WHISPER_MESSAGE_ON : Settings.WHISPER_MESSAGE_OFF]);
-				break;
-			case Settings.TOOLTIPS:
-				this.player.network.writeArray([messageType, value ? Settings.TOOLTIPS_MESSAGE_ON : Settings.TOOLTIPS_MESSAGE_OFF]);
-				break;
-			case Settings.DUEL:
-				this.player.network.writeArray([messageType, value ? Settings.DUEL_MESSAGE_ON : Settings.DUEL_MESSAGE_OFF]);
-				break;
-			case Settings.GUILD:
-				this.player.network.writeArray([messageType, value ? Settings.GUILD_MESSAGE_ON : Settings.GUILD_MESSAGE_OFF]);
-				break;
-			default:
-				break;
-		}
+	public set(pref: string, val: boolean): void {
+		throw new Error(`Not Implemented`);
 	}
 
-	public changePreferences(user: Player, pref: string, value: boolean): void {
-		let ia1: number = user.properties.get(PlayerConst.SETTINGS) as number;
-		ia1 = Settings.setPreferences(pref, ia1, value);
-		user.properties.set(PlayerConst.SETTINGS, ia1);
+	public isShowingHelm(index: number): boolean {
+		return this.get(Preference.HELM, index);
+	}
 
-		const uotls: JSONObject = new JSONObject();
-		uotls.put("cmd", "uotls");
-		uotls.put("unm", user.username());
+	public isShowingCloak(index: number): boolean {
+		return this.get(Preference.CLOAK, index);
+	}
 
-		if (pref === Settings.HELM) {
-			uotls.put("o", new JSONObject().put("showHelm", Settings.getPreferences(Settings.HELM, ia1)));
-			this.player.room.writeObjectExcept(this.player, uotls);
-		}
+	public isNotAcceptingWhisper(index: number): boolean {
+		return !this.get(Preference.WHISPER, index);
+	}
 
-		if (pref === Settings.CLOAK) {
-			uotls.put("o", new JSONObject().put("showCloak", Settings.getPreferences(Settings.CLOAK, ia1)));
-			this.player.room.writeObjectExcept(this.player, uotls);
-		}
+	public isNotAcceptingGuild(index: number): boolean {
+		return !this.get(Preference.GUILD, index);
+	}
 
-		this.sendPreferences(user, pref);
+	public isNotAcceptingFriend(index: number): boolean {
+		return !this.get(Preference.FRIEND, index);
+	}
 
-		this.world.db.jdbc.run("UPDATE users SET Settings = ? WHERE id = ?", ia1, user.properties.get(PlayerConst.DATABASE_ID));
+	public isNotAcceptingDuel(index: number): boolean {
+		return !this.get(Preference.DUEL, index);
+	}
+
+	public isNotAcceptingParty(index: number): boolean {
+		return !this.get(Preference.PARTY, index);
+	}
+
+	public isNotAcceptingGoto(index: number): boolean {
+		return !this.get(Preference.GOTO, index);
+	}
+
+	private get(achievement: number, index: number): boolean {
+		return Achievement.get(achievement, index) === 0;
 	}
 
 }
