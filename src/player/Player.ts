@@ -6,7 +6,7 @@ import {and, eq, sql} from "drizzle-orm";
 import type IUser from "../database/interfaces/IUser.ts";
 import PlayerPreference from "./PlayerPreference.ts";
 import JSONObject from "../util/json/JSONObject.ts";
-import {CoreValues} from "../aqw/CoreValues.ts";
+import CoreValues from "../aqw/CoreValues.ts";
 import {Rank} from "../aqw/Rank.ts";
 import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../util/Const.ts";
 import type ISkillAura from "../database/interfaces/ISkillAura.ts";
@@ -33,6 +33,7 @@ import AvatarStatus from "../avatar/AvatarStatus.ts";
 import Message from "../aqw/Message.ts";
 import PlayerInventory from "./PlayerInventory.ts";
 import {AvatarState} from "../avatar/AvatarState.ts";
+import type AvatarStats from "../avatar/AvatarStats.ts";
 
 export default class Player {
 
@@ -400,7 +401,7 @@ export default class Player {
 	public updateStats(enhancement: IEnhancement, equipment: string): void {
 		const itemStats: Map<string, number> = CoreValues.getItemStats(enhancement, equipment);
 
-		const stats: Stats = this.properties.get(PlayerConst.STATS);
+		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
 
 		switch (equipment) {
 			case EQUIPMENT_CLASS:
@@ -434,7 +435,7 @@ export default class Player {
 
 		const userLevel: number = this.properties.get(PlayerConst.LEVEL);
 
-		const stats: Stats = this.properties.get(PlayerConst.STATS);
+		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
 		stats.update();
 
 		const END: number = stats.get$END() + stats.get_END();
@@ -994,7 +995,7 @@ export default class Player {
 
 		removeAuras.clear();
 
-		const stats: Stats = this.properties.get(PlayerConst.STATS);
+		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
 		stats.effects.clear();
 
 		this.network.writeObject(
@@ -1011,7 +1012,7 @@ export default class Player {
 		const aurap: JSONObject = new JSONObject();
 		const auras: JSONArray = new JSONArray();
 
-		const stats: Stats = this.properties.get(PlayerConst.STATS);
+		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
 
 		for (const skillId of classObj.skills) {
 			const skill: ISkill = this.world.skills.get(skillId);

@@ -1,13 +1,13 @@
-import type Player from "../../player/Player.ts";
-import type IEnhancement from "../../database/interfaces/IEnhancement.ts";
-import type IItem from "../../database/interfaces/IItem.ts";
-import type ISkill from "../../database/interfaces/ISkill.ts";
-import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";
-import {CoreValues} from "../../aqw/CoreValues.ts";
-import JSONObject from "../../util/json/JSONObject.ts";
-import PlayerConst from "../../player/PlayerConst.ts";
+import CoreValues from "../aqw/CoreValues";
+import type IEnhancement from "../database/interfaces/IEnhancement";
+import type IItem from "../database/interfaces/IItem";
+import type ISkill from "../database/interfaces/ISkill";
+import type ISkillAuraEffect from "../database/interfaces/ISkillAuraEffect";
+import type Player from "../player/Player";
+import PlayerConst from "../player/PlayerConst";
+import JSONObject from "../util/json/JSONObject";
 
-export default class Stats {
+export default class AvatarStats {
 
 	public static readonly classCatMap: Map<string, number[]> = new Map([
 		["M1", [0.27, 0.3, 0.22, 0.05, 0.1, 0.06]],
@@ -128,7 +128,7 @@ export default class Stats {
 		this.cape.set("LCK", 0.0);
 	}
 
-	public sendStatChanges(stat: Stats, effects: Set<ISkillAuraEffect>): void {
+	public sendStatChanges(stat: AvatarStats, effects: Set<ISkillAuraEffect>): void {
 		const stu: JSONObject = new JSONObject();
 		const sta: JSONObject = new JSONObject();
 
@@ -469,7 +469,7 @@ export default class Stats {
 		let cat: string = this.player.properties.get("classcat");
 
 		let innateStat: number = CoreValues.getInnateStats(level);
-		let ratios: number[] = <number[]>Stats.classCatMap.get(cat);
+		let ratios: number[] = <number[]>AvatarStats.classCatMap.get(cat);
 
 		let keyEntry: IterableIterator<string> = this.innate.keys();
 

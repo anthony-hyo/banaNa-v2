@@ -1,11 +1,11 @@
 import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../util/Const.ts";
 import database from "../database/drizzle/database.ts";
 import type ISettingCoreValue from "../database/interfaces/ISettingCoreValue.ts";
-import Stats from "../world/stats/Stats.ts";
 import type IEnhancement from "../database/interfaces/IEnhancement.ts";
 import JSONObject from "../util/json/JSONObject.ts";
+import AvatarStats from "../avatar/AvatarStats.ts";
 
-export class CoreValues {
+export default class CoreValues {
 
 	private static CORE_VALUES: Map<string, number> = new Map<string, number>();
 	private static EQUIPMENT_RATIO: Map<string, number> = new Map<string, number>();
@@ -83,7 +83,7 @@ export class CoreValues {
 
 	public static setInitInnateStats(level: number, category: string, innate: Map<string, number>): void {
 		const innateStat: number = CoreValues.getInnateStats(level);
-		const ratios: number[] = Stats.classCatMap.get(category)!;
+		const ratios: number[] = AvatarStats.classCatMap.get(category)!;
 
 		const keyEntry: IterableIterator<string> = innate.keys();
 

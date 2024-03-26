@@ -12,11 +12,11 @@ import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
 import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
 import type Player from "../player/Player.ts";
 import type Room from "../room/Room.ts";
-import type Stats from "../world/stats/Stats.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
 import GameController from "../controller/GameController.ts";
 import type IMonsterData from "../interfaces/monster/IMonsterData.ts";
 import type AvatarStatus from "../avatar/AvatarStatus.ts";
+import type AvatarStats from "../avatar/AvatarStats.ts";
 
 export class Monster implements IDispatchable {
 
@@ -78,7 +78,7 @@ export class Monster implements IDispatchable {
 
 		let damage: number = this.rand.nextInt(maxDmg - minDmg) + minDmg;
 
-		const stats: Stats = player.properties.get(PlayerConst.STATS);
+		const stats: AvatarStats = player.properties.get(PlayerConst.STATS);
 
 		const crit: boolean = Math.random() < 0.2;
 		const dodge: boolean = Math.random() < stats.get$tdo();
