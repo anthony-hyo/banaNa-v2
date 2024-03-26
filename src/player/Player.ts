@@ -14,22 +14,25 @@ import JSONArray from "../util/json/JSONArray.ts";
 import type IEnhancement from "../database/interfaces/IEnhancement.ts";
 import Stats from "../world/stats/Stats.ts";
 import {Quests} from "../aqw/Quests.ts";
-import {Achievement} from "../aqw/Achievement.ts";
 import Party from "../party/Party.ts";
-import type IHair from "../database/interfaces/IHair.ts";
 import type IClass from "../database/interfaces/IClass.ts";
 import type ISkill from "../database/interfaces/ISkill.ts";
 import type ISkillAuraEffect from "../database/interfaces/ISkillAuraEffect.ts";
 import PlayerConst from "./PlayerConst.ts";
 import GameController from "../controller/GameController.ts";
 import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
-import {format} from "date-fns";
+import {differenceInDays, differenceInSeconds, differenceInYears, format} from "date-fns";
 import type IUserFriend from "../database/interfaces/IUserFriend.ts";
 import PlayerController from "../controller/PlayerController.ts";
 import PartyController from "../party/PartyController.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
 import type IGuild from "../database/interfaces/IGuild.ts";
 import {RoomController} from "../controller/RoomController.ts";
+import AvatarPosition from "../avatar/AvatarPosition.ts";
+import AvatarStatus from "../avatar/AvatarStatus.ts";
+import Message from "../aqw/Message.ts";
+import PlayerInventory from "./PlayerInventory.ts";
+import {AvatarState} from "../avatar/AvatarState.ts";
 
 export default class Player {
 
@@ -39,8 +42,12 @@ export default class Player {
 	private readonly _databaseId: number;
 	private readonly _username: string;
 	private readonly _network: PlayerNetwork;
+	public readonly position: AvatarPosition = new AvatarPosition();
 
 	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
+	public readonly status: AvatarStatus = new AvatarStatus(2500, 100, AvatarState.NEUTRAL);
+	public readonly inventory: PlayerInventory = new PlayerInventory(this);
+	public readonly preference: PlayerPreference = new PlayerPreference(this);
 
 	constructor(user: IUser, network: PlayerNetwork) {
 		this._databaseId = user.id;
@@ -83,6 +90,15 @@ export default class Player {
 
 	}
 
+	public moveToCell(frame: string, pad: string, sendUpdate: boolean): void {
+		this.position.frame = frame;
+		this.position.pad = pad;
+
+		if (sendUpdate) {
+			this.room!.writeArrayExcept(this, "uotls", this.network.name, `strPad:${pad},tx:0,strFrame:${frame},ty:0`);
+		}
+	}
+
 	public sendUotls(showHp: boolean, showHpMax: boolean, showMp: boolean, showMpMax: boolean, showLevel: boolean, showState: boolean): void {
 		const uotls: JSONObject = new JSONObject().element("cmd", "uotls");
 
@@ -109,7 +125,7 @@ export default class Player {
 		}
 
 		if (showState) {
-			o.element("intState", this.properties.get(PlayerConst.STATE));
+			o.element("intState", this.status.state);
 		}
 
 		this.room!.writeObject(
@@ -586,82 +602,6 @@ export default class Player {
 		return index > 99 ? Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_2) as string, (index - 100)) : Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_1) as string, index);
 	}
 
-	public async setAchievement(field: string, index: number, value: number, user: Player): Promise<void> {
-		let update: object | undefined = undefined;
-
-		switch (field) {
-			case "ia0":
-				this.properties.set(PlayerConst.ACHIEVEMENT, Achievement.update(this.properties.get(PlayerConst.ACHIEVEMENT), index, value));
-
-				update = {
-					achievement: this.properties.get(PlayerConst.ACHIEVEMENT)
-				};
-				break;
-			case "id0":
-				this.properties.set(PlayerConst.QUEST_DAILY_0, Achievement.update(this.properties.get(PlayerConst.QUEST_DAILY_0), index, value));
-
-				update = {
-					dailyQuests0: this.properties.get(PlayerConst.QUEST_DAILY_0)
-				};
-				break;
-			case "id1":
-				this.properties.set(PlayerConst.QUEST_DAILY_1, Achievement.update(this.properties.get(PlayerConst.QUEST_DAILY_1), index, value));
-
-				update = {
-					dailyQuests1: this.properties.get(PlayerConst.QUEST_DAILY_1)
-				};
-				break;
-			case "id2":
-				this.properties.set(PlayerConst.QUEST_DAILY_2, Achievement.update(this.properties.get(PlayerConst.QUEST_DAILY_2), index, value));
-
-				update = {
-					dailyQuests2: this.properties.get(PlayerConst.QUEST_DAILY_2)
-				};
-				break;
-			case "im0":
-				this.properties.set(PlayerConst.QUEST_MONTHLY_0, Achievement.update(this.properties.get(PlayerConst.QUEST_MONTHLY_0), index, value));
-
-				update = {
-					monthlyQuests0: this.properties.get(PlayerConst.QUEST_MONTHLY_0)
-				};
-				break;
-		}
-
-		if (!update) {
-			return;
-		}
-
-		await database
-			.update(users)
-			.set(update)
-			.where(eq(users.id, this.databaseId));
-
-		this.network.writeObject(
-			new JSONObject()
-				.element("cmd", "setAchievement")
-				.element("field", field)
-				.element("index", index)
-				.element("value", value)
-		);
-	}
-
-	public getAchievement(field: string, index: number, user: Player): number {
-		switch (field) {
-			case "ia0":
-				return Achievement.get(this.properties.get(PlayerConst.ACHIEVEMENT), index);
-			case "id0":
-				return Achievement.get(this.properties.get(PlayerConst.QUEST_DAILY_0), index);
-			case "id1":
-				return Achievement.get(this.properties.get(PlayerConst.QUEST_DAILY_1), index);
-			case "id2":
-				return Achievement.get(this.properties.get(PlayerConst.QUEST_DAILY_2), index);
-			case "im0":
-				return Achievement.get(this.properties.get(PlayerConst.QUEST_MONTHLY_0), index);
-			default:
-				return -1;
-		}
-	}
-
 	public getGuildRank(rank: number): string {
 		switch (rank) {
 			case 0:
@@ -750,25 +690,21 @@ export default class Player {
 			//this.sendGuildUpdate(this.getGuildObject(guildId)); //TODO
 		}
 
-		// UPDATE FRIEND
-		const updateFriend: JSONObject = new JSONObject();
-		const friendInfo: JSONObject = new JSONObject();
+		const friendJSONObject: JSONObject = new JSONObject()
+			.element("cmd", "updateFriend")
+			.element("friend", new JSONObject()
+				.element("iLvl", data().level())
+				.element("ID", this.databaseId)
+				.element("sName", this.username)
+				.element("sServer", "Offline")
+			);
 
-		updateFriend.put("cmd", "updateFriend");
-		friendInfo.put("iLvl", this.properties.get(PlayerConst.LEVEL));
-		friendInfo.put("ID", this.properties.get(PlayerConst.DATABASE_ID));
-		friendInfo.put("sName", this.properties.get(PlayerConst.USERNAME));
-		friendInfo.put("sServer", "Offline");
-		updateFriend.put("friend", friendInfo);
+		const friendMessage: [string, string] = Message.create("server", `${this.username} has logged out.`);
 
 		const userFriends: IUserFriend[] = await database.query.usersFriends.findMany({
 			where: eq(usersFriends.userId, this.databaseId),
 			with: {
-				friend: {
-					with: {
-						currentServer: true
-					}
-				}
+				friend: true
 			}
 		});
 
@@ -776,8 +712,8 @@ export default class Player {
 			const client: Player | undefined = PlayerController.findByUsername(userFriend.friend!.username.toLowerCase());
 
 			if (client) {
-				client.network.writeObject(updateFriend);
-				client.network.writeArray("server", this.username + " has logged out.");
+				client.network.writeObject(friendJSONObject);
+				client.network.writeArray(friendMessage);
 			}
 		}
 	}
@@ -883,10 +819,10 @@ export default class Player {
 				.element("iAge", differenceInYears(dateNow, user.dateBirth))
 				.element("iBagSlots", user.slotsBag)
 				.element("iBankSlots", user.slotsBank)
-				.element("iBoostCP", differenceInSeconds(dateNow, user.dateClassPointBoostExpire))
-				.element("iBoostG", differenceInSeconds(dateNow, user.dateGoldBoostExpire))
-				.element("iBoostRep", differenceInSeconds(dateNow, user.dateReputationBoostExpire))
-				.element("iBoostXP", differenceInSeconds(dateNow, user.dateExperienceBoostExpire))
+				.element("iBoostCP", differenceInSeconds(user.dateClassPointBoostExpire, dateNow))
+				.element("iBoostG", differenceInSeconds(user.dateGoldBoostExpire, dateNow))
+				.element("iBoostRep", differenceInSeconds(user.dateReputationBoostExpire, dateNow))
+				.element("iBoostXP", differenceInSeconds(user.dateExperienceBoostExpire, dateNow))
 				//.element("iDBCP", 0)
 				.element("iDEX", 0)
 				//.element("iDailyAdCap", 0)

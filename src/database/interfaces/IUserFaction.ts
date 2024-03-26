@@ -1,3 +1,6 @@
+import type IFaction from "./IFaction.ts";
+import type IUser from "./IUser.ts";
+
 export default interface IUserFaction {
 	id: number;
 
@@ -8,4 +11,7 @@ export default interface IUserFaction {
 
 	dateUpdated: Date;
 	dateCreated: Date;
+
+	user?: IUser;
+	faction?: IFaction;
 }

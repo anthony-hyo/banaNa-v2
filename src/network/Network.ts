@@ -17,7 +17,7 @@ export default class Network {
 
 			this.count++;
 
-			const playerNetwork: PlayerNetwork = new PlayerNetwork(this.count, socket);
+			const playerNetwork: PlayerNetwork = new PlayerNetwork(this.count, undefined, undefined, socket);
 
 			socket.on('data', (data: any): void => playerNetwork.data(data));
 

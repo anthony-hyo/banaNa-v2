@@ -14,6 +14,7 @@ export default interface IServer {
 
 	isOnline: boolean;
 	isUpgradeOnly: boolean;
+	isStaffOnly: boolean;
 
 	chatType: number;
 

@@ -10,13 +10,12 @@ export default class PlayerNetwork implements IDispatchable {
 
 	public readonly decoder: Decoder = new Decoder(this);
 
-	public player: Player | undefined;
 	private chunk: string = "";
-
-	private _name!: string;
 
 	constructor(
 		private readonly _id: number,
+		private _name: string | undefined,
+		private _player: Player | undefined,
 		public readonly socket: Socket
 	) {
 	}
@@ -26,7 +25,16 @@ export default class PlayerNetwork implements IDispatchable {
 	}
 
 	public get name(): string {
-		return this._name;
+		return this._name!;
+	}
+
+	public get player(): Player | undefined {
+		return this._player;
+	}
+
+	public set player(player: Player) {
+		this._player = player;
+		this._name = player.username.toLowerCase();
 	}
 
 	public data(data: any): void {
@@ -62,7 +70,7 @@ export default class PlayerNetwork implements IDispatchable {
 			t: `xt`,
 			b: {
 				r: -1,
-				o: data
+				o: data.toJSON()
 			},
 		}));
 	}

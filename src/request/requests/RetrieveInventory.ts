@@ -84,9 +84,9 @@ export default class RetrieveInventory implements IRequest {
 			))
 		);
 
-		const currentDate: Date = new Date();
+		const dateNow: Date = new Date();
 
-		const boostCPSeconds: number = differenceInSeconds(currentDate, user.dateClassPointBoostExpire);
+		const boostCPSeconds: number = differenceInSeconds(user.dateClassPointBoostExpire, dateNow);
 
 		if (boostCPSeconds > 0) {
 			player.network.writeObject(new JSONObject()
@@ -96,7 +96,7 @@ export default class RetrieveInventory implements IRequest {
 			);
 		}
 
-		const boostRepSeconds: number = differenceInSeconds(currentDate, user.dateReputationBoostExpire);
+		const boostRepSeconds: number = differenceInSeconds(user.dateReputationBoostExpire, dateNow);
 
 		if (boostRepSeconds > 0) {
 			player.network.writeObject(new JSONObject()
@@ -106,7 +106,7 @@ export default class RetrieveInventory implements IRequest {
 			);
 		}
 
-		const boostCoinsSeconds: number = differenceInSeconds(currentDate, user.dateCoinsBoostExpire);
+		const boostCoinsSeconds: number = differenceInSeconds(user.dateCoinsBoostExpire, dateNow);
 
 		if (boostCoinsSeconds > 0) {
 			player.network.writeObject(new JSONObject()
@@ -116,7 +116,7 @@ export default class RetrieveInventory implements IRequest {
 			);
 		}
 
-		const boostGoldSeconds: number = differenceInSeconds(currentDate, user.dateGoldBoostExpire);
+		const boostGoldSeconds: number = differenceInSeconds(user.dateGoldBoostExpire, dateNow);
 
 		if (boostGoldSeconds > 0) {
 			player.network.writeObject(new JSONObject()
@@ -126,7 +126,7 @@ export default class RetrieveInventory implements IRequest {
 			);
 		}
 
-		const boostExpSeconds: number = differenceInSeconds(currentDate, user.dateExperienceBoostExpire);
+		const boostExpSeconds: number = differenceInSeconds(user.dateExperienceBoostExpire, dateNow);
 
 		if (boostExpSeconds > 0) {
 			player.network.writeObject(new JSONObject()

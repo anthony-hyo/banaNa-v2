@@ -7,7 +7,6 @@ import {
 	index,
 	int,
 	mediumint,
-	type MySqlColumnBuilderBase,
 	mysqlEnum,
 	mysqlTable,
 	smallint,
@@ -20,15 +19,15 @@ import {
 } from "drizzle-orm/mysql-core";
 import {relations, sql} from "drizzle-orm";
 
-const combatCategory: MySqlColumnBuilderBase = mysqlEnum('category', ['M1', 'M2', 'M3', 'M4', 'C1', 'C2', 'C3', 'S1'])
+const combatCategory = mysqlEnum('category', ['M1', 'M2', 'M3', 'M4', 'C1', 'C2', 'C3', 'S1'])
 	.default("M1")
 	.notNull();
 
-const genderEnum: MySqlColumnBuilderBase = mysqlEnum('gender', ['M', 'F'])
+const genderEnum = mysqlEnum('gender', ['M', 'F'])
 	.default("M")
 	.notNull();
 
-const targetEnum: MySqlColumnBuilderBase = mysqlEnum('target', ['s', 'h', 'f'])
+const targetEnum = mysqlEnum('target', ['s', 'h', 'f'])
 	.default("h")
 	.notNull();
 
@@ -227,6 +226,13 @@ export const areasCells = mysqlTable("areas_cells", {
 	id: idColumn(),
 
 	areaId: areaIdColumn,
+
+	cellId:
+		int("cell_id", {
+			unsigned: true
+		})
+			.default(1)
+			.notNull(),
 
 	frame:
 		varchar("frame", {
@@ -927,8 +933,6 @@ export const items = mysqlTable("items", {
 		int("required_faction_id", {
 			unsigned: true
 		})
-			.default(1)
-			.notNull()
 			.references((): AnyMySqlColumn => factions.id, {
 				onDelete: "restrict",
 				onUpdate: "cascade"
@@ -945,8 +949,6 @@ export const items = mysqlTable("items", {
 		int("required_class_item_id", {
 			unsigned: true
 		})
-			.default(0)
-			.notNull()
 			.references((): AnyMySqlColumn => classes.id, {
 				onDelete: "restrict",
 				onUpdate: "cascade"
@@ -965,7 +967,7 @@ export const items = mysqlTable("items", {
 			.notNull(),
 
 	questStringValue:
-		tinyint("quest_stringValue")
+		tinyint("quest_string_value")
 			.default(0)
 			.notNull(),
 
@@ -2185,8 +2187,6 @@ export const users = mysqlTable("users", {
 				onUpdate: "cascade"
 			}),
 
-	gender: genderEnum,
-
 	hairId:
 		int("hair_id", {
 			unsigned: true
@@ -2273,6 +2273,34 @@ export const users = mysqlTable("users", {
 			.default('0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
 			.notNull(),
 
+	quests3:
+		char("quests_3", {
+			length: 100
+		})
+			.default('0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
+			.notNull(),
+
+	quests4:
+		char("quests_4", {
+			length: 100
+		})
+			.default('0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
+			.notNull(),
+
+	quests5:
+		char("quests_5", {
+			length: 100
+		})
+			.default('0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
+			.notNull(),
+
+	quests6:
+		char("quests_6", {
+			length: 100
+		})
+			.default('0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
+			.notNull(),
+
 	dailyQuests0:
 		smallint("daily_quests_0", {
 			unsigned: true
@@ -2347,6 +2375,8 @@ export const users = mysqlTable("users", {
 	dateUpgradeExpire: dateColumn('date_upgrade_expire'),
 
 	dateLastLogin: dateColumn('date_last_login'),
+
+	dateBirth: dateColumn('date_birth'),
 
 	dateUpdated: dateUpdatedColumn,
 

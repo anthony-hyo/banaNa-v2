@@ -15,11 +15,15 @@ export default class Request {
 		Helper
 			.getAllFilesFromFolder(path.resolve(__dirname, 'requests'))
 			.forEach((file: string): void => {
-				const request: IRequest = new (require(file).default)();
+				try {
+					const request: IRequest = new (require(file).default)();
 
-				logger.warn(`[Request] register ${request.name}`);
+					logger.warn(`[Request] register ${request.name}`);
 
-				Request.requests.set(request.name, request);
+					Request.requests.set(request.name, request);
+				} catch (e) {
+					logger.error(`[Request] register error`, e);
+				}
 			});
 	}
 

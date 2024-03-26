@@ -1,12 +1,39 @@
+import AvatarVitality from "./AvatarVitality.ts";
+import {AvatarState} from "./AvatarState.ts";
+
 export default class AvatarStatus {
 
-	constructor(
-		public health: number,
-		public healthMax: number,
-		public mana: number,
-		public manaMax: number,
-	) {
+	public _health: AvatarVitality;
+	public _mana: AvatarVitality;
+
+	public _state: AvatarState;
+
+	constructor(health: number, mana: number, state: AvatarState) {
+		this._health = new AvatarVitality(health, health);
+		this._mana = new AvatarVitality(mana, mana);
+
+		this._state = state;
 	}
 
+	public get health(): AvatarVitality {
+		return this._health;
+	}
+
+	public get mana(): AvatarVitality {
+		return this._mana;
+	}
+
+	public get state(): AvatarState {
+		return this._state;
+	}
+
+	public set state(value: AvatarState) {
+		this._state = value;
+	}
+
+	public endCombat() {
+		this.state = AvatarState.NEUTRAL;
+	}
 
 }
+

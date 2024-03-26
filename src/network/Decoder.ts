@@ -8,15 +8,14 @@ import logger from "../util/Logger.ts";
 
 export default class Decoder {
 
-	private readonly playerNetwork: PlayerNetwork;
-
 	private readonly xmlParser: XMLParser = new XMLParser({
 		ignoreAttributes: false,
 		attributeNamePrefix: "_"
 	});
 
-	constructor(playerNetwork: PlayerNetwork) {
-		this.playerNetwork = playerNetwork;
+	constructor(
+		private readonly playerNetwork: PlayerNetwork
+	) {
 	}
 
 	public decode(data: string): void {

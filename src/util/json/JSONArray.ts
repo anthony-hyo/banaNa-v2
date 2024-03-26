@@ -1,3 +1,5 @@
+import JSONObject from "./JSONObject.ts";
+
 export default class JSONArray implements Iterable<any> {
 
 	private readonly elements: any[];
@@ -46,6 +48,17 @@ export default class JSONArray implements Iterable<any> {
 				}
 			}
 		};
+	}
+
+	accumulate(key: string, value: any): this {
+		const array = this.elements.find(item => item.hasOwnProperty(key));
+		if (array) {
+			array[key].push(value);
+		} else {
+			const newArray = new JSONObject().element(key, [value]);
+			this.add(newArray);
+		}
+		return this;
 	}
 
 }

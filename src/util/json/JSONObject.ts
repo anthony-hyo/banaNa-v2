@@ -13,7 +13,7 @@ export default class JSONObject {
 		this.properties[key] = value;
 	}
 
-	public element(key: string, value: any): this {
+	public element(key: string, value: string | number | JSONObject | JSONArray): this {
 		this.properties[key] = value;
 		return this;
 	}

@@ -5,6 +5,8 @@ export default interface IAreaCell {
 
 	areaId: number;
 
+	cellId: number;
+
 	frame: string;
 	pad: string;
 
