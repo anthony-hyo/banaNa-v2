@@ -36,9 +36,6 @@ export default class PlayerController {
 					})
 					.where(eq(users.id, user.id));
 
-				console.log(GameController.instance().server.isOnline);
-				console.log((GameController.instance().server.isStaffOnly && user.accessId < 40));
-
 				if (!GameController.instance().server.isOnline || (GameController.instance().server.isStaffOnly && user.accessId < 40)) {
 					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `A game update/maintenance is currently ongoing.<br>Only the staff can enter the server at the moment.`);
 
@@ -55,6 +52,8 @@ export default class PlayerController {
 				}
 
 				const player: Player = new Player(user, playerNetwork);
+
+				PlayerController.add(player);
 
 				//["loginResponse","-1","true","25860","KATHLEEN","","2024-03-13T00:46:57","SETTINGS LOGIN","3.00941"]
 				playerNetwork.writeArray(`loginResponse`, `true`, player.network.id, user.username, `Message of the day`, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941");

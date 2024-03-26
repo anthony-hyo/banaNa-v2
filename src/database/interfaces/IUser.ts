@@ -40,7 +40,6 @@ export default interface IUser {
 
 	currentServerId: number | null;
 
-	gender: unknown;
 	hairId: number;
 
 	colorSkin: string;
@@ -56,6 +55,10 @@ export default interface IUser {
 
 	quests1: string;
 	quests2: string;
+	quests3: string;
+	quests4: string;
+	quests5: string;
+	quests6: string;
 
 	dailyQuests0: number;
 	dailyQuests1: number;
@@ -75,8 +78,11 @@ export default interface IUser {
 	dateCoinsBoostExpire: Date;
 	dateGoldBoostExpire: Date;
 	dateExperienceBoostExpire: Date;
+
 	dateUpgradeExpire: Date;
 	dateLastLogin: Date;
+
+	dateBirth: Date;
 
 	dateUpdated: Date;
 	dateCreated: Date;
@@ -88,7 +94,7 @@ export default interface IUser {
 	currentServer?: IServer | null;
 	hair?: IHair;
 
-	actions?: Array<IUserFaction>;
+	factions?: Array<IUserFaction>;
 	friends?: Array<IUserFriend>;
 	inventory?: Array<IUserInventory>;
 	logs?: Array<IUserLog>;

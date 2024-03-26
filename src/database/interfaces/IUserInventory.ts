@@ -1,3 +1,7 @@
+import type IUser from "./IUser.ts";
+import type IItem from "./IItem.ts";
+import type IEnhancement from "./IEnhancement.ts";
+
 export default interface IUserInventory {
 	id: number;
 
@@ -13,4 +17,8 @@ export default interface IUserInventory {
 	dateDeleted: Date | null;
 	dateUpdated: Date;
 	dateCreated: Date;
+
+	user?: IUser;
+	item?: IItem;
+	enhancement?: IEnhancement;
 }

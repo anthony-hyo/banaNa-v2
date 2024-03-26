@@ -1,9 +1,9 @@
 import type IItemRequirement from "./IItemRequirement.ts";
-import type IClass from "./IClass.ts";
 import type ITypeElement from "./ITypeElement.ts";
 import type ITypeItem from "./ITypeItem.ts";
 import type ITypeRarity from "./ITypeRarity.ts";
 import type IFaction from "./IFaction.ts";
+import type IEnhancement from "./IEnhancement.ts";
 
 export default interface IItem {
 	id: number;
@@ -34,10 +34,10 @@ export default interface IItem {
 
 	enhancementId: number;
 
-	requiredFactionId: number;
+	requiredFactionId: number | null;
 	requiredFactionReputation: number;
 
-	requiredClassItemId: number;
+	requiredClassItemId: number | null;
 	requiredClassPoints: number;
 
 	questStringIndex: number;
@@ -52,7 +52,7 @@ export default interface IItem {
 	typeRarity?: ITypeRarity;
 	typeElement?: ITypeElement;
 
-	enhancement?: IClass;
+	enhancement?: IEnhancement;
 
 	requiredFaction?: IFaction;
 

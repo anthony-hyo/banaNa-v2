@@ -5,7 +5,7 @@ export default interface IEnhancement {
 	name: string;
 	patternId: number;
 	rarity: number;
-	dps: number;
+	damage_per_second: number;
 	level: number;
 
 	pattern?: IEnhancementPattern;

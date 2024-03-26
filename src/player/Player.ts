@@ -782,112 +782,254 @@ export default class Player {
 		}
 	}
 
-	public getUserData(id: number, self: boolean): JSONObject {
-		const userData: JSONObject = new JSONObject();
+	public async json2(): Promise<JSONObject> {
+		const { level, settings } = await database.query.users.findFirst({
+			columns: {
+				level: true,
+				settings: true
+			},
+			where: eq(users.id, this.databaseId)
+		}) || {};
 
-		const hairId: number = this.properties.get(PlayerConst.HAIR_ID) as number;
-		const hair: IHair = this.world.hairs.get(hairId);
-
-		const lastArea: string = this.properties.get(PlayerConst.LAST_AREA).split("\\|")[0];
-
-		userData
-			.element("eqp", this.properties.get(PlayerConst.EQUIPMENT))
-			.element("iCP", this.properties.get(PlayerConst.CLASS_POINTS))
-			.element("iUpgDays", this.properties.get(PlayerConst.UPGRADE_DAYS))
-			.element("intAccessLevel", this.properties.get(PlayerConst.ACCESS))
-			.element("intColorAccessory", this.properties.get(PlayerConst.COLOR_ACCESSORY))
-			.element("intColorBase", this.properties.get(PlayerConst.COLOR_BASE))
-			.element("intColorEye", this.properties.get(PlayerConst.COLOR_EYE))
-			.element("intColorHair", this.properties.get(PlayerConst.COLOR_HAIR))
-			.element("intColorSkin", this.properties.get(PlayerConst.COLOR_SKIN))
-			.element("intColorTrim", this.properties.get(PlayerConst.COLOR_TRIM))
-			.element("intLevel", this.properties.get(PlayerConst.LEVEL))
-			.element("strClassName", this.properties.get(PlayerConst.CLASS_NAME))
-			.element("strGender", this.properties.get(PlayerConst.GENDER))
-			.element("strHairFilename", hair.file)
-			.element("strHairName", hair.name)
-			.element("strUsername", this.properties.get(PlayerConst.USERNAME));
-
-		if (this.properties.get(PlayerConst.GUILD_ID) > 0) {
-			const guildData: JSONObject = this.properties.get(PlayerConst.GUILD) as JSONObject;
-			const guild: JSONObject = new JSONObject();
-
-			guild
-				.element("id", this.properties.get(PlayerConst.GUILD_ID))
-				.element("Name", guildData.getString("Name"))
-				.element("MOTD", guildData.getString("MOTD"));
-
-			userData
-				.element("guild", guild)
-				.element("guildRank", this.properties.get(PlayerConst.GUILD_RANK));
+		if (!level || !settings) {
+			return new JSONObject();
 		}
+
+		const data: JSONObject = new JSONObject()
+			.element("Away", this.properties.get(PlayerConst.AFK))
+			.element("entID", this.network.id)
+			.element("entType", "p")
+			.element("intHP", this.status.health.value)
+			.element("intHPMax", this.status.health.max)
+			.element("intLevel", level)
+			.element("intMP", this.status.mana.value)
+			.element("intMPMax", this.status.mana.max)
+			.element("intState", this.status.state.toString())
+			.element("showCloak", this.preference.isShowingCloak(settings) ? 1 : 0)
+			.element("showHelm", this.preference.isShowingHelm(settings) ? 1 : 0)
+			.element("strFrame", this.position.frame)
+			.element("strPad", this.position.pad)
+			.element("strUsername", this.username)
+			.element("tx", this.position.xAxis)
+			.element("ty", this.position.yAxis)
+			.element("uoName", this.network.name);
+
+		if (this.room && this.room.data.is_pvp) {
+			data.element("pvpTeam", this.properties.get(PlayerConst.PVP_TEAM));
+		}
+
+		return data;
+	}
+
+	public async json(self: boolean, withEquipment: boolean, withNetworkId: boolean): Promise<JSONObject> {
+		const user: IUser | undefined = await database.query.users.findFirst({
+			with: {
+				hair: true,
+				...(withEquipment ? {
+					inventory: {
+						with: {
+							item: {
+								with: {
+									typeItem: true,
+									enhancement: true,
+								}
+							}
+						}
+					}
+				} : {}),
+			}
+		});
+
+		const data: JSONObject = new JSONObject();
+
+		if (!user) {
+			return data;
+		}
+
+		if (withNetworkId) {
+			data
+				.element("CharID", this.network.id);
+		}
+
+		const dateNow: Date = new Date();
+
+		data
+			.element("guildRank", user.guildRank)
+			.element("iUpgDays", differenceInDays(dateNow, user.dateUpgradeExpire))
+			.element("intAccessLevel", user.accessId)
+			.element("intColorAccessory", user.colorAccessory)
+			.element("intColorBase", user.colorBase)
+			.element("intColorEye", user.colorHair)
+			.element("intColorHair", user.colorHair)
+			.element("intColorSkin", user.colorSkin)
+			.element("intColorTrim", user.colorTrim)
+			.element("intLevel", user.level)
+			.element("strGender", user.hair!.gender)
+			.element("strHairFilename", user.hair!.file)
+			.element("strHairName", user.hair!.name)
+			.element("strUsername", user.username);
 
 		if (self) {
-			const result: QueryResult = this.world.db.jdbc.query("SELECT HouseInfo, ActivationFlag, Gold, Coins, Exp, Country, Email, DateCreated, UpgradeExpire, Age, Upgraded FROM users WHERE id = ?", this.properties.get(PlayerConst.DATABASE_ID));
-
-			if (result.next()) {
-				userData
-					.element("CharID", this.properties.get(PlayerConst.DATABASE_ID))
-					.element("HairID", hairId)
-					.element("UserID", this.network.id)
-					.element("bPermaMute", this.properties.get(PlayerConst.PERMAMUTE_FLAG))
-					.element("bitSuccess", "1")
-					.element("dCreated", format(result.getDate("DateCreated"), "yyyy-MM-dd'T'HH:mm:ss"))
-					.element("dUpgExp", format(result.getDate("UpgradeExpire"), "yyyy-MM-dd'T'HH:mm:ss"))
-					.element("iAge", result.getString("Age"))
-					.element("iBagSlots", this.properties.get(PlayerConst.SLOTS_BAG))
-					.element("iBankSlots", this.properties.get(PlayerConst.SLOTS_BANK))
-					.element("iBoostCP", 0)
-					.element("iBoostG", 0)
-					.element("iBoostRep", 0)
-					.element("iBoostXP", 0)
-					.element("iDBCP", this.properties.get(PlayerConst.CLASS_POINTS))
-					.element("iDEX", 0)
-					.element("iDailyAdCap", 6)
-					.element("iDailyAds", 0)
-					.element("iEND", 0)
-					.element("iFounder", 0)
-					.element("iHouseSlots", this.properties.get(PlayerConst.SLOTS_HOUSE))
-					.element("iINT", 0)
-					.element("iLCK", 0)
-					.element("iSTR", 0)
-					.element("iUpg", result.getInt("Upgraded"))
-					.element("iWIS", 0)
-					.element("ia0", this.properties.get(PlayerConst.ACHIEVEMENT))
-					.element("ia1", this.properties.get(PlayerConst.SETTINGS))
-					.element("id0", this.properties.get(PlayerConst.QUEST_DAILY_0))
-					.element("id1", this.properties.get(PlayerConst.QUEST_DAILY_1))
-					.element("id2", this.properties.get(PlayerConst.QUEST_DAILY_2))
-					.element("im0", this.properties.get(PlayerConst.QUEST_MONTHLY_0))
-					.element("intActivationFlag", result.getInt("ActivationFlag"))
-					.element("intCoins", result.getInt("Coins"))
-					.element("intDBExp", result.getInt("Exp"))
-					.element("intDBGold", result.getInt("Gold"))
-					.element("intExp", result.getInt("Exp"))
-					.element("intExpToLevel", CoreValues.getExpToLevel(this.properties.get(PlayerConst.LEVEL)))
-					.element("intGold", result.getInt("Gold"))
-					.element("intHP", this.properties.get(PlayerConst.HP))
-					.element("intHPMax", this.properties.get(PlayerConst.HP_MAX))
-					.element("intHits", 1267)
-					.element("intMP", this.properties.get(PlayerConst.MP))
-					.element("intMPMax", this.properties.get(PlayerConst.MP_MAX))
-					.element("ip0", 0)
-					.element("ip1", 0)
-					.element("ip2", 0)
-					.element("iq0", 0)
-					.element("lastArea", lastArea)
-					.element("sCountry", result.getString("Country"))
-					.element("sHouseInfo", result.getString("HouseInfo"))
-					.element("strEmail", result.getString("Email"))
-					.element("strMapName", this.room!.data.name)
-					.element("strQuests", this.properties.get(PlayerConst.QUESTS_1))
-					.element("strQuests2", this.properties.get(PlayerConst.QUESTS_2));
-			}
-
-			result.close();
+			data
+				.element("HairID", user.hairId)
+				.element("UserID", user.id)
+				//.element("bBuyer", 1)
+				.element("bPermaMute", user.isPermanentMute ? 1 : 0)
+				.element("bitSuccess", 1)
+				//.element("bitWatched", 0)
+				.element("dCreated", format(user.dateCreated, "yyyy-MM-dd'T'HH:mm:ss"))
+				//.element("dRefReset", )
+				.element("dUpgExp", format(user.dateUpgradeExpire, "yyyy-MM-dd'T'HH:mm:ss"))
+				.element("iAge", differenceInYears(dateNow, user.dateBirth))
+				.element("iBagSlots", user.slotsBag)
+				.element("iBankSlots", user.slotsBank)
+				.element("iBoostCP", differenceInSeconds(dateNow, user.dateClassPointBoostExpire))
+				.element("iBoostG", differenceInSeconds(dateNow, user.dateGoldBoostExpire))
+				.element("iBoostRep", differenceInSeconds(dateNow, user.dateReputationBoostExpire))
+				.element("iBoostXP", differenceInSeconds(dateNow, user.dateExperienceBoostExpire))
+				//.element("iDBCP", 0)
+				.element("iDEX", 0)
+				//.element("iDailyAdCap", 0)
+				//.element("iDailyAds", 0)
+				.element("iEND", 0)
+				//.element("iFounder", 0)
+				.element("iHouseSlots", user.slotsHouse)
+				.element("iINT", 0)
+				.element("iLCK", 0)
+				//.element("iRefExp", 0)
+				//.element("iRefGold", 0)
+				.element("iSTR", 0)
+				.element("iUpg", 2)
+				.element("iWIS", 0)
+				.element("ia0", 0)
+				.element("ia1", 0)
+				.element("id0", 0)
+				.element("id1", 0)
+				.element("id2", 0)
+				.element("id3", 0)
+				.element("id4", 0)
+				.element("id5", 0)
+				.element("im0", 0)
+				.element("intActivationFlag", user.activationFlag)
+				.element("intCoins", user.coins)
+				//.element("intDBExp", 0)
+				//.element("intDBGold", 0)
+				//.element("intDays", 0)
+				//.element("intDaysPlayed", 0)
+				.element("intExp", user.experience)
+				.element("intExpToLevel", CoreValues.getExpToLevel(user.level))
+				.element("intGold", user.gold)
+				.element("intHP", this.status.health.value)
+				.element("intHits", user.level)
+				.element("intMP", this.status.mana.value)
+				.element("ip0", 0)
+				.element("ip1", 0)
+				.element("ip10", 0)
+				.element("ip11", 0)
+				.element("ip12", 0)
+				.element("ip13", 0)
+				.element("ip14", 0)
+				.element("ip15", 0)
+				.element("ip16", 0)
+				.element("ip17", 0)
+				.element("ip18", 0)
+				.element("ip19", 0)
+				.element("ip2", 0)
+				.element("ip20", 0)
+				.element("ip21", 0)
+				.element("ip22", 0)
+				.element("ip3", 0)
+				.element("ip4", 0)
+				.element("ip5", 0)
+				.element("ip6", 0)
+				.element("ip7", 0)
+				.element("ip8", 0)
+				.element("ip9", 0)
+				.element("iq0", 0)
+				.element("iw0", 0)
+				.element("lastArea", user.lastArea)
+				//.element("numHouses", 0)
+				.element("sCountry", user.countryCode)
+				.element("sHouseInfo", user.houseInfo)
+				.element("strEmail", user.email)
+				.element("strIP", "")
+				.element("strMapName", this.room!.data.name)
+				.element("strQuests", user.quests1)
+				.element("strQuests2", user.quests2)
+				.element("strQuests3", user.quests3)
+				.element("strQuests4", user.quests4)
+				.element("strQuests5", user.quests5)
+				.element("strQuests6", user.quests6);
 		}
 
-		return userData;
+		if (user.guildId) {
+			if (self) {
+				const members: JSONArray = new JSONArray();
+
+				for (let member of user.guild!.members) {
+					members
+						.add(new JSONObject()
+							.element("ID", member.id)
+							.element("Level", member.level)
+							.element("Rank", member.guildRank)
+							.element("Server", member.currentServer!.name)
+							.element("userName", member.username)
+						);
+				}
+
+				data
+					.element("guild", new JSONObject()
+						.element("GuildID", user.guild!.id)
+						.element("MOTD", user.guild!.messageOfTheDay)
+						.element("MaxMembers", user.guild!.maxMembers)
+						.element("Name", user.guild!.name)
+						.element("dateUpdated", format(user.guild!.dateUpdated, "yyyy-MM-dd'T'HH:mm:ss"))
+						.element("guildRep", 0)
+						.element("newRep", 0)
+						.element("pending", new JSONObject())
+						.element("pendingOfficer", new JSONObject())
+						.element("ul", members)
+					);
+			} else {
+				data
+					.element("guild", new JSONObject()
+						.element("Name", user.guild!.name)
+					);
+			}
+		}
+
+		const equipment: JSONObject = new JSONObject();
+
+		if (withEquipment) {
+			for (const inventoryItem of user.inventory!) {
+				const equipData: JSONObject = new JSONObject()
+					.element("ItemID", inventoryItem.itemId)
+					.element("sLink", inventoryItem.item!.linkage)
+					.element("sFile", inventoryItem.item!.file);
+
+				if (inventoryItem.item!.meta != null) {
+					equipData
+						.element("sMeta", inventoryItem.item!.meta);
+				}
+
+				switch (inventoryItem.item!.typeItem!.equipment) {
+					case 'Weapon':
+						equipData
+							.element("sType", inventoryItem.item!.typeItem!.name);
+						break;
+					case 'ar':
+						data
+							.element("iCP", inventoryItem.quantity)
+							.element("strClassName", inventoryItem.item!.name);
+						break;
+				}
+
+				equipment
+					.element(inventoryItem.item!.typeItem!.equipment, equipData);
+			}
+		}
+
+		return data.element("eqp", equipment);
 	}
 
 	public respawn(): void {
