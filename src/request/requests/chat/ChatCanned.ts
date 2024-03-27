@@ -2,7 +2,7 @@ import type IRequest from "../../../interfaces/request/IRequest.ts";
 import type Player from "../../../player/Player.ts";
 import type RequestArg from "../../RequestArg.ts";
 
-export default class CannedChat implements IRequest {
+export default class ChatCanned implements IRequest {
 
 	public readonly name: string = 'cc';
 
