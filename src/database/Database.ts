@@ -7,6 +7,7 @@ import {
 } from "drizzle-orm/mysql2";
 import {type Connection, createPool, type Pool} from "mysql2";
 import * as schema from "./drizzle/schema";
+import Config from "../config/Config.ts";
 
 export default class Database {
 
@@ -40,7 +41,7 @@ export default class Database {
 		});
 
 		this._drizzle = drizzle(this._pool, {
-			logger: true,
+			logger: Config.QUERY_LOG,
 			mode: 'default',
 			schema: {
 				...schema
