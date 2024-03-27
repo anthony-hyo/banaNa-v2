@@ -13,6 +13,7 @@ import logger from "../util/Logger.ts";
 import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
 import Request from "../request/Request.ts";
 import type IEnhancementPattern from "../database/interfaces/IEnhancementPattern.ts";
+import PlayerController from "./PlayerController.ts";
 
 export default class GameController implements IDispatchable {
 
@@ -148,23 +149,33 @@ export default class GameController implements IDispatchable {
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
-		logger.info(`writeExcept.`, data);
+		for (let player of PlayerController.players()) {
+			player.network.writeExcept(ignored, data);
+		}
 	}
 
 	public writeObject(data: JSONObject): void {
-		logger.info(`writeObject.`, data);
+		for (let player of PlayerController.players()) {
+			player.network.writeObject(data);
+		}
 	}
 
 	public writeObjectExcept(ignored: Player, data: JSONObject): void {
-		logger.info(`writeObjectExcept.`, data);
+		for (let player of PlayerController.players()) {
+			player.network.writeObjectExcept(ignored, data);
+		}
 	}
 
 	public writeArray(...data: any[]): void {
-		logger.info(`writeArray.`, data);
+		for (let player of PlayerController.players()) {
+			player.network.writeArray(data);
+		}
 	}
 
 	public writeArrayExcept(ignored: Player, ...data: any[]): void {
-		logger.info(`writeArrayExcept.`, data);
+		for (let player of PlayerController.players()) {
+			player.network.writeArrayExcept(ignored, data);
+		}
 	}
 
 }
