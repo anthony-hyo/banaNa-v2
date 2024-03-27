@@ -21,7 +21,8 @@ export default class GenderSwap implements IRequest {
 						gender: true
 					}
 				}
-			}
+			},
+			where: eq(users.id, player.databaseId)
 		}) || {});
 
 		if (!coins || !hair) {

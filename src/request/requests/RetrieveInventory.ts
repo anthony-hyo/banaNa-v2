@@ -6,7 +6,7 @@ import JSONArray from "../../util/json/JSONArray.ts";
 import type IUserFriend from "../../database/interfaces/IUserFriend.ts";
 import database from "../../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
-import {usersFriends} from "../../database/drizzle/schema.ts";
+import {users, usersFriends} from "../../database/drizzle/schema.ts";
 import PlayerController from "../../controller/PlayerController.ts";
 import GameController from "../../controller/GameController.ts";
 import type IUser from "../../database/interfaces/IUser.ts";
@@ -41,7 +41,8 @@ export default class RetrieveInventory implements IRequest {
 						enhancement: true,
 					}
 				}
-			}
+			},
+			where: eq(users.id, player.databaseId)
 		});
 
 		if (!user) {
@@ -153,10 +154,10 @@ export default class RetrieveInventory implements IRequest {
 		];
 
 		const userFriends: IUserFriend[] = await database.query.usersFriends.findMany({
-			where: eq(usersFriends.userId, player.databaseId),
 			with: {
 				friend: true
-			}
+			},
+			where: eq(usersFriends.userId, player.databaseId)
 		});
 
 		for (const userFriend of userFriends) {

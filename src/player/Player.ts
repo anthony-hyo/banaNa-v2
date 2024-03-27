@@ -322,14 +322,14 @@ export default class Player {
 
 	public async getGuildObject(): Promise<JSONObject> {
 		const guild: IGuild | undefined = await database.query.guilds.findFirst({
-			where: eq(guilds.id, this.properties.get(PlayerConst.GUILD_ID)),
 			with: {
 				members: {
 					with: {
 						currentServer: true,
 					}
 				}
-			}
+			},
+			where: eq(guilds.id, this.properties.get(PlayerConst.GUILD_ID))
 		});
 
 		const guildJSONObject: JSONObject = new JSONObject();
@@ -504,14 +504,14 @@ export default class Player {
 		const friends: JSONArray = new JSONArray();
 
 		const userFriends: IUserFriend[] = await database.query.usersFriends.findMany({
-			where: eq(usersFriends.userId, this.databaseId),
 			with: {
 				friend: {
 					with: {
 						currentServer: true
 					}
 				}
-			}
+			},
+			where: eq(usersFriends.userId, this.databaseId)
 		});
 
 		for (let userFriend of userFriends) {
@@ -671,10 +671,10 @@ export default class Player {
 		];
 
 		const userFriends: IUserFriend[] = await database.query.usersFriends.findMany({
-			where: eq(usersFriends.userId, this.databaseId),
 			with: {
 				friend: true
-			}
+			},
+			where: eq(usersFriends.userId, this.databaseId)
 		});
 
 		for (let userFriend of userFriends) {
@@ -703,7 +703,8 @@ export default class Player {
 						}
 					}
 				} : {}),
-			}
+			},
+			where: eq(users.id, this.databaseId)
 		});
 
 		const data: JSONObject = new JSONObject();

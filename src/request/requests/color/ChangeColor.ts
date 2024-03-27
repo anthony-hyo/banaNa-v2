@@ -3,7 +3,7 @@ import type Player from "../../../player/Player.ts";
 import type RequestArg from "../../RequestArg.ts";
 import JSONObject from "../../../util/json/JSONObject.ts";
 import database from "../../../database/drizzle/database.ts";
-import {users} from "../../../database/drizzle/schema.ts";
+import {hairs, users} from "../../../database/drizzle/schema.ts";
 import {eq} from "drizzle-orm";
 
 export default class ChangeColor implements IRequest {
@@ -20,7 +20,8 @@ export default class ChangeColor implements IRequest {
 			columns: {
 				name: true,
 				file: true
-			}
+			},
+			where: eq(hairs.id, hairId)
 		});
 
 		if (!hair) {

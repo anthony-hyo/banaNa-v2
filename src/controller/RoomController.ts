@@ -122,7 +122,6 @@ export class RoomController {
 		const mapName: string = name.split("-")[0] == "house" ? name : name.split("-")[0];
 
 		const data: IArea | undefined = await database.query.areas.findFirst({
-			where: eq(areas.name, mapName),
 			with: {
 				cells: true,
 				items: {
@@ -135,7 +134,8 @@ export class RoomController {
 						monster: true,
 					}
 				},
-			}
+			},
+			where: eq(areas.name, mapName)
 		});
 
 		if (!data) {
