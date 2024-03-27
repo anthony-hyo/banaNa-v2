@@ -15,8 +15,6 @@ export default class Helper {
 		);
 	}
 
-	public static joinOK = (roomId: number): string => `<msg t='sys'><body action='joinOK' r='${roomId}'><pid id='0'/><vars /><uLs r='${roomId}'>`;
-
 	public static getAllFilesFromFolder(dir: string): Array<string> {
 		let results: Array<string> = [];
 

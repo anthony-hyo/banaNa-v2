@@ -28,7 +28,7 @@ export default class RequestDefault implements IRequest {
 			return;
 		}
 
-		player.joinRoom(room, roomFrame, roomPad);
+		await player.joinRoom(room, roomFrame, roomPad);
 	}
 
 }

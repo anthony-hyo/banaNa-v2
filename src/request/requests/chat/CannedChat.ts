@@ -7,7 +7,7 @@ export default class CannedChat implements IRequest {
 	public readonly name: string = 'cc';
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
-		player.room?.writeArray("cc", args.getString(0), player.network.name);
+		player.room!.writeArray("cc", args.getString(0), player.network.name);
 	}
 
 }
