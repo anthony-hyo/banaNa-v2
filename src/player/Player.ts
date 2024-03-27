@@ -29,10 +29,10 @@ import type IGuild from "../database/interfaces/IGuild.ts";
 import {RoomController} from "../controller/RoomController.ts";
 import AvatarPosition from "../avatar/AvatarPosition.ts";
 import AvatarStatus from "../avatar/AvatarStatus.ts";
-import Message from "../aqw/Message.ts";
 import PlayerInventory from "./PlayerInventory.ts";
 import {AvatarState} from "../avatar/AvatarState.ts";
 import type AvatarStats from "../avatar/AvatarStats.ts";
+import PlayerData from "./PlayerData.ts";
 
 export default class Player {
 
@@ -95,7 +95,7 @@ export default class Player {
 		this.position.pad = pad;
 
 		if (sendUpdate) {
-			this.room!.writeArrayExcept(this, "uotls", this.network.name, `strPad:${pad},tx:0,strFrame:${frame},ty:0`);
+			this.room!.writeArrayExcept(this, "uotls", [this.network.name, `strPad:${pad},tx:0,strFrame:${frame},ty:0`]);
 		}
 	}
 
@@ -115,7 +115,7 @@ export default class Player {
 		this.room!.writeObject(
 			new JSONObject()
 				.element("cmd", "uotls")
-				.element("unm", this.username)
+				.element("unm", this.network.name)
 				.element("o", new JSONObject()
 					.elementIf(withHealth, "intHP", this.status.health.value)
 					.elementIf(withHealthMax, "intHPMax", this.status.health.max)
@@ -664,7 +664,10 @@ export default class Player {
 				.element("sServer", "Offline")
 			);
 
-		const friendMessage: [string, string] = Message.create("server", `${this.username} has logged out.`);
+		const friendMessage: [string, string] = [
+			'server',
+			`${this.username} has logged out.`
+		];
 
 		const userFriends: IUserFriend[] = await database.query.usersFriends.findMany({
 			where: eq(usersFriends.userId, this.databaseId),
@@ -674,11 +677,11 @@ export default class Player {
 		});
 
 		for (let userFriend of userFriends) {
-			const client: Player | undefined = PlayerController.findByUsername(userFriend.friend!.username.toLowerCase());
+			const client: Player | undefined = PlayerController.findByUsername(userFriend.friend!.username);
 
 			if (client) {
 				client.network.writeObject(friendJSONObject);
-				client.network.writeArray(friendMessage);
+				client.network.writeArray(friendMessage[0], [friendMessage[1]]);
 			}
 		}
 	}
@@ -736,7 +739,7 @@ export default class Player {
 				.element("HairID", user.hairId)
 				.element("UserID", user.id)
 				//.element("bBuyer", 1)
-				.element("bPermaMute", user.isPermanentMute ? 1 : 0)
+				.element("bPermaMute", user.isPermanentMute)
 				.element("bitSuccess", 1)
 				//.element("bitWatched", 0)
 				.element("dCreated", format(user.dateCreated, "yyyy-MM-dd'T'HH:mm:ss"))
@@ -917,8 +920,8 @@ export default class Player {
 			.element("intMP", this.status.mana.value)
 			.element("intMPMax", this.status.mana.max)
 			.element("intState", this.status.state)
-			.element("showCloak", this.preference.isShowingCloak(settings) ? 1 : 0)
-			.element("showHelm", this.preference.isShowingHelm(settings) ? 1 : 0)
+			.element("showCloak", this.preference.isShowingCloak(settings))
+			.element("showHelm", this.preference.isShowingHelm(settings))
 			.element("strFrame", this.position.frame)
 			.element("strPad", this.position.pad)
 			.element("strUsername", this.username)

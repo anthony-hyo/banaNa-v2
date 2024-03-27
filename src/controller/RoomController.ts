@@ -85,7 +85,7 @@ export class RoomController {
 
 			for (let [networkId, target] of newRoom.players) {
 				// noinspection HtmlUnknownAttribute
-				response += `<u i='${networkId}' m='0' s='0' p='${i}'><n><![CDATA[${target.username}]]></n><vars></vars></u>`;
+				response += `<u i='${networkId}' m='0' s='0' p='${i}'><n><![CDATA[${target.network.name}]]></n><vars></vars></u>`;
 				i++;
 			}
 

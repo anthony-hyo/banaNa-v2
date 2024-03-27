@@ -22,10 +22,12 @@ export default class PlayerController {
 			})*/
 			.findFirst()
 			.then((user: IUser | undefined): void => {
+				const networkName: string = user!.username.toLowerCase(); //TODO: Temporary fix
+
 				if (user === undefined) {
 					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `Player Data for '${username}' could not be retrieved.<br>Please contact the staff to resolve the issue.`);
 
-					this.removeConnection(username);
+					this.removeConnection(networkName);
 					return;
 				}
 
@@ -39,16 +41,16 @@ export default class PlayerController {
 				if (!GameController.instance().server.isOnline || (GameController.instance().server.isStaffOnly && user.accessId < 40)) {
 					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `A game update/maintenance is currently ongoing.<br>Only the staff can enter the server at the moment.`);
 
-					this.removeConnection(username);
+					this.removeConnection(networkName);
 					return;
 				}
 
-				const exitingPlayer: Player | undefined = this.findByUsername(username);
+				const exitingPlayer: Player | undefined = this.findByUsername(networkName);
 
 				if (exitingPlayer !== undefined) {
 					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `You logged in from a different location.`);
 
-					this.removeConnection(username);
+					this.removeConnection(networkName);
 				}
 
 				const player: Player = new Player(user, playerNetwork);
@@ -83,7 +85,7 @@ export default class PlayerController {
 		const nameCase: string = name.toLowerCase();
 
 		for (let player of this.players()) {
-			if (player.username == nameCase) {
+			if (player.network.name == nameCase) {
 				return player;
 			}
 		}

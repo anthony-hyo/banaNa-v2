@@ -9,16 +9,16 @@ export default class JSONObject {
 		this.properties = properties;
 	}
 
-	public put(key: string, value: any): void {
+	public put(key: string, value: string | number | boolean | JSONObject | JSONArray): void {
 		this.properties[key] = value;
 	}
 
-	public element(key: string, value: string | number | JSONObject | JSONArray): this {
+	public element(key: string, value: string | number | boolean | JSONObject | JSONArray): this {
 		this.properties[key] = value;
 		return this;
 	}
 
-	public elementIf(condition: boolean, key: string, value: string | number | JSONObject | JSONArray): this {
+	public elementIf(condition: boolean, key: string, value: string | number | boolean | JSONObject | JSONArray): this {
 		if (condition) {
 			this.properties[key] = value;
 		}

@@ -3,7 +3,6 @@ import type RequestArg from "../RequestArg.ts";
 import type Player from "../../player/Player.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
 import JSONArray from "../../util/json/JSONArray.ts";
-import Message from "../../aqw/Message.ts";
 import type IUserFriend from "../../database/interfaces/IUserFriend.ts";
 import database from "../../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
@@ -158,7 +157,7 @@ export default class RetrieveInventory implements IRequest {
 		});
 
 		for (const userFriend of userFriends) {
-			const client: Player | undefined = PlayerController.findByUsername(userFriend.friend!.username.toLowerCase());
+			const client: Player | undefined = PlayerController.findByUsername(userFriend.friend!.username);
 
 			if (client) {
 				client.network.writeObject(friendJSONObject);
