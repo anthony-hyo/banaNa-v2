@@ -4,6 +4,7 @@ import type ITypeItem from "./ITypeItem.ts";
 import type ITypeRarity from "./ITypeRarity.ts";
 import type IFaction from "./IFaction.ts";
 import type IEnhancement from "./IEnhancement.ts";
+import type IClass from "./IClass.ts";
 
 export default interface IItem {
 	id: number;
@@ -51,6 +52,8 @@ export default interface IItem {
 	typeItem?: ITypeItem;
 	typeRarity?: ITypeRarity;
 	typeElement?: ITypeElement;
+
+	class?: IClass;
 
 	enhancement?: IEnhancement;
 

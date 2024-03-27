@@ -122,6 +122,15 @@ const monsterIdColumn = int("monster_id", {
 		onUpdate: "cascade"
 	});
 
+const skillIdColumn = int("skill_id", {
+	unsigned: true
+})
+	.notNull()
+	.references((): AnyMySqlColumn => skills.id, {
+		onDelete: "cascade",
+		onUpdate: "cascade"
+	});
+
 const levelColumn = (table: string = `level`) => int(table, {
 	unsigned: true
 })
@@ -348,6 +357,45 @@ export const classes = mysqlTable("classes", {
 
 	dateCreated: dateCreatedColumn,
 });
+
+export const classesRelations = relations(classes, ({ one, many }) => ({
+	item: one(items, {
+		fields: [classes.id],
+		references: [items.classId],
+	}),
+
+	skills: many(classes)
+}));
+
+export const classesSkills = mysqlTable("classes_skills", {
+	id: idColumn(),
+
+	classId: int("class_id", {
+		unsigned: true
+	})
+		.notNull()
+		.references((): AnyMySqlColumn => classes.id, {
+			onDelete: "cascade",
+			onUpdate: "cascade"
+		}),
+
+	skillId: skillIdColumn,
+
+	dateUpdated: dateUpdatedColumn,
+
+	dateCreated: dateCreatedColumn,
+});
+
+export const classesSkillsRelations = relations(classesSkills, ({ one, many }) => ({
+	class: one(classes, {
+		fields: [classesSkills.classId],
+		references: [classes.id],
+	}),
+	skill: one(skills, {
+		fields: [classesSkills.skillId],
+		references: [skills.id],
+	}),
+}));
 
 export const countries = mysqlTable("countries", {
 	code:
@@ -868,6 +916,15 @@ export const items = mysqlTable("items", {
 				onUpdate: "cascade"
 			}),
 
+	classId:
+		int("class_id", {
+			unsigned: true
+		})
+			.references((): AnyMySqlColumn => classes.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
 	level: levelColumn(),
 
 	range:
@@ -994,6 +1051,11 @@ export const itemsRelations = relations(items, ({ one, many }) => ({
 	typeElement: one(typesElements, {
 		fields: [items.typeElementId],
 		references: [typesElements.id],
+	}),
+
+	class: one(classes, {
+		fields: [items.classId],
+		references: [classes.id],
 	}),
 
 	enhancement: one(enhancements, {
@@ -1858,6 +1920,7 @@ export const skills = mysqlTable("skills", {
 });
 
 export const skillsRelations = relations(skills, ({ many }) => ({
+	classesSkills: many(classesSkills),
 	auras: many(skillsAuras),
 }));
 
@@ -1871,15 +1934,7 @@ export const skillsAuras = mysqlTable("skills_auras", {
 			.default('banaNa')
 			.notNull(),
 
-	skillId:
-		int("skill_id", {
-			unsigned: true
-		})
-			.notNull()
-			.references((): AnyMySqlColumn => skills.id, {
-				onDelete: "cascade",
-				onUpdate: "cascade"
-			}),
+	skillId: skillIdColumn,
 
 	maxStack:
 		tinyint("max_stack", {
