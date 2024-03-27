@@ -1,6 +1,6 @@
 import Room from "../room/Room";
 import PlayerNetwork from "./PlayerNetwork";
-import {guilds, users, usersFactions, usersFriends, usersInventory, usersLogs} from "../database/drizzle/schema";
+import {users, usersFactions, usersFriends, usersInventory, usersLogs} from "../database/drizzle/schema";
 import database from "../database/drizzle/database";
 import {and, eq, sql} from "drizzle-orm";
 import type IUser from "../database/interfaces/IUser.ts";
@@ -25,7 +25,6 @@ import type IUserFriend from "../database/interfaces/IUserFriend.ts";
 import PlayerController from "../controller/PlayerController.ts";
 import PartyController from "../party/PartyController.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
-import type IGuild from "../database/interfaces/IGuild.ts";
 import {RoomController} from "../controller/RoomController.ts";
 import AvatarPosition from "../avatar/AvatarPosition.ts";
 import AvatarStatus from "../avatar/AvatarStatus.ts";
@@ -33,6 +32,7 @@ import PlayerInventory from "./PlayerInventory.ts";
 import {AvatarState} from "../avatar/AvatarState.ts";
 import type AvatarStats from "../avatar/AvatarStats.ts";
 import PlayerData from "./PlayerData.ts";
+import Guild from "../guild/Guild.ts";
 
 export default class Player {
 
@@ -45,6 +45,7 @@ export default class Player {
 	public readonly position: AvatarPosition = new AvatarPosition();
 
 	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
+
 	public readonly status: AvatarStatus = new AvatarStatus(2500, 1000, 100, AvatarState.NEUTRAL);
 	public readonly inventory: PlayerInventory = new PlayerInventory(this);
 	public readonly preference: PlayerPreference = new PlayerPreference(this);
@@ -110,7 +111,7 @@ export default class Player {
 		}) || {};
 
 		if (level == undefined) {
-			throw new Error(`User not found in the database.`);
+			throw new Error("The user could not be found in the database.");
 		}
 
 		this.room!.writeObject(
@@ -320,49 +321,6 @@ export default class Player {
 		return ra;
 	}
 
-	public async getGuildObject(): Promise<JSONObject> {
-		const guild: IGuild | undefined = await database.query.guilds.findFirst({
-			with: {
-				members: {
-					with: {
-						currentServer: true,
-					}
-				}
-			},
-			where: eq(guilds.id, this.properties.get(PlayerConst.GUILD_ID))
-		});
-
-		const guildJSONObject: JSONObject = new JSONObject();
-
-		if (!guild) {
-			return guildJSONObject;
-		}
-
-		const members: JSONArray = new JSONArray();
-
-		for (let member of guild.members) {
-			members.add(
-				new JSONObject()
-					.element("ID", member.id)
-					.element("userName", member.user!.username)
-					.element("Level", member.level)
-					.element("Rank", member.guildRank)//TODO
-					.element("Server", member.currentServerId ? member.currentServer!.name : 'Offline')
-			);
-		}
-
-		return guildJSONObject.element("Name", guild.name)
-			.element("MOTD", guild.messageOfTheDay.length > 0 ? guild.messageOfTheDay : "undefined")
-			.element("pending", new JSONObject())
-			.element("MaxMembers", guild.maxMembers)
-			.element("dateUpdated", format(guild.dateUpdated, "yyyy-MM-dd'T'HH:mm:ss"))
-			.element("Level", 1)
-			.element("HallSize", guild.hallSize)
-			//.element("guildHall", getGuildHallData(guildId))
-			.element("guildHall", new JSONArray())
-			.element("ul", members);
-	}
-
 	public updateStats(enhancement: IEnhancement, equipment: string): void {
 		const itemStats: Map<string, number> = CoreValues.getItemStats(enhancement, equipment);
 
@@ -568,21 +526,6 @@ export default class Player {
 		return index > 99 ? Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_2) as string, index - 100) : Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_1) as string, index);
 	}
 
-	public getGuildRank(rank: number): string {
-		switch (rank) {
-			case 0:
-				return "duffer";
-			case 1:
-				return "member";
-			case 2:
-				return "officer";
-			case 3:
-				return "leader";
-			default:
-				return "";
-		}
-	}
-
 	public turnInItem(itemId: number, quantity: number): boolean {
 		const items: Map<number, number> = new Map<number, number>();
 		//TODO: ..
@@ -608,58 +551,69 @@ export default class Player {
 	}
 
 	public async lost(): Promise<void> {
-		if (this.properties.size == 0) {
-			return;
+		const user: IUser | undefined = await database.query.users.findFirst({
+			with: {
+				guild: {
+					with: {
+						members: {
+							with: {
+								currentServer: true,
+							}
+						}
+					}
+				},
+				hair: true,
+				friends: true
+			},
+			where: eq(users.id, this.databaseId)
+		});
+
+		if (!user) {
+			throw new Error("The user could not be found in the database.");
 		}
 
-		const pi: Party | undefined = PartyController.instance().getPartyInfo(this.properties.get(PlayerConst.PARTY_ID));
+		//Party
+		const party: Party | undefined = PartyController.instance().getPartyInfo(this.properties.get(PlayerConst.PARTY_ID));
 
-		if (pi) {
-			if (pi.getOwner() === this.username) {
-				pi.setOwner(pi.getNextOwner());
+		if (party) {
+			if (party.getOwner() === this.username) {
+				party.setOwner(party.getNextOwner());
 			}
 
-			pi.removeMember(this);
+			party.removeMember(this);
 
-			pi.writeObject(
+			party.writeObject(
 				new JSONObject()
 					.element("cmd", "pr")
-					.element("owner", pi.getOwner())
+					.element("owner", party.getOwner())
 					.element("typ", "l")
 					.element("unm", this.username)
 			);
 
-			if (pi.getMemberCount() <= 0) {
-				pi.getOwnerObject().network.writeObject(
+			if (party.getMemberCount() <= 0) {
+				party.getOwnerObject().network.writeObject(
 					new JSONObject()
 						.element("cmd", "pc")
 				);
 
-				PartyController.instance().removeParty(pi.id);
+				PartyController.instance().removeParty(party.id);
 
-				pi.getOwnerObject().properties.set(PlayerConst.PARTY_ID, -1);
+				party.getOwnerObject().properties.set(PlayerConst.PARTY_ID, -1);
 			}
 		}
 
-		await database
-			.update(users)
-			.set({
-				lastArea: this.properties.get(PlayerConst.LAST_AREA),
-				currentServerId: null
-			})
-			.where(eq(users.id, this.databaseId));
+		//Guild
+		if (user.guildId) {
+			const guild: Guild = await Guild.findOrCreate(user.guildId);
 
-		// UPDATE GUILD
-		const guildId: number = this.properties.get(PlayerConst.GUILD_ID);
-
-		if (guildId > 0) {
-			//this.sendGuildUpdate(this.getGuildObject(guildId)); //TODO
+			await guild.update(user.guild);
 		}
 
+		//Friend
 		const friendJSONObject: JSONObject = new JSONObject()
 			.element("cmd", "updateFriend")
 			.element("friend", new JSONObject()
-				.element("iLvl", data().level())
+				.element("iLvl", user.level)
 				.element("ID", this.databaseId)
 				.element("sName", this.username)
 				.element("sServer", "Offline")
@@ -690,6 +644,15 @@ export default class Player {
 	public async json(self: boolean, withNetworkId: boolean, withEquipment: boolean): Promise<JSONObject> {
 		const user: IUser | undefined = await database.query.users.findFirst({
 			with: {
+				guild: {
+					with: {
+						members: {
+							with: {
+								currentServer: true,
+							}
+						}
+					}
+				},
 				hair: true,
 				...(withEquipment ? {
 					inventory: {
@@ -831,32 +794,10 @@ export default class Player {
 
 		if (user.guildId) {
 			if (self) {
-				const members: JSONArray = new JSONArray();
-
-				for (let member of user.guild!.members) {
-					members
-						.add(new JSONObject()
-							.element("ID", member.id)
-							.element("Level", member.level)
-							.element("Rank", member.guildRank)
-							.element("Server", member.currentServer!.name)
-							.element("userName", member.username)
-						);
-				}
+				const guild: Guild = await Guild.findOrCreate(user.guildId);
 
 				data
-					.element("guild", new JSONObject()
-						.element("GuildID", user.guild!.id)
-						.element("MOTD", user.guild!.messageOfTheDay)
-						.element("MaxMembers", user.guild!.maxMembers)
-						.element("Name", user.guild!.name)
-						.element("dateUpdated", format(user.guild!.dateUpdated, "yyyy-MM-dd'T'HH:mm:ss"))
-						.element("guildRep", 0)
-						.element("newRep", 0)
-						.element("pending", new JSONObject())
-						.element("pendingOfficer", new JSONObject())
-						.element("ul", members)
-					);
+					.element("guild", await guild.json(user.guild));
 			} else {
 				data
 					.element("guild", new JSONObject()
@@ -980,9 +921,8 @@ export default class Player {
 		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
 		stats.effects.clear();
 
-		this.network.writeObject(
-			new JSONObject()
-				.element("cmd", "clearAuras")
+		this.network.writeObject(new JSONObject()
+			.element("cmd", "clearAuras")
 		);
 	}
 
@@ -1056,10 +996,7 @@ export default class Player {
 		} else if (room.players.has(this.network.id)) {
 			this.network.writeArray("warning", ["Cannot join a room you are currently in!"]);
 			return false;
-		} /*else if (area instanceof Hall && (area as Hall).getGuildId() != parseInt(this.properties.get(PlayerConst.GUILD_ID))) {
-			this.network.writeArray("warning", ["You cannot access other guild halls!"]);
-			return false
-		}*/ else if (room.players.size >= room.data.max_players) {
+		} else if (room.players.size >= room.data.max_players) {
 			this.network.writeArray("warning", ["Room join failed, destination room is full."]);
 			return false;
 		}
@@ -1068,10 +1005,11 @@ export default class Player {
 	}
 
 	public async joinRoom(room: Room, frame: string = "Enter", pad: string = "Spawn"): Promise<void> {
-		this.properties.set(PlayerConst.FRAME, frame);
-		this.properties.set(PlayerConst.PAD, pad);
-		this.properties.set(PlayerConst.TX, 0);
-		this.properties.set(PlayerConst.TY, 0);
+		this.position.frame = frame;
+		this.position.pad = pad;
+
+		this.position.xAxis = 0;
+		this.position.yAxis = 0;
 
 		await RoomController.joinRoom(this, room);
 

@@ -57,7 +57,6 @@ export default class PlayerController {
 
 				PlayerController.add(player);
 
-				//["loginResponse","-1","true","25860","KATHLEEN","","2024-03-13T00:46:57","SETTINGS LOGIN","3.00941"]
 				playerNetwork.writeArray(`loginResponse`, [`true`, player.network.id, networkName, `Message of the day`, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941"]);
 
 				database

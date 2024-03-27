@@ -90,7 +90,7 @@ export default interface IUser {
 	user?: IUser;
 	access?: IAccess;
 	settingLevel?: ISettingLevel;
-	guild?: IGuild;
+	guild?: IGuild | null;
 	currentServer?: IServer | null;
 	hair?: IHair;
 

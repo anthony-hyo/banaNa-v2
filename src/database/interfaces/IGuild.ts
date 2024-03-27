@@ -8,10 +8,9 @@ export default interface IGuild {
 	messageOfTheDay: string;
 
 	maxMembers: number;
-	hallSize: number;
 
 	dateUpdated: Date;
 	dateCreated: Date;
 
-	members: IUser[];
+	members?: IUser[];
 }
