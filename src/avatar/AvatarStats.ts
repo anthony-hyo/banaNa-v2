@@ -27,13 +27,14 @@ export default class AvatarStats {
 		["Weapon", 0.33]
 	]);
 
-	public wDPS: number = 0;
 	public innate: Map<string, number> = new Map<string, number>();
 	public weapon: Map<string, number> = new Map<string, number>();
 	public helm: Map<string, number> = new Map<string, number>();
 	public armor: Map<string, number> = new Map<string, number>();
 	public cape: Map<string, number> = new Map<string, number>();
+
 	public effects: Set<ISkillAuraEffect> = new Set<ISkillAuraEffect>();
+
 	private $cai: number = 1.0;
 	private $cao: number = 1.0;
 	private $cdi: number = 1.0;
@@ -87,10 +88,20 @@ export default class AvatarStats {
 	private _thi: number = 0.0; //total hit
 	private _tpa: number = 0.0;
 	private _tre: number = 0.0;
-	private minDmg: number = 0;
-	private maxDmg: number = 0;
 
-	public constructor(private readonly player: Player) {
+	public physicalDamage: number = 0;
+
+	private minimumPhysicalDamage: number = 0;
+	private maximumPhysicalDamage: number = 0;
+
+	public magicDamage: number = 0;
+
+	private minimumMagicDamage: number = 0;
+	private maximumMagicDamage: number = 0;
+
+	public constructor(
+		private readonly player: Player
+	) {
 		//IN ORDER DO NOT TOUCH
 		this.innate.set("STR", 0.0);
 		this.innate.set("END", 0.0);
@@ -414,11 +425,11 @@ export default class AvatarStats {
 	}
 
 	public getMinDmg(): number {
-		return this.minDmg;
+		return this.minimumPhysicalDamage;
 	}
 
 	public getMaxDmg(): number {
-		return this.maxDmg;
+		return this.maximumPhysicalDamage;
 	}
 
 	private applyAuraEffects(): void {
@@ -465,16 +476,16 @@ export default class AvatarStats {
 	}
 
 	private initInnateStats(): void {
-		let level: number = parseInt(this.player.properties.get("level"));
-		let cat: string = this.player.properties.get("classcat");
+		const level: number = parseInt(this.player.properties.get("level"));
+		const cat: string = this.player.properties.get("classcat");
 
-		let innateStat: number = CoreValues.getInnateStats(level);
-		let ratios: number[] = <number[]>AvatarStats.classCatMap.get(cat);
+		const innateStat: number = CoreValues.getInnateStats(level);
+		const ratios: number[] = <number[]>AvatarStats.classCatMap.get(cat);
 
-		let keyEntry: IterableIterator<string> = this.innate.keys();
+		const keyEntry: IterableIterator<string> = this.innate.keys();
 
 		let i: number = 0;
-		for (let key of keyEntry) {
+		for (const key of keyEntry) {
 			let stat: number = Math.round(ratios[i] * innateStat);
 			this.innate.set(key, stat);
 			i++;
@@ -539,16 +550,16 @@ export default class AvatarStats {
 	private applyCoreStatRatings(): void {
 		const cat: string = this.player.properties.get(PlayerConst.CLASS_CATEGORY) as string;
 		const enhancement: IEnhancement = this.player.properties.get(PlayerConst.ITEM_WEAPON_ENHANCEMENT);
-		const level: number = this.player.properties.get(PlayerConst.LEVEL) as number;
+		const level: number = Player_Level;
 
 		const wLvl: number = enhancement ? enhancement.level : 1;
-		let iDPS: number = enhancement ? enhancement.dps : 100;
-		iDPS = iDPS === 0 ? 100 : iDPS;
-		iDPS = iDPS / 100;
 
-		const intAPtoDPS: number = CoreValues.getValue("intAPtoDPS")!;
-		const PCDPSMod: number = CoreValues.getValue("PCDPSMod")!;
-		//const intSPtoDPS: number = CoreValues.getValue("intSPtoDPS");
+		const iDPS: number = (enhancement && enhancement.damage_per_second !== 0 ? enhancement.damage_per_second : 100) / 100;
+
+		const intAPtoDPS: number = CoreValues.getValue("intAPtoDPS");
+		const intSPtoDPS: number = CoreValues.getValue("intSPtoDPS");
+
+		const PCDPSMod: number = CoreValues.getValue("PCDPSMod");
 
 		const hpTgt: number = CoreValues.getBaseHPByLevel(level);
 		const TTD: number = 20;
@@ -558,95 +569,110 @@ export default class AvatarStats {
 		this.resetValues();
 
 		for (const key in this.innate) {
-			let val: number = this.innate.get(key)! + this.armor.get(key)! + this.weapon.get(key)! + this.helm.get(key)! + this.cape.get(key)!;
+			const val: number = this.innate.get(key)! + this.armor.get(key)! + this.weapon.get(key)! + this.helm.get(key)! + this.cape.get(key)!;
 
-			if (key === "STR") {
-				const bias1: number = sp1pc;
-				if (cat === "M1") {
-					this.$sbm -= (val / bias1 / 100) * 0.3;
-				}
-				if (cat === "S1") {
-					this.attackPower += Math.round(val * 1.4);
-				} else {
-					this.attackPower += val * 2;
-				}
-				if (["M1", "M2", "M3", "M4", "S1"].includes(cat)) {
-					this.criticalHit += (val / bias1 / 100) * (cat === "M4" ? 0.7 : 0.4);
-				}
-			} else if (key === "INT") {
-				const bias1: number = sp1pc;
-				this.$cmi -= val / bias1 / 100;
-				if (cat[0] === "C" || cat === "M3") {
-					this.$cmo += val / bias1 / 100;
-				}
-				if (cat === "S1") {
-					this.magicPower += Math.round(val * 1.4);
-				} else {
-					this.magicPower += val * 2;
-				}
-				if (["C1", "C2", "C3", "M3", "S1"].includes(cat)) {
-					this.haste += (val / bias1 / 100) * (cat === "C2" ? 0.5 : 0.3);
-				}
-			} else if (key === "DEX") {
-				const bias1: number = sp1pc;
-				if (["M1", "M2", "M3", "M4", "S1"].includes(cat)) {
-					if (!cat.startsWith("C")) {
-						this.hit += (val / bias1 / 100) * 0.2;
+			const baseVal: number = val / sp1pc / 100;
+
+			switch (key) {
+				case "STR":
+					if (cat === "M1") {
+						this.$sbm -= baseVal * 0.3;
 					}
-					if (["M2", "M4"].includes(cat)) {
-						this.haste += (val / bias1 / 100) * 0.5;
+
+					if (cat === "S1") {
+						this.attackPower += Math.round(val * 1.4);
 					} else {
-						this.haste += (val / bias1 / 100) * 0.3;
+						this.attackPower += val * 2;
 					}
-					if (cat === "M1" && this._tbl > 0.01) {
-						this.block += (val / bias1 / 100) * 0.5;
+
+					if (["M1", "M2", "M3", "M4", "S1"].includes(cat)) {
+						this.criticalHit += baseVal * (cat === "M4" ? 0.7 : 0.4);
 					}
-				}
-				if (!["M2", "M3"].includes(cat)) {
-					this.evasion += (val / bias1 / 100) * 0.3;
-				} else {
-					this.evasion += (val / bias1 / 100) * 0.5;
-				}
-			} else if (key === "WIS") {
-				const bias1: number = sp1pc;
-				if (["C1", "C2", "C3", "S1"].includes(cat)) {
-					if (cat === "C1") {
-						this.criticalHit += (val / bias1 / 100) * 0.7;
+					break;
+				case "INT":
+					this.$cmi -= baseVal;
+
+					if (cat[0] === "C" || cat === "M3") {
+						this.$cmo += baseVal;
+					}
+
+					if (cat === "S1") {
+						this.magicPower += Math.round(val * 1.4);
 					} else {
-						this.criticalHit += (val / bias1 / 100) * 0.4;
+						this.magicPower += val * 2;
 					}
-					this.hit += (val / bias1 / 100) * 0.2;
-				}
-				this.evasion += (val / bias1 / 100) * 0.3;
-			} else if (key === "LCK") {
-				const bias1: number = sp1pc;
-				this.$sem += (val / bias1 / 100) * 2;
-				if (cat === "S1") {
-					this.attackPower += Math.round(val * 1);
-					this.magicPower += Math.round(val * 1);
-					this.criticalHit += (val / bias1 / 100) * 0.3;
-					this.hit += (val / bias1 / 100) * 0.1;
-					this.haste += (val / bias1 / 100) * 0.3;
-					this.evasion += (val / bias1 / 100) * 0.25;
-					this.$scm += (val / bias1 / 100) * 2.5;
-				} else {
-					if (["M1", "M2", "M3", "M4"].includes(cat)) {
-						this.attackPower += Math.round(val * 0.7);
+
+					if (["C1", "C2", "C3", "M3", "S1"].includes(cat)) {
+						this.haste += baseVal * (cat === "C2" ? 0.5 : 0.3);
 					}
-					if (["C1", "C2", "C3", "M3"].includes(cat)) {
-						this.magicPower += Math.round(val * 0.7);
+					break;
+				case "DEX":
+					if (["M1", "M2", "M3", "M4", "S1"].includes(cat)) {
+						if (!cat.startsWith("C")) {
+							this.hit += baseVal * 0.2;
+						}
+
+						if (["M2", "M4"].includes(cat)) {
+							this.haste += baseVal * 0.5;
+						} else {
+							this.haste += baseVal * 0.3;
+						}
+
+						if (cat === "M1" && this._tbl > 0.01) {
+							this.block += baseVal * 0.5;
+						}
 					}
-					this.criticalHit += (val / bias1 / 100) * 0.2;
-					this.hit += (val / bias1 / 100) * 0.1;
-					this.haste += (val / bias1 / 100) * 0.1;
-					this.evasion += (val / bias1 / 100) * 0.1;
-					this.$scm += (val / bias1 / 100) * 5;
-				}
+
+					if (!["M2", "M3"].includes(cat)) {
+						this.evasion += baseVal * 0.3;
+					} else {
+						this.evasion += baseVal * 0.5;
+					}
+					break;
+				case "WIS":
+					if (["C1", "C2", "C3", "S1"].includes(cat)) {
+						if (cat === "C1") {
+							this.criticalHit += baseVal * 0.7;
+						} else {
+							this.criticalHit += baseVal * 0.4;
+						}
+
+						this.hit += baseVal * 0.2;
+					}
+					this.evasion += baseVal * 0.3;
+					break;
+				case "LCK":
+					this.$sem += baseVal * 2;
+
+					if (cat === "S1") {
+						this.attackPower += Math.round(val * 1);
+						this.magicPower += Math.round(val * 1);
+						this.criticalHit += baseVal * 0.3;
+						this.hit += baseVal * 0.1;
+						this.haste += baseVal * 0.3;
+						this.evasion += baseVal * 0.25;
+						this.$scm += baseVal * 2.5;
+					} else {
+						if (["M1", "M2", "M3", "M4"].includes(cat)) {
+							this.attackPower += Math.round(val * 0.7);
+						}
+
+						if (["C1", "C2", "C3", "M3"].includes(cat)) {
+							this.magicPower += Math.round(val * 0.7);
+						}
+
+						this.criticalHit += baseVal * 0.2;
+						this.hit += baseVal * 0.1;
+						this.haste += baseVal * 0.1;
+						this.evasion += baseVal * 0.1;
+						this.$scm += baseVal * 5;
+					}
+					break;
 			}
 		}
 
-		this.wDPS = Math.round((CoreValues.getBaseHPByLevel(wLvl) / TTD) * iDPS * PCDPSMod + Math.round(this.attackPower / intAPtoDPS));
-		// this.mDPS = Math.round(((this.world.getBaseHPByLevel(wLvl) / TTD) * iDPS * PCDPSMod) + Math.round(($sp / intSPtoDPS)));
+		this.physicalDamage = Math.round((CoreValues.getBaseHPByLevel(wLvl) / TTD) * iDPS * PCDPSMod + Math.round(this.attackPower / intAPtoDPS));
+		this.magicDamage = Math.round((CoreValues.getBaseHPByLevel(wLvl) / TTD) * iDPS * PCDPSMod + Math.round(this.magicPower / intSPtoDPS));
 	}
 
 	private initDamage(): void {
@@ -656,21 +682,31 @@ export default class AvatarStats {
 		let weaponItem: IItem = this.player.properties.get("weaponitem");
 
 		if (userSkills && weaponItem) {
-			const autoAttack: ISkill | undefined = this.world.skills.get(userSkills.get("aa"));
+			const autoAttack: ISkill | undefined = Player_Auto_Attack;
 
 			if (!autoAttack) {
 				throw new Error("not allowed to have class without auto attack");
 			}
 
-			const wSPD: number = 2.0;
-			const wDMG: number = this.wDPS * wSPD;
-			const wepDPS: number = weaponItem.dps;
-			const wepRng: number = weaponItem.range;
-			const iRNG: number = wepRng / 100.0;
-			const tDMG: number = wDMG * autoAttack.damage;
+			const aaDamage: number = autoAttack.damage;
 
-			this.minDmg = Math.floor(tDMG - tDMG * iRNG + wepDPS);
-			this.maxDmg = Math.ceil(tDMG + tDMG * iRNG + wepDPS);
+			const wSPD: number = 2;
+
+			const wDMG: number = this.physicalDamage * wSPD;
+			const mDMG: number = this.magicDamage * wSPD;
+
+			const wepRng: number = weaponItem.range;
+
+			const iRNG: number = wepRng / 100;
+
+			const tADMG: number = wDMG * aaDamage;
+			const tMDMG: number = mDMG * aaDamage;
+
+			this.minimumPhysicalDamage = Math.floor(tADMG - tADMG * iRNG);
+			this.maximumPhysicalDamage = Math.ceil(tADMG + tADMG * iRNG);
+
+			this.minimumMagicDamage = Math.floor(tMDMG - tMDMG * iRNG);
+			this.maximumMagicDamage = Math.ceil(tMDMG + tMDMG * iRNG);
 		}
 	}
 

@@ -495,7 +495,7 @@ export default class Player {
 				.element("tempSta", tempStat)
 				.element("cmd", "stu")
 				.element("sta", stat)
-				.element("wDPS", stats.wDPS),
+				.element("wDPS", stats.physicalDamage),
 		);
 	}
 

@@ -109,12 +109,12 @@ export default class CoreValues {
 		const iBudget: number = Math.round(this.getIBudget(enhancement.level, enhancement.rarity) * CoreValues.EQUIPMENT_RATIO.get(equipment)!);
 
 		const statPattern: Map<string, number> = new Map<string, number>([
-			['WIS', enhancement.pattern.wisdom],
-			['END', enhancement.pattern.endurance],
-			['LCK', enhancement.pattern.luck],
-			['STR', enhancement.pattern.strength],
-			['DEX', enhancement.pattern.dexterity],
-			['INT', enhancement.pattern.intelligence]
+			['WIS', enhancement.pattern!.wisdom],
+			['END', enhancement.pattern!.endurance],
+			['LCK', enhancement.pattern!.luck],
+			['STR', enhancement.pattern!.strength],
+			['DEX', enhancement.pattern!.dexterity],
+			['INT', enhancement.pattern!.intelligence]
 		]);
 
 		const keyEntry: string[] = Array.from(itemStats.keys());
