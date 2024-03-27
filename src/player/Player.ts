@@ -46,7 +46,7 @@ export default class Player {
 	public readonly position: AvatarPosition = new AvatarPosition();
 
 	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
-	public readonly status: AvatarStatus = new AvatarStatus(2500, 100, AvatarState.NEUTRAL);
+	public readonly status: AvatarStatus = new AvatarStatus(2500, 1000, 100, AvatarState.NEUTRAL);
 	public readonly inventory: PlayerInventory = new PlayerInventory(this);
 	public readonly preference: PlayerPreference = new PlayerPreference(this);
 

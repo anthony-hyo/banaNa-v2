@@ -5,12 +5,14 @@ export default class AvatarStatus {
 
 	public _health: AvatarVitality;
 	public _mana: AvatarVitality;
+	public _stamina: AvatarVitality;
 
 	public _state: AvatarState;
 
-	constructor(health: number, mana: number, state: AvatarState) {
+	constructor(health: number, mana: number, stamina: number, state: AvatarState) {
 		this._health = new AvatarVitality(health, health);
 		this._mana = new AvatarVitality(mana, mana);
+		this._stamina = new AvatarVitality(stamina, mana);
 
 		this._state = state;
 	}
@@ -21,6 +23,10 @@ export default class AvatarStatus {
 
 	public get mana(): AvatarVitality {
 		return this._mana;
+	}
+
+	public get stamina(): AvatarVitality {
+		return this._stamina;
 	}
 
 	public get state(): AvatarState {
