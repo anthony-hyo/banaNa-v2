@@ -11,7 +11,7 @@ export default class MoveToCellById implements IRequest {
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		const cellId: number = args.getNumber(0);
 
-		const areaCell: IAreaCell | undefined = player.room?.data.cells?.find(areasCells => areasCells.cellId == 1);
+		const areaCell: IAreaCell | undefined = player.room!.data.cells?.find(areasCells => areasCells.cellId == 1);
 
 		if (!areaCell || areaCell.frame == "Enter0" && player.properties.get(PlayerConst.PVP_TEAM) !== 0 || areaCell.frame == "Enter1" && player.properties.get(PlayerConst.PVP_TEAM) !== 1) {
 			return;
