@@ -10,19 +10,12 @@ export default class RetrieveUserDatas implements IRequest {
 	public readonly name: string = 'retrieveUserDatas';
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
-		console.log(args.toString());
-
 		const jsonArray: JSONArray = new JSONArray();
 
 		for (let id of args.list()) {
 			const userId: number = Number(id);
 
 			const playerRetrieved: Player | undefined = PlayerController.find(userId);
-
-			for (let player1 of PlayerController.players()) {
-				console.log('aaa', player1.network.id, player1.username);
-			}
-			console.log(playerRetrieved);
 
 			if (!playerRetrieved) {
 				continue;
@@ -32,7 +25,7 @@ export default class RetrieveUserDatas implements IRequest {
 				.element("uid", userId)
 				.element("strFrame", playerRetrieved.position.frame)
 				.element("strPad", playerRetrieved.position.pad)
-				.element("data", await playerRetrieved.json(userId == player.network.id, true, false))
+				.element("data", await playerRetrieved.json(userId == player.network.id, false, true))
 			);
 		}
 

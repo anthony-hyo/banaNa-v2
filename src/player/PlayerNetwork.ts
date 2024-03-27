@@ -76,13 +76,7 @@ export default class PlayerNetwork implements IDispatchable {
 	}
 
 	public writeArray(...data: any[]): void {
-		let response: string = ``;
-
-		for (let i: number = 1; i < data.length; ++i) {
-			response += `${data[i]}%`;
-		}
-
-		this.write(`%xt%${data[0]}%-1%${response}`);
+		this.write(`%xt%${data[0]}%-1%${data.slice(1).join('%')}`);
 	}
 
 	public writeExcept(ignored: Player, data: string): void {

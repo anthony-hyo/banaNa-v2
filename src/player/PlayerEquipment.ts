@@ -2,7 +2,6 @@ import Player from "./Player.ts";
 import PlayerConst from "../player/PlayerConst.ts";
 import {Rank} from "../aqw/Rank.ts";
 import type IItem from "../database/interfaces/IItem.ts";
-import type ISkill from "../database/interfaces/ISkill.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 
@@ -16,21 +15,21 @@ export default class PlayerEquipment {
 
 		updateClass.put("cmd", "updateClass");
 		updateClass.put("iCP", classPoints);
-		updateClass.put("sClassCat", item.class.category);
-		updateClass.put("sDesc", item.class.description);
-		updateClass.put("sStats", item.class.statsDescription);
+		updateClass.put("sClassCat", item.class!.category);
+		updateClass.put("sDesc", item.class!.description);
+		updateClass.put("sStats", item.class!.statsDescription);
 		updateClass.put("uid", player.network.id);
 
-		if (item.class.manaRegenerationMethods.includes(":")) {
+		if (item.class!.manaRegenerationMethods.includes(":")) {
 			const aMRM: JSONArray = new JSONArray();
 
-			for (const s of item.class.manaRegenerationMethods.split(",")) {
+			for (const s of item.class!.manaRegenerationMethods.split(",")) {
 				aMRM.add(s + "\r");
 			}
 
 			updateClass.put("aMRM", aMRM);
 		} else {
-			updateClass.put("aMRM", item.class.manaRegenerationMethods);
+			updateClass.put("aMRM", item.class!.manaRegenerationMethods);
 		}
 
 		updateClass.put("sClassName", item.name);
@@ -40,14 +39,14 @@ export default class PlayerEquipment {
 		// Update User Properties
 		player.properties.set(PlayerConst.CLASS_POINTS, classPoints);
 		player.properties.set(PlayerConst.CLASS_NAME, item.name);
-		player.properties.set(PlayerConst.CLASS_CATEGORY, item.class.category);
+		player.properties.set(PlayerConst.CLASS_CATEGORY, item.class!.category);
 
-		player.room?.writeObjectExcept(
+		player.room!.writeObjectExcept(
 			player,
 			new JSONObject()
 				.element("cmd", "updateClass")
 				.element("iCP", classPoints)
-				.element("sClassCat", item.class.category)
+				.element("sClassCat", item.class!.category)
 				.element("sClassName", item.name)
 				.element("uid", player.network.id)
 		);
@@ -66,16 +65,14 @@ export default class PlayerEquipment {
 
 		sAct.put("cmd", "sAct");
 
-		for (const skillId of item.class.skills) {
-			const skill: ISkill = this.world.skills.get(skillId);
-
+		for (const skill of item.class!.skills) {
 			if (skill.type === "passive") {
 				const passObj: JSONObject = new JSONObject();
 
 				passObj.put("desc", skill.description);
 				passObj.put("fx", skill.effects);
 				passObj.put("icon", skill.icon);
-				passObj.put("id", skillId);
+				passObj.put("id", skill.id);
 				passObj.put("nam", skill.name);
 				passObj.put("range", skill.range);
 				passObj.put("ref", skill.reference);
@@ -95,7 +92,7 @@ export default class PlayerEquipment {
 
 				passive.add(passObj);
 
-				skills.set(skill.reference, skillId);
+				skills.set(skill.reference, skill.id);
 			} else {
 				const actObj: JSONObject = new JSONObject();
 
@@ -110,8 +107,8 @@ export default class PlayerEquipment {
 
 				actObj.element("fx", skill.effects)
 					.element("icon", skill.icon)
-					.element("id", skillId)
-					.element("isOK", true)
+					.element("id", skill.id)
+					.element("isOK", 1)
 					.element("mp", String(skill.mana))
 					.element("nam", skill.name)
 					.element("range", String(skill.range))
@@ -125,15 +122,15 @@ export default class PlayerEquipment {
 					.element("typ", skill.type);
 
 				if (rank < 2 && skill.reference === "a2") {
-					actObj.element("isOK", false);
+					actObj.element("isOK", 0);
 				}
 
 				if (rank < 3 && skill.reference === "a3") {
-					actObj.element("isOK", false);
+					actObj.element("isOK", 0);
 				}
 
 				if (rank < 5 && skill.reference === "a4") {
-					actObj.element("isOK", false);
+					actObj.element("isOK", 0);
 				}
 
 				if (skill.hitTargets > 0) {
@@ -142,7 +139,7 @@ export default class PlayerEquipment {
 				}
 
 				if (skill.reference === "aa") {
-					actObj.element("auto", true)
+					actObj.element("auto", 1)
 						.element("typ", "aa");
 
 					active.element(0, actObj);
@@ -150,25 +147,25 @@ export default class PlayerEquipment {
 					active.element(1, actObj);
 				} else if (skill.reference === "a2") {
 					if (rank < 2) {
-						actObj.element("isOK", false);
+						actObj.element("isOK", 0);
 					}
 
 					active.element(2, actObj);
 				} else if (skill.reference === "a3") {
 					if (rank < 3) {
-						actObj.element("isOK", false);
+						actObj.element("isOK", 0);
 					}
 
 					active.element(3, actObj);
 				} else if (skill.reference === "a4") {
 					if (rank < 5) {
-						actObj.element("isOK", false);
+						actObj.element("isOK", 0);
 					}
 
 					active.element(4, actObj);
 				}
 
-				skills.set(skill.reference, skillId);
+				skills.set(skill.reference, skill.id);
 			}
 		}
 
@@ -180,7 +177,7 @@ export default class PlayerEquipment {
 				.element("desc", "Equip a potion or scroll from your inventory to use it here.")
 				.element("fx", "")
 				.element("icon", "icu1")
-				.element("isOK", true)
+				.element("isOK", 1)
 				.element("mp", "" + 0)
 				.element("nam", "Potions")
 				.element("range", 808)
@@ -197,8 +194,8 @@ export default class PlayerEquipment {
 				.element("passive", passive)
 		);
 
-		this.clearAuras(user);
-		this.applyPassiveAuras(user, rank, item.classObj);
+		//this.clearAuras(user);
+		//this.applyPassiveAuras(user, rank, item.classObj);
 
 		this.player.network.writeObject(sAct);
 	}

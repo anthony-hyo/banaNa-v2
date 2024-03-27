@@ -1,6 +1,5 @@
 import Room from "../room/Room.ts";
 import type Player from "../player/Player.ts";
-import Helper from "../util/Helper.ts";
 import type IArea from "../database/interfaces/IArea.ts";
 import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
@@ -49,7 +48,7 @@ export class RoomController {
 		return found;
 	}
 
-	public static joinRoom(player: Player, newRoom: Room): void {
+	public static async joinRoom(player: Player, newRoom: Room): Promise<void> {
 		if (player.room !== undefined) {
 			let oldRoom: Room | null = player.room;
 
@@ -69,21 +68,26 @@ export class RoomController {
 		if (newRoom !== null) {
 			newRoom.addPlayer(player);
 
-			player.network.writeObject(
-				player.getProperties()
-					.element('cmd', 'uotls')
+			player.network.writeObjectExcept(
+				player,
+				new JSONObject()
+					.element("cmd", "uotls")
+					.element("o", (await player.jsonPartial(true, false))
+						.element('cmd', 'uotls')
+					)
+					.element("unm", player.network.name)
 			);
 
-			let response: string = Helper.joinOK(newRoom.id);
+			// noinspection HtmlUnknownAttribute
+			let response: string = `<msg t='sys'><body action='joinOK' r='${newRoom.id}'><pid id='0'/><vars /><uLs r='${newRoom.id}'>`;
 
 			let i: number = 1;
 
-			newRoom.players
-				.forEach((target: Player) => {
-					// noinspection HtmlUnknownAttribute
-					response += `<u i='${target.network.id}' m='0' s='0' p='${i}'><n><![CDATA[${target.username}]]></n><vars></vars></u>`;
-					i++;
-				});
+			for (let [networkId, target] of newRoom.players) {
+				// noinspection HtmlUnknownAttribute
+				response += `<u i='${networkId}' m='0' s='0' p='${i}'><n><![CDATA[${target.username}]]></n><vars></vars></u>`;
+				i++;
+			}
 
 			response += `</uLs></body></msg>`;
 

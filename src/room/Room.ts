@@ -192,13 +192,13 @@ export default class Room implements IDispatchable {
 			.element("pvpScore", pvpScore);
 	}
 
-	public moveToArea(player: Player): void {
+	public async moveToArea(player: Player): Promise<void> {
 		const mapName: string = this.name.split("-")[0] == "house" ? this.name : this.name.split("-")[0];
 
 		const uoBranch: JSONArray = new JSONArray();
 
 		for (const player of this.players.values()) {
-			uoBranch.add(player.getProperties());
+			uoBranch.add(await player.jsonPartial(true, false));
 		}
 
 		const moveToArea: JSONObject = new JSONObject()
@@ -211,15 +211,6 @@ export default class Room implements IDispatchable {
 			.element("uoBranch", uoBranch)
 			.element("monBranch", this.getMonBranch())
 			.element("intType", 2);
-
-		/*if (area instanceof House) {
-			mta.element("houseData", (area as House).getData());
-		}
-
-		if (area instanceof Hall) {
-			mta.element("guildData", this.world.users.getGuildHallData((area as Hall).getGuildId()));
-			mta.element("strMapName", "guildhall");
-		}*/
 
 		if (this.data.is_pvp) {
 			moveToArea

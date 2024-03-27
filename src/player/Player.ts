@@ -12,7 +12,6 @@ import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from 
 import type ISkillAura from "../database/interfaces/ISkillAura.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import type IEnhancement from "../database/interfaces/IEnhancement.ts";
-import Stats from "../world/stats/Stats.ts";
 import {Quests} from "../aqw/Quests.ts";
 import Party from "../party/Party.ts";
 import type IClass from "../database/interfaces/IClass.ts";
@@ -100,39 +99,31 @@ export default class Player {
 		}
 	}
 
-	public sendUotls(showHp: boolean, showHpMax: boolean, showMp: boolean, showMpMax: boolean, showLevel: boolean, showState: boolean): void {
-		const uotls: JSONObject = new JSONObject().element("cmd", "uotls");
+	public async sendUotls(withHealth: boolean, withHealthMax: boolean, withMana: boolean, withManaMax: boolean, withLevel: boolean, withState: boolean): Promise<void> {
+		const { level } = await database.query.users.findFirst({
+			columns: {
+				level: true,
+				settings: true
+			},
+			where: eq(users.id, this.databaseId)
+		}) || {};
 
-		const o: JSONObject = new JSONObject();
-
-		if (showHp) {
-			o.element("intHP", this.properties.get(PlayerConst.HP));
-		}
-
-		if (showHpMax) {
-			o.element("intHPMax", this.properties.get(PlayerConst.HP_MAX));
-		}
-
-		if (showMp) {
-			o.element("intMP", this.properties.get(PlayerConst.MP));
-		}
-
-		if (showMpMax) {
-			o.element("intMPMax", this.properties.get(PlayerConst.MP_MAX));
-		}
-
-		if (showLevel) {
-			o.element("intLevel", this.properties.get(PlayerConst.LEVEL));
-		}
-
-		if (showState) {
-			o.element("intState", this.status.state);
+		if (level == undefined) {
+			throw new Error(`User not found in the database.`);
 		}
 
 		this.room!.writeObject(
-			uotls
-				.element("o", o)
+			new JSONObject()
+				.element("cmd", "uotls")
 				.element("unm", this.username)
+				.element("o", new JSONObject()
+					.elementIf(withHealth, "intHP", this.status.health.value)
+					.elementIf(withHealthMax, "intHPMax", this.status.health.max)
+					.elementIf(withMana, "intMP", this.status.mana.value)
+					.elementIf(withManaMax, "intMPMax", this.status.mana.max)
+					.elementIf(withLevel, "intLevel", level)
+					.elementIf(withState, "intState", this.status.state)
+				)
 		);
 	}
 
@@ -352,7 +343,7 @@ export default class Player {
 			members.add(
 				new JSONObject()
 					.element("ID", member.id)
-					.element("userName", member.user?.username)
+					.element("userName", member.user!.username)
 					.element("Level", member.level)
 					.element("Rank", member.guildRank)//TODO
 					.element("Server", member.currentServerId ? member.currentServer!.name : 'Offline')
@@ -369,33 +360,6 @@ export default class Player {
 			//.element("guildHall", getGuildHallData(guildId))
 			.element("guildHall", new JSONArray())
 			.element("ul", members);
-	}
-
-	public getProperties(): JSONObject {
-		const userProperties: JSONObject = new JSONObject()
-			.element("afk", this.properties.get(PlayerConst.AFK))
-			.element("entID", this.network.id)
-			.element("entType", "p")
-			.element("intHP", this.properties.get(PlayerConst.HP))
-			.element("intHPMax", this.properties.get(PlayerConst.HP_MAX))
-			.element("intLevel", this.properties.get(PlayerConst.LEVEL))
-			.element("intMP", this.properties.get(PlayerConst.MP))
-			.element("intMPMax", this.properties.get(PlayerConst.MP_MAX))
-			.element("intState", this.properties.get(PlayerConst.STATE))
-			.element("showCloak", true)
-			.element("showHelm", true)
-			.element("strFrame", this.properties.get(PlayerConst.FRAME))
-			.element("strPad", this.properties.get(PlayerConst.PAD))
-			.element("strUsername", this.properties.get(PlayerConst.USERNAME))
-			.element("tx", this.properties.get(PlayerConst.TX))
-			.element("ty", this.properties.get(PlayerConst.TY))
-			.element("uoName", this.username);
-
-		if (this.room!.data.name.includes("house") && this.room!.data.is_pvp) {
-			userProperties.element("pvpTeam", this.properties.get(PlayerConst.PVP_TEAM));
-		}
-
-		return userProperties;
 	}
 
 	public updateStats(enhancement: IEnhancement, equipment: string): void {
@@ -450,19 +414,19 @@ export default class Player {
 		let userHp: number = CoreValues.getHealthByLevel(userLevel);
 		userHp += addedHP;
 
-		let userMp: number = CoreValues.getManaByLevel(userLevel) + (WIS * intMPperWIS);
+		let userMp: number = CoreValues.getManaByLevel(userLevel) + WIS * intMPperWIS;
 
 		// Max
-		this.properties.set(PlayerConst.HP_MAX, userHp);
-		this.properties.set(PlayerConst.MP_MAX, userMp);
+		this.status.health.max = userHp;
+		this.status.mana.max = userMp;
 
 		// Current
-		if (this.properties.get(PlayerConst.STATE) === PlayerConst.STATE_NORMAL || levelUp) {
-			this.properties.set(PlayerConst.HP, userHp);
+		if (this.status.state === AvatarState.NEUTRAL || levelUp) {
+			this.status.health.update = userHp;
 		}
 
-		if (this.properties.get(PlayerConst.STATE) === PlayerConst.STATE_NORMAL || levelUp) {
-			this.properties.set(PlayerConst.MP, userMp);
+		if (this.status.state === AvatarState.NEUTRAL || levelUp) {
+			this.status.mana.update = userMp;
 		}
 
 		this.sendUotls(true, true, true, true, levelUp, false);
@@ -573,7 +537,7 @@ export default class Player {
 		let update: object;
 
 		if (index > 99) {
-			this.properties.set(PlayerConst.QUESTS_2, Quests.updateValue(this.properties.get(PlayerConst.QUESTS_2), (index - 100), value));
+			this.properties.set(PlayerConst.QUESTS_2, Quests.updateValue(this.properties.get(PlayerConst.QUESTS_2), index - 100, value));
 
 			update = {
 				quests2: this.properties.get(PlayerConst.QUESTS_2)
@@ -600,7 +564,7 @@ export default class Player {
 	}
 
 	public getQuestValue(index: number): number {
-		return index > 99 ? Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_2) as string, (index - 100)) : Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_1) as string, index);
+		return index > 99 ? Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_2) as string, index - 100) : Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_1) as string, index);
 	}
 
 	public getGuildRank(rank: number): string {
@@ -635,7 +599,7 @@ export default class Player {
 		const item: number | undefined = inventoryTemporary.get(itemId);
 
 		if (item) {
-			inventoryTemporary.set(itemId, (item! + quantity));
+			inventoryTemporary.set(itemId, item! + quantity);
 			return;
 		}
 
@@ -719,46 +683,7 @@ export default class Player {
 		}
 	}
 
-	public async json2(): Promise<JSONObject> {
-		const { level, settings } = await database.query.users.findFirst({
-			columns: {
-				level: true,
-				settings: true
-			},
-			where: eq(users.id, this.databaseId)
-		}) || {};
-
-		if (!level || !settings) {
-			return new JSONObject();
-		}
-
-		const data: JSONObject = new JSONObject()
-			.element("Away", this.properties.get(PlayerConst.AFK))
-			.element("entID", this.network.id)
-			.element("entType", "p")
-			.element("intHP", this.status.health.value)
-			.element("intHPMax", this.status.health.max)
-			.element("intLevel", level)
-			.element("intMP", this.status.mana.value)
-			.element("intMPMax", this.status.mana.max)
-			.element("intState", this.status.state.toString())
-			.element("showCloak", this.preference.isShowingCloak(settings) ? 1 : 0)
-			.element("showHelm", this.preference.isShowingHelm(settings) ? 1 : 0)
-			.element("strFrame", this.position.frame)
-			.element("strPad", this.position.pad)
-			.element("strUsername", this.username)
-			.element("tx", this.position.xAxis)
-			.element("ty", this.position.yAxis)
-			.element("uoName", this.network.name);
-
-		if (this.room && this.room.data.is_pvp) {
-			data.element("pvpTeam", this.properties.get(PlayerConst.PVP_TEAM));
-		}
-
-		return data;
-	}
-
-	public async json(self: boolean, withEquipment: boolean, withNetworkId: boolean): Promise<JSONObject> {
+	public async json(self: boolean, withNetworkId: boolean, withEquipment: boolean): Promise<JSONObject> {
 		const user: IUser | undefined = await database.query.users.findFirst({
 			with: {
 				hair: true,
@@ -969,19 +894,71 @@ export default class Player {
 		return data.element("eqp", equipment);
 	}
 
-	public respawn(): void {
-		this.properties.set(PlayerConst.HP, this.properties.get(PlayerConst.HP_MAX));
-		this.properties.set(PlayerConst.MP, this.properties.get(PlayerConst.MP_MAX));
-		this.properties.set(PlayerConst.STATE, PlayerConst.STATE_NORMAL);
+	public async jsonPartial(withNetworkId: boolean, withStamina: boolean): Promise<JSONObject> {
+		const { level, settings } = await database.query.users.findFirst({
+			columns: {
+				level: true,
+				settings: true
+			},
+			where: eq(users.id, this.databaseId)
+		}) || {};
+
+		if (level == undefined || settings == undefined) {
+			return new JSONObject();
+		}
+
+		const data: JSONObject = new JSONObject()
+			.element("afk", this.properties.get(PlayerConst.AFK))
+			.element("entID", this.network.id)
+			.element("entType", "p")
+			.element("intHP", this.status.health.value)
+			.element("intHPMax", this.status.health.max)
+			.element("intLevel", level)
+			.element("intMP", this.status.mana.value)
+			.element("intMPMax", this.status.mana.max)
+			.element("intState", this.status.state)
+			.element("showCloak", this.preference.isShowingCloak(settings) ? 1 : 0)
+			.element("showHelm", this.preference.isShowingHelm(settings) ? 1 : 0)
+			.element("strFrame", this.position.frame)
+			.element("strPad", this.position.pad)
+			.element("strUsername", this.username)
+			.element("tx", this.position.xAxis)
+			.element("ty", this.position.yAxis)
+			.element("uoName", this.network.name);
+
+		if (withNetworkId) {
+			data
+				.element("ID", this.properties.get(PlayerConst.PVP_TEAM));
+		}
+
+		if (withStamina) {
+			data
+				.element("intSP", this.status.stamina.value)
+				.element("intSPMax", this.status.stamina.max);
+		}
+
+		if (this.room && this.room.data.is_pvp) {
+			data.element("pvpTeam", this.properties.get(PlayerConst.PVP_TEAM));
+		}
+
+		return data;
+	}
+
+	public async respawn(): Promise<void> {
+		this.status.health.update = this.status.health.max;
+		this.status.mana.update = this.status.mana.max;
+
+		this.status.state = AvatarState.NEUTRAL;
 
 		this.clearAuras();
-		this.sendUotls(true, false, true, false, false, true);
+		await this.sendUotls(true, false, true, false, false, true);
 	}
 
 	public die(): void {
-		this.properties.set(PlayerConst.HP, 0);
-		this.properties.set(PlayerConst.MP, 0);
-		this.properties.set(PlayerConst.STATE, PlayerConst.STATE_DEAD);
+		this.status.health.update = 0;
+		this.status.mana.update = 0;
+
+		this.status.state = AvatarState.DEAD;
 
 		this.properties.set(PlayerConst.RESPAWN_TIME, Date.now());
 	}
@@ -1085,15 +1062,15 @@ export default class Player {
 		return true;
 	}
 
-	public joinRoom(room: Room, frame: string = "Enter", pad: string = "Spawn"): void {
+	public async joinRoom(room: Room, frame: string = "Enter", pad: string = "Spawn"): Promise<void> {
 		this.properties.set(PlayerConst.FRAME, frame);
 		this.properties.set(PlayerConst.PAD, pad);
 		this.properties.set(PlayerConst.TX, 0);
 		this.properties.set(PlayerConst.TY, 0);
 
-		RoomController.joinRoom(this, room);
+		await RoomController.joinRoom(this, room);
 
-		this.room!.moveToArea(this);
+		await this.room!.moveToArea(this);
 
 		this.network.writeArray("server", "You joined \"" + this.room!.name + "\"!");
 	}

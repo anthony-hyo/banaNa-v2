@@ -35,9 +35,11 @@ export default class RetrieveInventory implements IRequest {
 						item: {
 							with: {
 								typeItem: true,
+								typeElement: true,
 								enhancement: true,
 							}
-						}
+						},
+						enhancement: true,
 					}
 				}
 			}
@@ -51,7 +53,6 @@ export default class RetrieveInventory implements IRequest {
 		for (const inventoryItem of user.inventory!) {
 			if (inventoryItem.is_equipped) {
 				player.inventory.equip(inventoryItem, false);
-				continue;
 			}
 
 			const equipment: string = inventoryItem.item!.typeItem!.equipment;
