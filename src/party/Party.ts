@@ -21,11 +21,11 @@ export default class Party implements IDispatchable {
 	public getUsers(): Array<string> {
 		const partyMembers: Array<string> = [];
 
-		for (const user of this.members) {
-			partyMembers.push(user.properties.get(PlayerConst.USERNAME));
+		for (const member of this.members) {
+			partyMembers.push(member.username);
 		}
 
-		partyMembers.push(this.owner.properties.get(PlayerConst.USERNAME));
+		partyMembers.push(this.owner.username);
 
 		return partyMembers;
 	}
@@ -89,7 +89,7 @@ export default class Party implements IDispatchable {
 	}
 
 	public getOwner(): string {
-		return this.owner.properties.get(PlayerConst.USERNAME);
+		return this.owner.username;
 	}
 
 	public setOwner(user: Player): void {

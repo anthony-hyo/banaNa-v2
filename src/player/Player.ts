@@ -615,7 +615,7 @@ export default class Player {
 		const pi: Party | undefined = PartyController.instance().getPartyInfo(this.properties.get(PlayerConst.PARTY_ID));
 
 		if (pi) {
-			if (pi.getOwner() === this.properties.get(PlayerConst.USERNAME)) {
+			if (pi.getOwner() === this.username) {
 				pi.setOwner(pi.getNextOwner());
 			}
 
@@ -626,7 +626,7 @@ export default class Player {
 					.element("cmd", "pr")
 					.element("owner", pi.getOwner())
 					.element("typ", "l")
-					.element("unm", this.properties.get(PlayerConst.USERNAME))
+					.element("unm", this.username)
 			);
 
 			if (pi.getMemberCount() <= 0) {
@@ -912,7 +912,7 @@ export default class Player {
 		}
 
 		const data: JSONObject = new JSONObject()
-			.element("afk", this.properties.get(PlayerConst.AFK))
+			.element("afk", this.data.isAway)
 			.element("entID", this.network.id)
 			.element("entType", "p")
 			.element("intHP", this.status.health.value)
