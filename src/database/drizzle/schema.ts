@@ -3,7 +3,6 @@ import {
 	boolean,
 	char,
 	decimal,
-	double,
 	index,
 	int,
 	mediumint,
@@ -574,13 +573,6 @@ export const guilds = mysqlTable("guilds", {
 			.default(10)
 			.notNull(),
 
-	hallSize:
-		tinyint("hall_size", {
-			unsigned: true
-		})
-			.default(1)
-			.notNull(),
-
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,
@@ -590,171 +582,6 @@ export const guilds = mysqlTable("guilds", {
 
 export const guildsRelations = relations(guilds, ({ many }) => ({
 	members: many(users),
-	halls: many(guildsHalls),
-	inventory: many(guildsInventory),
-}));
-
-export const guildsHalls = mysqlTable("guilds_halls", {
-	id: idColumn(),
-
-	guildId: guildIdColumn,
-
-	linkage:
-		varchar("linkage", {
-			length: 64
-		})
-			.default('fr1')
-			.notNull(),
-
-	cell:
-		varchar("cell", {
-			length: 32
-		})
-			.default('Enter')
-			.notNull(),
-
-	x:
-		double("x_axis", {
-			precision: 7,
-			scale: 2
-		})
-			.default(0)
-			.notNull(),
-
-	y:
-		double("y_axis", {
-			precision: 7,
-			scale: 2
-		})
-			.default(0)
-			.notNull(),
-
-	interior:
-		text("interior")
-			.default('|||')
-			.notNull(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
-export const guildsHallsRelations = relations(guildsHalls, ({ one, many }) => ({
-	guild: one(guilds, {
-		fields: [guildsHalls.guildId],
-		references: [guilds.id],
-	}),
-
-	buildings: many(guildsHallsBuildings),
-	connections: many(guildsHallsConnections),
-}));
-
-export const guildsHallsBuildings = mysqlTable("guilds_halls_buildings", {
-	id: idColumn(),
-
-	guildHallId: guildHallIdColumn,
-
-	itemId: itemIdColumn(),
-
-	slot:
-		tinyint("slot", {
-			unsigned: true
-		})
-			.default(1)
-			.notNull(),
-
-	size:
-		tinyint("size", {
-			unsigned: true
-		})
-			.default(1)
-			.notNull(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-}, (table) => ({
-	unique: unique().on(table.guildHallId, table.itemId)
-}));
-
-export const guildsHallsBuildingsRelations = relations(guildsHallsBuildings, ({ one }) => ({
-	guildHall: one(guildsHalls, {
-		fields: [guildsHallsBuildings.guildHallId],
-		references: [guildsHalls.id],
-	}),
-	item: one(items, {
-		fields: [guildsHallsBuildings.itemId],
-		references: [items.id],
-	}),
-}));
-
-export const guildsHallsConnections = mysqlTable("guilds_halls_connections", {
-	id: idColumn(),
-
-	guildHallId: guildHallIdColumn,
-
-	pad:
-		varchar("pad", {
-			length: 32
-		})
-			.default('')
-			.notNull(),
-
-	cell:
-		varchar("cell", {
-			length: 32
-		})
-			.default('')
-			.notNull(),
-
-	padPosition:
-		varchar("pad_position", {
-			length: 32
-		})
-			.default('')
-			.notNull(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-});
-
-export const guildsHallsConnectionsRelations = relations(guildsHallsConnections, ({ one }) => ({
-	guildHall: one(guildsHalls, {
-		fields: [guildsHallsConnections.guildHallId],
-		references: [guildsHalls.id],
-	})
-}));
-
-export const guildsInventory = mysqlTable("guilds_inventory", {
-	id: idColumn(),
-
-	guildId: guildIdColumn,
-
-	itemId: itemIdColumn(),
-
-	userId: userIdColumn(),
-
-	dateUpdated: dateUpdatedColumn,
-
-	dateCreated: dateCreatedColumn,
-}, (table) => ({
-	unique: unique().on(table.guildId, table.itemId, table.userId)
-}));
-
-export const guildsInventoryRelations = relations(guildsInventory, ({ one }) => ({
-	guild: one(guilds, {
-		fields: [guildsInventory.guildId],
-		references: [guilds.id],
-	}),
-	item: one(items, {
-		fields: [guildsInventory.itemId],
-		references: [items.id],
-	}),
-	user: one(users, {
-		fields: [guildsInventory.userId],
-		references: [users.id],
-	}),
 }));
 
 export const hairs = mysqlTable("hairs", {
