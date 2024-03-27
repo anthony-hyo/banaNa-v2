@@ -18,6 +18,13 @@ export default class JSONObject {
 		return this;
 	}
 
+	public elementIf(condition: boolean, key: string, value: string | number | JSONObject | JSONArray): this {
+		if (condition) {
+			this.properties[key] = value;
+		}
+		return this;
+	}
+
 	public has(key: string): boolean {
 		return key in this.properties;
 	}
