@@ -34,9 +34,9 @@ export class ACGiveaway implements ITask {
 				})
 				.where(eq(users.id, target.databaseId))
 				.then((): void => {
-					target.network.writeArray("administrator", "Congratulations! You just won 500 AdventureCoins!");
+					target.network.writeArray("administrator", ["Congratulations! You just won 500 AdventureCoins!"]);
 
-					GameController.instance().writeArray("administrator", `Congratulations! <font color=\"#ffffff\">${target.username}</font> has won 500 AdventureCoins!`);
+					GameController.instance().writeArray("administrator", [`Congratulations! <font color=\"#ffffff\">${target.username}</font> has won 500 AdventureCoins!`]);
 					GameController.instance().serverMessage(`Congratulations! <font color=\"#ffffff\"><a href=\"http://augoeides.org/?profile=${target.username}\" target=\"_blank\">${target.username}</a></font> has won <font color=\"#ffffff\">500</font> AdventureCoins!`);
 
 					target.network.writeObject(

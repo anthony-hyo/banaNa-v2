@@ -2,7 +2,6 @@ import type IRequest from "../../interfaces/request/IRequest.ts";
 import type RequestArg from "../RequestArg.ts";
 import type Player from "../../player/Player.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
-import Message from "../../aqw/Message.ts";
 import database from "../../database/drizzle/database.ts";
 import {hairs, users} from "../../database/drizzle/schema.ts";
 import {eq, sql} from "drizzle-orm";
@@ -34,7 +33,7 @@ export default class GenderSwap implements IRequest {
 		const deltaCoins: number = coins - cost;
 
 		if (deltaCoins < 0) {
-			player.network.writeArray(Message.create('warning', "You don't have enough ACs!"));
+			player.network.writeArray('warning', ["You don't have enough ACs!"]);
 			return;
 		}
 

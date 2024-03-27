@@ -136,7 +136,7 @@ export default class RetrieveInventory implements IRequest {
 			);
 		}
 
-		player.network.writeArray(Message.create("server", "Character load complete."));
+		player.network.writeArray("server", ["Character load complete."]);
 
 		const friendJSONObject: JSONObject = new JSONObject()
 			.element("cmd", "updateFriend")
@@ -147,7 +147,10 @@ export default class RetrieveInventory implements IRequest {
 				.element("sServer", GameController.instance().server.name)
 			);
 
-		const friendMessage: [string, string] = Message.create("server", `${player.username} has logged in.`);
+		const friendMessage: [string, string] = [
+			"server",
+			`${player.username} has logged in.`
+		];
 
 		const userFriends: IUserFriend[] = await database.query.usersFriends.findMany({
 			where: eq(usersFriends.userId, player.databaseId),
@@ -161,7 +164,7 @@ export default class RetrieveInventory implements IRequest {
 
 			if (client) {
 				client.network.writeObject(friendJSONObject);
-				client.network.writeArray(friendMessage);
+				client.network.writeArray(friendMessage[0], [friendMessage[1]]);
 			}
 		}
 	}

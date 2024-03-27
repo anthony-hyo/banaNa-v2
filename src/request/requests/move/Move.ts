@@ -14,7 +14,7 @@ export default class Move implements IRequest {
 		player.position.xAxis = xAxis;
 		player.position.yAxis = yAxis;
 
-		player.room!.writeArrayExcept(player, "uotls", player.network.name, `tx:${xAxis},ty:${yAxis},sp:${speed},strFrame:${player.position.frame}`);
+		player.room!.writeArrayExcept(player, "uotls", [player.network.name, `tx:${xAxis},ty:${yAxis},sp:${speed},strFrame:${player.position.frame}`]);
 	}
 
 }

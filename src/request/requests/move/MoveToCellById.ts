@@ -21,7 +21,7 @@ export default class MoveToCellById implements IRequest {
 
 		player.moveToCell(areaCell.frame, areaCell.pad, true);
 
-		player.network.writeArray("mtcid", cellId);
+		player.network.writeArray("mtcid", [cellId]);
 	}
 
 }

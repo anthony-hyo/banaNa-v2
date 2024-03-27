@@ -110,9 +110,9 @@ export default class Party implements IDispatchable {
 		}
 	}
 
-	public writeArray(...data: any[]): void {
+	public writeArray(command: string, data: Array<string | number>): void {
 		for (let member of this.members) {
-			member.network.writeArray(data);
+			member.network.writeArray(command, data);
 		}
 	}
 
@@ -128,9 +128,9 @@ export default class Party implements IDispatchable {
 		}
 	}
 
-	public writeArrayExcept(ignored: Player, ...data: any[]): void {
+	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
 		for (let member of this.members) {
-			member.network.writeArrayExcept(ignored, data);
+			member.network.writeArrayExcept(ignored, command, data);
 		}
 	}
 

@@ -25,7 +25,7 @@ export default class PlayerController {
 				const networkName: string = user!.username.toLowerCase(); //TODO: Temporary fix
 
 				if (user === undefined) {
-					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `Player Data for '${username}' could not be retrieved.<br>Please contact the staff to resolve the issue.`);
+					playerNetwork.writeArray(`loginResponse`, [`false`, `-1`, networkName, `Player Data for '${networkName}' could not be retrieved.<br>Please contact the staff to resolve the issue.`]);
 
 					this.removeConnection(networkName);
 					return;
@@ -39,7 +39,7 @@ export default class PlayerController {
 					.where(eq(users.id, user.id));
 
 				if (!GameController.instance().server.isOnline || (GameController.instance().server.isStaffOnly && user.accessId < 40)) {
-					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `A game update/maintenance is currently ongoing.<br>Only the staff can enter the server at the moment.`);
+					playerNetwork.writeArray(`loginResponse`, [`false`, `-1`, networkName, `A game update/maintenance is currently ongoing.<br>Only the staff can enter the server at the moment.`]);
 
 					this.removeConnection(networkName);
 					return;
@@ -48,7 +48,7 @@ export default class PlayerController {
 				const exitingPlayer: Player | undefined = this.findByUsername(networkName);
 
 				if (exitingPlayer !== undefined) {
-					playerNetwork.writeArray(`loginResponse`, `false`, `-1`, username, `You logged in from a different location.`);
+					playerNetwork.writeArray(`loginResponse`, [`false`, `-1`, networkName, `You logged in from a different location.`]);
 
 					this.removeConnection(networkName);
 				}
@@ -58,7 +58,7 @@ export default class PlayerController {
 				PlayerController.add(player);
 
 				//["loginResponse","-1","true","25860","KATHLEEN","","2024-03-13T00:46:57","SETTINGS LOGIN","3.00941"]
-				playerNetwork.writeArray(`loginResponse`, `true`, player.network.id, user.username, `Message of the day`, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941");
+				playerNetwork.writeArray(`loginResponse`, [`true`, player.network.id, networkName, `Message of the day`, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941"]);
 
 				database
 					.update(users)

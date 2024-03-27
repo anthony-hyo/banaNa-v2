@@ -1,11 +1,11 @@
+import type JSONObject from "../../util/json/JSONObject.ts";
+import type Player from "../../player/Player.ts";
+
 /**
  * IDispatchable Interface
  *
  * Represents an interface for objects that can dispatch messages or data to multiple entities.
  */
-import JSONObject from "../util/json/JSONObject.ts";
-import Player from "../player/Player.ts";
-
 export default interface IDispatchable {
 
 	/**
@@ -18,9 +18,10 @@ export default interface IDispatchable {
 	/**
 	 * Writes an array message to all connected entities.
 	 *
+	 * @param command
 	 * @param data String or any data to be converted to a string and written.
 	 */
-	writeArray(...data: any[]): void;
+	writeArray(command: string, data: Array<string | number>): void;
 
 	/**
 	 * Writes a string message to all entities except one specified {@link Player}.
@@ -42,8 +43,9 @@ export default interface IDispatchable {
 	 * Writes an array message to all entities except one specified {@link Player}.
 	 *
 	 * @param ignored The {@link Player} to be ignored.
+	 * @param command
 	 * @param data String or any data to be converted to a string and written.
 	 */
-	writeArrayExcept(ignored: Player, ...data: any[]): void;
+	writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void;
 
 }

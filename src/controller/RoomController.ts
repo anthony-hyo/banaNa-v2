@@ -55,7 +55,7 @@ export class RoomController {
 			if (oldRoom !== null) {
 				// noinspection HtmlUnknownAttribute
 				oldRoom.writeExcept(player, "<msg t='sys'><body action='userGone' r='" + oldRoom.id + "'><user id='" + player.network.id + "' /></body></msg>");
-				oldRoom.writeArrayExcept(player, "exitArea", player.network.id, player.network.name);
+				oldRoom.writeArrayExcept(player, "exitArea", [player.network.id, player.network.name]);
 
 				oldRoom.removePlayer(player);
 

@@ -312,8 +312,8 @@ export class Monster implements IDispatchable {
 		this.room.writeObject(data);
 	}
 
-	public writeArray(...data: any[]): void {
-		this.room.writeArray(data);
+	public writeArray(command: string, data: Array<string | number>): void {
+		this.room.writeArray(command, data);
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
@@ -324,8 +324,8 @@ export class Monster implements IDispatchable {
 		this.room.writeObjectExcept(ignored, data);
 	}
 
-	public writeArrayExcept(ignored: Player, ...data: any[]): void {
-		this.room.writeArrayExcept(ignored, data);
+	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
+		this.room.writeArrayExcept(ignored, command, data);
 	}
 
 }

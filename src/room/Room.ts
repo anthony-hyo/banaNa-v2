@@ -89,10 +89,10 @@ export default class Room implements IDispatchable {
 	}
 
 	public exit(player: Player): void {
-		this.writeArrayExcept(player, "exitArea", String(player.network.id), player.username);
+		this.writeArrayExcept(player, "exitArea", [player.network.id, player.network.name]);
 
 		if (this.data.is_pvp) {
-			this.writeArrayExcept(player, "server", player.username + " has left the match.");
+			this.writeArrayExcept(player, "server", [player.username + " has left the match."]);
 		}
 	}
 
@@ -323,9 +323,9 @@ export default class Room implements IDispatchable {
 		}
 	}
 
-	public writeArray(...data: any[]): void {
+	public writeArray(command: string, data: Array<string | number>): void {
 		for (let [, player] of this.players) {
-			player.network.writeArray(data);
+			player.network.writeArray(command, data);
 		}
 	}
 
@@ -345,10 +345,10 @@ export default class Room implements IDispatchable {
 		}
 	}
 
-	public writeArrayExcept(ignored: Player, ...data: any[]): void {
+	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
 		for (let [networkId, player] of this.players) {
 			if (networkId !== ignored.network.id) {
-				player.network.writeArray(data);
+				player.network.writeArray(command, data);
 			}
 		}
 	}

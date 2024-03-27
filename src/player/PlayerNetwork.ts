@@ -75,8 +75,8 @@ export default class PlayerNetwork implements IDispatchable {
 		}));
 	}
 
-	public writeArray(...data: any[]): void {
-		this.write(`%xt%${data[0]}%-1%${data.slice(1).join('%')}`);
+	public writeArray(command: string, data: Array<string | number>): void {
+		this.write(`%xt%${command}%-1%${data.join('%')}%`);
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
@@ -95,12 +95,12 @@ export default class PlayerNetwork implements IDispatchable {
 		this.writeObject(data);
 	}
 
-	public writeArrayExcept(ignored: Player, ...data: any[]): void {
+	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
 		if (ignored.network.id == this.id) {
 			return;
 		}
 
-		this.writeArray(data);
+		this.writeArray(command, data);
 	}
 
 }

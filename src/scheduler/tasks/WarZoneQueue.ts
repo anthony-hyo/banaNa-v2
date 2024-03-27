@@ -35,7 +35,7 @@ export default class WarZoneQueue implements ITask {
 										player.properties.set(PlayerConst.PVP_TEAM, 1);
 									}
 
-									player.network.writeArray("server", "A new Warzone battle has started!");
+									player.network.writeArray("server", ["A new Warzone battle has started!"]);
 
 									player.network.writeObject(
 										new JSONObject()

@@ -13,7 +13,7 @@ export default class MonsterRespawn implements ITask {
 	public run(): void {
 		try {
 			this.monster.restore();
-			this.monster.writeArray("respawnMon", this.monster.data.monsterAreaId);
+			this.monster.writeArray("respawnMon", [this.monster.data.monsterAreaId]);
 		} catch (error: any) {
 			logger.warn(error);
 		}
