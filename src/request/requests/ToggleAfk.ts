@@ -7,19 +7,13 @@ export default class ToggleAfk implements IRequest {
 	public readonly name: string = 'afk';
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
-		/*let afk: boolean = java.lang.Boolean.parseBoolean(args.getString(0));
+		const isAway: boolean = args.getBoolean(0);
 
-		if (afk !== player.properties().isAfk()) {
-			if (!afk) {
-				player.dispatch(Message.server("You are no longer Away From Keyboard (AFK)."));
-				player.handler().onIdle();
-			} else {
-				player.dispatch(Message.server("You are now Away From Keyboard (AFK)."));
-			}
-
-			player.properties().afk(afk);
-			player.room!.dispatch(["uotls", player.network.name, "afk:" + afk]);
-		}*/
+		if (isAway != player.data.isAway) {
+			player.data.isAway = isAway;
+			player.network.writeArray("server", [(isAway ? "You are now Away From Keyboard (AFK)." : "You are no longer Away From Keyboard (AFK)")]);
+			player.room!.writeArray("uotls", [player.network.name, "afk:" + isAway]);
+		}
 	}
 
 }

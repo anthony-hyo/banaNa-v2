@@ -26,6 +26,18 @@ export default class RequestArg {
 		return this.args[argIndex].valueOf();
 	}
 
+	public getBoolean(argIndex: number) {
+		const strValue: string = this.getString(argIndex).toLowerCase();
+
+		if (strValue == "true" || strValue == "1") {
+			return true;
+		} else if (strValue == "false" || strValue == "0") {
+			return false;
+		}
+
+		throw new Error("Invalid boolean value: " + strValue);
+	}
+
 	public list(): Array<string> {
 		return this.args;
 	}

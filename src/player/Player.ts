@@ -48,6 +48,7 @@ export default class Player {
 	public readonly status: AvatarStatus = new AvatarStatus(2500, 1000, 100, AvatarState.NEUTRAL);
 	public readonly inventory: PlayerInventory = new PlayerInventory(this);
 	public readonly preference: PlayerPreference = new PlayerPreference(this);
+	public readonly data: PlayerData = new PlayerData(this);
 
 	constructor(user: IUser, network: PlayerNetwork) {
 		this._databaseId = user.id;
