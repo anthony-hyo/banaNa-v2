@@ -23,7 +23,6 @@ import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
 import {differenceInDays, differenceInSeconds, differenceInYears, format} from "date-fns";
 import type IUserFriend from "../database/interfaces/IUserFriend.ts";
 import PlayerController from "../controller/PlayerController.ts";
-import PartyController from "../party/PartyController.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
 import {RoomController} from "../controller/RoomController.ts";
 import AvatarPosition from "../avatar/AvatarPosition.ts";
@@ -50,6 +49,8 @@ export default class Player {
 	public readonly inventory: PlayerInventory = new PlayerInventory(this);
 	public readonly preference: PlayerPreference = new PlayerPreference(this);
 	public readonly data: PlayerData = new PlayerData(this);
+
+	public party: Party | undefined = undefined;
 
 	constructor(user: IUser, network: PlayerNetwork) {
 		this._databaseId = user.id;
@@ -573,33 +574,8 @@ export default class Player {
 		}
 
 		//Party
-		const party: Party | undefined = PartyController.instance().getPartyInfo(this.properties.get(PlayerConst.PARTY_ID));
-
-		if (party) {
-			if (party.getOwner() === this.username) {
-				party.setOwner(party.getNextOwner());
-			}
-
-			party.removeMember(this);
-
-			party.writeObject(
-				new JSONObject()
-					.element("cmd", "pr")
-					.element("owner", party.getOwner())
-					.element("typ", "l")
-					.element("unm", this.username)
-			);
-
-			if (party.getMemberCount() <= 0) {
-				party.getOwnerObject().network.writeObject(
-					new JSONObject()
-						.element("cmd", "pc")
-				);
-
-				PartyController.instance().removeParty(party.id);
-
-				party.getOwnerObject().properties.set(PlayerConst.PARTY_ID, -1);
-			}
+		if (this.party) {
+			this.party.onMemberLeave(this);
 		}
 
 		//Guild

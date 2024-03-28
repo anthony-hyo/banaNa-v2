@@ -1,135 +1,98 @@
 import type Player from "../player/Player.ts";
 import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
-import PlayerConst from "../player/PlayerConst.ts";
-import type {Socket} from "net";
-import type JSONObject from "../util/json/JSONObject.ts";
+import JSONObject from "../util/json/JSONObject.ts";
 
 export default class Party implements IDispatchable {
 
+	private static readonly parties: Map<number, Party> = new Map<number, Party>();
+
+	private readonly _members: Map<number, Player> = new Map<number, Player>;
+
 	constructor(
 		private readonly _id: number,
-		private readonly members: Player[] = [],
-		private owner: Player
+		private _owner: Player
 	) {
-		this.owner.properties.set(PlayerConst.PARTY_ID, this._id);
+		this._owner.party = this;
 	}
 
 	public get id(): number {
 		return this._id;
 	}
 
-	public getUsers(): Array<string> {
-		const partyMembers: Array<string> = [];
+	public get members(): Map<number, Player> {
+		return this._members;
+	}
 
-		for (const member of this.members) {
-			partyMembers.push(member.username);
+	public get owner(): Player {
+		return this._owner;
+	}
+
+	public set owner(player: Player) {
+		this._owner = player;
+	}
+
+	public onMemberJoin(player: Player): void {
+		this.members.set(player.network.id, player);
+		player.party = this;
+	}
+
+	public onMemberLeave(player: Player): void {
+		this.writeObject(new JSONObject()
+			.element("cmd", "pr")
+			.element("owner", this.owner.username)
+			.element("typ", "l")
+			.element("unm", player.username)
+		);
+
+		this.members.delete(player.network.id);
+
+		player.party = undefined;
+
+		if (this.members.size <= 1) {
+			this.writeObject(new JSONObject()
+				.element("cmd", "pc")
+			);
+
+			Party.parties.delete(this.id);
+
+			return;
 		}
 
-		partyMembers.push(this.owner.username);
+		if (this.owner.network.id === player.network.id) {
+			const firstMember = this.members.values().next().value;
 
-		return partyMembers;
-	}
-
-	public getMemberCount(): number {
-		return this.members.length;
-	}
-
-	public getNextOwner(): Player {
-		return this.members[0];
-	}
-
-	public isMember(user: Player): boolean {
-		return this.members.includes(user);
-	}
-
-	public addMember(user: Player): void {
-		if (this.members.includes(user)) {
-			throw new Error("Unable to add member already in the party");
-		}
-
-		this.members.push(user);
-		user.properties.set(PlayerConst.PARTY_ID, this._id);
-	}
-
-	public removeMember(user: Player): void {
-		const index: number = this.members.indexOf(user);
-
-		if (index === -1) {
-			throw new Error("Unable to remove member not in the party");
-		}
-
-		this.members.splice(index, 1);
-		user.properties.set(PlayerConst.PARTY_ID, -1);
-	}
-
-	public getChannelListButOne(user: Player): Socket[] {
-		const partyMembers: Socket[] = [];
-
-		for (const u of this.members) {
-			if (user !== u) {
-				partyMembers.push(u.network.socket);
+			if (firstMember !== undefined) {
+				this.owner = firstMember;
 			}
 		}
-
-		partyMembers.push(this.owner.network.socket);
-
-		return partyMembers;
-	}
-
-	public getChannelList(): Socket[] {
-		const partyMembers: Socket[] = [];
-
-		for (const u of this.members) {
-			partyMembers.push(u.network.socket);
-		}
-
-		partyMembers.push(this.owner.network.socket);
-
-		return partyMembers;
-	}
-
-	public getOwner(): string {
-		return this.owner.username;
-	}
-
-	public setOwner(user: Player): void {
-		this.addMember(this.owner);
-		this.removeMember(user);
-
-		this.owner = user;
-		this.owner.properties.set(PlayerConst.PARTY_ID, this._id);
-	}
-
-	public getOwnerObject(): Player {
-		return this.owner;
 	}
 
 	public writeObject(data: JSONObject): void {
-		for (let member of this.members) {
+		for (let member of this._members.values()) {
 			member.network.writeObject(data);
 		}
 	}
 
 	public writeArray(command: string, data: Array<string | number>): void {
-		for (let member of this.members) {
+		for (let member of this._members.values()) {
 			member.network.writeArray(command, data);
 		}
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
-		for (let member of this.members) {
+		for (let member of this._members.values()) {
 			member.network.writeExcept(ignored, data);
 		}
 	}
 
 	public writeObjectExcept(ignored: Player, data: JSONObject): void {
-		for (let member of this.members) {
+		for (let member of this._members.values()) {
 			member.network.writeObjectExcept(ignored, data);
 		}
 	}
 
 	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
-		for (let member of this.members) {
+		for (let member of this._members.values()) {
 			member.network.writeArrayExcept(ignored, command, data);
 		}
 	}
