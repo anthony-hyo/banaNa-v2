@@ -5,10 +5,12 @@ import JSONObject from "../../../util/json/JSONObject.ts";
 import database from "../../../database/drizzle/database.ts";
 import {users} from "../../../database/drizzle/schema.ts";
 import {eq} from "drizzle-orm";
+import {RequestType} from "../../RequestType.ts";
 
 export default class ChangeArmorColor implements IRequest {
 
 	public readonly name: string = 'changeArmorColor';
+	public readonly type: RequestType = RequestType.DEFAULT;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		const colorBase: number = args.getNumber(0);

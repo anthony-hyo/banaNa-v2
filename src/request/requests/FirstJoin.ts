@@ -5,10 +5,12 @@ import JSONObject from "../../util/json/JSONObject.ts";
 import CoreValues from "../../aqw/CoreValues.ts";
 import {RoomController} from "../../controller/RoomController.ts";
 import type Room from "../../room/Room.ts";
+import {RequestType} from "../RequestType.ts";
 
 export default class RequestDefault implements IRequest {
 
 	public readonly name: string = 'firstJoin';
+	public readonly type: RequestType = RequestType.DEFAULT;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		player.network.writeObject(

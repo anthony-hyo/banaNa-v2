@@ -2,33 +2,21 @@ import * as fs from "fs";
 
 export default class Helper {
 
-	public static padTo2Digits: (num: number) => string = (num: number) => num.toString().padStart(2, '0');
 
-	public static formatDate(date: Date): string {
-		return (
-			[
-				date.getFullYear(), Helper.padTo2Digits(date.getMonth() + 1), Helper.padTo2Digits(date.getDate())
-			].join('-') + ' ' +
-			[
-				Helper.padTo2Digits(date.getHours()), Helper.padTo2Digits(date.getMinutes()), Helper.padTo2Digits(date.getSeconds())
-			].join(':')
-		);
-	}
-
-	public static getAllFilesFromFolder(dir: string): Array<string> {
+	public static getAllFilesFromDirectory(dir: string): Array<string> {
 		let results: Array<string> = [];
 
-		fs.readdirSync(dir).forEach((file: string) => {
-			file = dir + '/' + file;
+		for (let file of fs.readdirSync(dir)) {
+			const path: string = dir + '/' + file;
 
-			const stat: any = fs.statSync(file);
+			const stat: fs.Stats = fs.statSync(path);
 
 			if (stat && stat.isDirectory()) {
-				results = results.concat(Helper.getAllFilesFromFolder(file));
+				results = results.concat(Helper.getAllFilesFromDirectory(path));
 			} else {
-				results.push(file);
+				results.push(path);
 			}
-		});
+		}
 
 		return results;
 	}

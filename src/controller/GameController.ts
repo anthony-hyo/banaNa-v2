@@ -11,7 +11,7 @@ import Network from "../network/Network.ts";
 import type IServer from "../database/interfaces/IServer.ts";
 import logger from "../util/Logger.ts";
 import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
-import Request from "../request/Request.ts";
+import RequestFactory from "../request/RequestFactory.ts";
 import type IEnhancementPattern from "../database/interfaces/IEnhancementPattern.ts";
 import PlayerController from "./PlayerController.ts";
 
@@ -126,9 +126,9 @@ export default class GameController implements IDispatchable {
 
 		logger.info(`Server initialized.`);
 
-		Request.register();
+		RequestFactory.register();
 
-		logger.info(`Request initialized.`);
+		logger.info(`Request Factory initialized.`);
 
 		this.network = await new Network()
 			.init();

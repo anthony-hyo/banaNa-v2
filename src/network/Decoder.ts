@@ -2,9 +2,11 @@ import {DecoderType} from "../util/Const";
 import {XMLParser} from "fast-xml-parser";
 import type PlayerNetwork from "../player/PlayerNetwork.ts";
 import PlayerController from "../controller/PlayerController.ts";
-import Request from "../request/Request.ts";
+import RequestFactory from "../request/RequestFactory.ts";
 import RequestArg from "../request/RequestArg.ts";
 import logger from "../util/Logger.ts";
+import type IRequest from "../interfaces/request/IRequest.ts";
+import {RequestType} from "../request/RequestType.ts";
 
 export default class Decoder {
 
@@ -66,14 +68,16 @@ export default class Decoder {
 					args.push(params[i]);
 				}
 
-				const request = Request.request(params[1]);
+				const request: IRequest | undefined = RequestFactory.request(RequestType.DEFAULT, params[1]);
 
 				if (!request) {
 					logger.warn(`${this.playerNetwork.player.username}(${this.playerNetwork.player.databaseId})#${this.playerNetwork.id} default request called`, JSON.stringify(data));
 					return;
 				}
 
-				request.handler(this.playerNetwork.player, RequestArg.parse(args)).catch(logger.error);
+				request
+					.handler(this.playerNetwork.player, RequestArg.parse(args))
+					.catch(logger.error);
 				break;
 			default:
 			case DecoderType.NONE:

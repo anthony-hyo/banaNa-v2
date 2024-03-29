@@ -2,10 +2,12 @@ import type IRequest from "../../../interfaces/request/IRequest.ts";
 import type Player from "../../../player/Player.ts";
 import type RequestArg from "../../RequestArg.ts";
 import {ChatChannel} from "../../../util/ChatChannel.ts";
+import {RequestType} from "../../RequestType.ts";
 
 export default class ChatMessage implements IRequest {
 
 	public readonly name: string = 'message';
+	public readonly type: RequestType = RequestType.DEFAULT;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		const message: string = args.getString(0);

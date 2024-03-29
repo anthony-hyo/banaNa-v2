@@ -13,10 +13,12 @@ import type IUser from "../../database/interfaces/IUser.ts";
 import HelperItem from "../../util/HelperItem.ts";
 import type IUserFaction from "../../database/interfaces/IUserFaction.ts";
 import {differenceInSeconds} from "date-fns";
+import {RequestType} from "../RequestType.ts";
 
 export default class RetrieveInventory implements IRequest {
 
 	public readonly name: string = 'retrieveInventory';
+	public readonly type: RequestType = RequestType.DEFAULT;
 
 	private readonly inventory_items: JSONArray = new JSONArray();
 	private readonly house_items: JSONArray = new JSONArray();

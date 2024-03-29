@@ -3,10 +3,12 @@ import type Player from "../../../player/Player.ts";
 import type RequestArg from "../../RequestArg.ts";
 import type IAreaCell from "../../../database/interfaces/IAreaCell.ts";
 import PlayerConst from "../../../player/PlayerConst.ts";
+import {RequestType} from "../../RequestType.ts";
 
 export default class MoveToCellById implements IRequest {
 
 	public readonly name: string = 'mtcid';
+	public readonly type: RequestType = RequestType.DEFAULT;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		const cellId: number = args.getNumber(0);

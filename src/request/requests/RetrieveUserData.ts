@@ -3,10 +3,12 @@ import type RequestArg from "../RequestArg.ts";
 import type Player from "../../player/Player.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
 import PlayerController from "../../controller/PlayerController.ts";
+import {RequestType} from "../RequestType.ts";
 
 export default class RetrieveUserData implements IRequest {
 
 	public readonly name: string = 'retrieveUserData';
+	public readonly type: RequestType = RequestType.DEFAULT;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		const target: Player | undefined = PlayerController.find(args.getNumber(0));
