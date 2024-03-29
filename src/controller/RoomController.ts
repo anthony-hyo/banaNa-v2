@@ -7,7 +7,7 @@ import {areas} from "../database/drizzle/schema.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 
-export class RoomController {
+export default class RoomController {
 
 	private static count: number = 0;
 
@@ -145,7 +145,7 @@ export class RoomController {
 
 		const room: Room = new Room(data, RoomController.count++, "");
 
-		if (room.data.is_pvp) {
+		if (room.data.isPvP) {
 			room.isPvPDone = false;
 
 			room.blueTeamScore = 0;

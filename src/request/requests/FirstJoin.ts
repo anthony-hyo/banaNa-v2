@@ -3,7 +3,7 @@ import type RequestArg from "../RequestArg.ts";
 import type Player from "../../player/Player.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
 import CoreValues from "../../aqw/CoreValues.ts";
-import {RoomController} from "../../controller/RoomController.ts";
+import RoomController from "../../controller/RoomController.ts";
 import type Room from "../../room/Room.ts";
 import {RequestType} from "../RequestType.ts";
 

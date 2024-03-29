@@ -4,7 +4,7 @@ import type Room from "../../room/Room";
 import logger from "../../util/Logger";
 import JSONObject from "../../util/json/JSONObject";
 import PlayerConst from "../../player/PlayerConst.ts";
-import {RoomController} from "../../controller/RoomController.ts";
+import RoomController from "../../controller/RoomController.ts";
 
 export default class WarZoneQueue implements ITask {
 

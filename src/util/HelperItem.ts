@@ -6,7 +6,7 @@ export default class HelperItem {
 
 	public static inventory(inventory: IUserInventory): JSONObject {
 		return new JSONObject()
-			.element("bEquip", inventory.is_equipped)
+			.element("bEquip", inventory.isEquipped)
 			.element("bStaff", inventory.item!.isStaffOnly)
 			.element("metaValues", inventory.item!.meta || new JSONObject())
 			.element("sReqQuests", "")
@@ -29,7 +29,7 @@ export default class HelperItem {
 			.element("sIcon", inventory.item!.icon)
 			.element("bUpg", inventory.item!.isUpgradeOnly)
 			.element("CharItemID", inventory.item!.requiredClassItemId ?? 0)
-			.element("bBank", inventory.is_on_bank)
+			.element("bBank", inventory.isOnBank)
 			.element("sName", inventory.item!.name)
 			.element("iQSValue", inventory.item!.questStringValue)
 			.element("sDesc", inventory.item!.description)

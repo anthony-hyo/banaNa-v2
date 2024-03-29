@@ -16,7 +16,7 @@ const logger: ILogger = {
 		}
 	},
 	warn: (...args: any[]) => {
-		console.warn('\x1b[33m%s\x1b[0m %s', `[${new Date().toLocaleString()}]`, `warn::`, ...args);
+		console.warn('\x1b[33m%s\x1b[0m %s', `[${new Date().toLocaleString()}]`, `warn:`, ...args);
 
 		if (args.length > 0 && args[args.length - 1] instanceof Error) {
 			console.error((args[args.length - 1] as Error).stack);

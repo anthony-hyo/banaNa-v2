@@ -68,7 +68,7 @@ export default class Room implements IDispatchable {
 
 
 	public get isFull(): boolean {
-		return this.players.size >= this.data.max_players;
+		return this.players.size >= this.data.maxPlayers;
 	}
 
 	public get isNotFull(): boolean {
@@ -91,7 +91,7 @@ export default class Room implements IDispatchable {
 	public exit(player: Player): void {
 		this.writeArrayExcept(player, "exitArea", [player.network.id, player.network.name]);
 
-		if (this.data.is_pvp) {
+		if (this.data.isPvP) {
 			this.writeArrayExcept(player, "server", [player.username + " has left the match."]);
 		}
 	}
@@ -212,7 +212,7 @@ export default class Room implements IDispatchable {
 			.element("monBranch", this.getMonBranch())
 			.element("intType", 2);
 
-		if (this.data.is_pvp) {
+		if (this.data.isPvP) {
 			moveToArea
 				.element("pvpTeam", player.properties.get(PlayerConst.PVP_TEAM))
 				.element("PVPFactions", this.pvpFactions);
@@ -297,7 +297,7 @@ export default class Room implements IDispatchable {
 				.element("intState", monster.getState())
 				.element("wDPS", monster.data.monster!.damagePerSecond);
 
-			if (this.data.is_pvp) {
+			if (this.data.isPvP) {
 				const react: JSONArray = new JSONArray();
 
 				if (monster.data.monster!.teamId > 0) {

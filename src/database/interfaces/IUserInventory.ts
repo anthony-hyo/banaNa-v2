@@ -11,8 +11,8 @@ export default interface IUserInventory {
 
 	quantity: number;
 
-	is_equipped: boolean;
-	is_on_bank: boolean;
+	isEquipped: boolean;
+	isOnBank: boolean;
 
 	dateDeleted: Date | null;
 	dateUpdated: Date;

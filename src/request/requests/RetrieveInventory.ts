@@ -53,7 +53,7 @@ export default class RetrieveInventory implements IRequest {
 		}
 
 		for (const inventoryItem of user.inventory!) {
-			if (inventoryItem.is_equipped) {
+			if (inventoryItem.isEquipped) {
 				player.inventory.equip(inventoryItem, false);
 			}
 

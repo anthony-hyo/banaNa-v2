@@ -24,7 +24,7 @@ import {differenceInDays, differenceInSeconds, differenceInYears, format} from "
 import type IUserFriend from "../database/interfaces/IUserFriend.ts";
 import PlayerController from "../controller/PlayerController.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
-import {RoomController} from "../controller/RoomController.ts";
+import RoomController from "../controller/RoomController.ts";
 import AvatarPosition from "../avatar/AvatarPosition.ts";
 import AvatarStatus from "../avatar/AvatarStatus.ts";
 import PlayerInventory from "./PlayerInventory.ts";
@@ -141,7 +141,7 @@ export default class Player {
 			.where(
 				and(
 					eq(usersInventory.userId, this.databaseId),
-					eq(usersInventory.is_on_bank, true)
+					eq(usersInventory.isOnBank, true)
 				)
 			);
 
@@ -859,7 +859,7 @@ export default class Player {
 				.element("intSPMax", this.status.stamina.max);
 		}
 
-		if (this.room && this.room.data.is_pvp) {
+		if (this.room && this.room.data.isPvP) {
 			data.element("pvpTeam", this.properties.get(PlayerConst.PVP_TEAM));
 		}
 
@@ -957,22 +957,22 @@ export default class Player {
 	public checkLimits(room: Room): boolean {
 		const areaName: string = room.name.split("-")[0] == "house" ? room.name : room.name.split("-")[0];
 
-		if (room.data.required_level > parseInt(this.properties.get(PlayerConst.LEVEL))) {
-			this.network.writeArray("warning", ["\"" + areaName + "\" requires level " + room.data.required_level + " and above to enter."]);
+		if (room.data.levelRequired > parseInt(this.properties.get(PlayerConst.LEVEL))) {
+			this.network.writeArray("warning", ["\"" + areaName + "\" requires level " + room.data.levelRequired + " and above to enter."]);
 			return false;
-		} else if (room.data.is_pvp) {
+		} else if (room.data.isPvP) {
 			this.network.writeArray("warning", ["\"" + areaName + "\" is locked zone."]);
 			return true;
 		} /*else if (room.data.is_staff_only && !(this.isAdmin() || this.isModerator())) {
 			this.network.writeArray("warning", ["\"" + areaName + "\" is not a recognized map name."]);
 			return false;
-		}*/ else if (room.data.is_upgrade_only && parseInt(this.properties.get(PlayerConst.UPGRADE_DAYS)) <= 0) {
+		}*/ else if (room.data.isUpgradeOnly && parseInt(this.properties.get(PlayerConst.UPGRADE_DAYS)) <= 0) {
 			this.network.writeArray("warning", ["\"" + areaName + "\" is member only."]);
 			return false;
 		} else if (room.players.has(this.network.id)) {
 			this.network.writeArray("warning", ["Cannot join a room you are currently in!"]);
 			return false;
-		} else if (room.players.size >= room.data.max_players) {
+		} else if (room.players.size >= room.data.maxPlayers) {
 			this.network.writeArray("warning", ["Room join failed, destination room is full."]);
 			return false;
 		}

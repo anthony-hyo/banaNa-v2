@@ -9,12 +9,13 @@ export default interface IArea {
 
 	file: string;
 
-	max_players: number;
-	required_level: number;
+	maxPlayers: number;
+	levelRequired: number;
 
-	is_upgrade_only: boolean;
-	is_staff_only: boolean;
-	is_pvp: boolean;
+	isUpgradeOnly: boolean;
+	isStaffOnly: boolean;
+	isPvP: boolean;
+	isKeyUnique: boolean;
 
 	dateUpdated: Date;
 	dateCreated: Date;

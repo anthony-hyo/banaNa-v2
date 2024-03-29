@@ -46,24 +46,6 @@ const userIdColumn = (table: string = `user_id`) => int(table, {
 		onUpdate: "cascade"
 	});
 
-const guildIdColumn = int("guild_id", {
-	unsigned: true
-})
-	.notNull()
-	.references((): AnyMySqlColumn => guilds.id, {
-		onDelete: "cascade",
-		onUpdate: "cascade"
-	});
-
-const guildHallIdColumn = int("guild_hall_id", {
-	unsigned: true
-})
-	.notNull()
-	.references((): AnyMySqlColumn => guildsHalls.id, {
-		onDelete: "cascade",
-		onUpdate: "cascade"
-	});
-
 const itemIdColumn = (table: string = `item_id`) => int(table, {
 	unsigned: true
 })
@@ -193,26 +175,31 @@ export const areas = mysqlTable("areas", {
 			.default('banaNa')
 			.notNull(),
 
-	max_players:
+	maxPlayers:
 		tinyint("max_players", {
 			unsigned: true
 		})
 			.default(10)
 			.notNull(),
 
-	required_level: levelColumn('required_level'),
+	levelRequired: levelColumn('level_required'),
 
-	is_upgrade_only:
+	isUpgradeOnly:
 		boolean("is_upgrade_only")
 			.default(false)
 			.notNull(),
 
-	is_staff_only:
+	isStaffOnly:
 		boolean("is_staff_only")
 			.default(false)
 			.notNull(),
 
-	is_pvp:
+	isPvP:
+		boolean("is_pvp")
+			.default(false)
+			.notNull(),
+
+	isKeyUnique:
 		boolean("is_pvp")
 			.default(false)
 			.notNull(),
@@ -2379,12 +2366,12 @@ export const usersInventory = mysqlTable("users_inventory", {
 			.default(1)
 			.notNull(),
 
-	is_equipped:
+	isEquipped:
 		boolean("is_equipped")
 			.default(false)
 			.notNull(),
 
-	is_on_bank:
+	isOnBank:
 		boolean("is_on_bank")
 			.default(false)
 			.notNull(),
