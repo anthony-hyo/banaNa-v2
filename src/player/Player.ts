@@ -33,6 +33,7 @@ import type AvatarStats from "../avatar/AvatarStats.ts";
 import PlayerData from "./PlayerData.ts";
 import Guild from "../guild/Guild.ts";
 import type IArea from "../database/interfaces/IArea.ts";
+import UserNotFoundException from "../exceptions/UserNotFoundException.ts";
 
 export default class Player {
 
@@ -116,7 +117,7 @@ export default class Player {
 		}) || {};
 
 		if (level == undefined) {
-			throw new Error("The user could not be found in the database.");
+			throw new UserNotFoundException("The user could not be found in the database.");
 		}
 
 		this.room!.writeObject(
@@ -574,7 +575,7 @@ export default class Player {
 		});
 
 		if (!user) {
-			throw new Error("The user could not be found in the database.");
+			throw new UserNotFoundException("The user could not be found in the database.");
 		}
 
 		//Party

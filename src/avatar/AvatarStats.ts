@@ -685,7 +685,7 @@ export default class AvatarStats {
 			const autoAttack: ISkill | undefined = Player_Auto_Attack;
 
 			if (!autoAttack) {
-				throw new Error("not allowed to have class without auto attack");
+				throw new Error("Not allowed to have class without auto attack");
 			}
 
 			const aaDamage: number = autoAttack.damage;

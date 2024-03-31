@@ -7,6 +7,7 @@ import RequestArg from "../request/RequestArg.ts";
 import logger from "../util/Logger.ts";
 import type IRequest from "../interfaces/request/IRequest.ts";
 import {RequestType} from "../request/RequestType.ts";
+import UserNotFoundException from "../exceptions/UserNotFoundException.ts";
 
 export default class Decoder {
 
@@ -77,7 +78,14 @@ export default class Decoder {
 
 				request
 					.handler(this.playerNetwork.player, RequestArg.parse(args))
-					.catch(logger.error);
+					.catch((error: Error | UserNotFoundException) => {
+						if (error instanceof UserNotFoundException) {
+							this.playerNetwork.player!.kick();
+							return;
+						}
+
+						logger.error(error);
+					});
 				break;
 			default:
 			case DecoderType.NONE:
