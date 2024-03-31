@@ -1,4 +1,4 @@
-import type {Monster} from "../../monster/Monster.ts";
+import type {Monster} from "../../avatar/monster/Monster.ts";
 import type ITask from "../../interfaces/scheduler/ITask";
 import logger from "../../util/Logger.ts";
 

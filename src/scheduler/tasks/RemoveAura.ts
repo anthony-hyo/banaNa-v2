@@ -1,7 +1,6 @@
-import type {Monster} from "../../monster/Monster.ts";
+import type {Monster} from "../../avatar/monster/Monster.ts";
 import JSONArray from "../../util/json/JSONArray";
 import JSONObject from "../../util/json/JSONObject";
-import PlayerConst from "../../avatar/player/PlayerConst.ts";
 import type Player from "../../avatar/player/Player.ts";
 import type ISkillAura from "../../database/interfaces/ISkillAura.ts";
 import type ITask from "../../interfaces/scheduler/ITask";
