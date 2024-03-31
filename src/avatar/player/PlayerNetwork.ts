@@ -4,7 +4,7 @@ import Decoder from "../../network/Decoder";
 import {DELIMITER} from "../../util/Const";
 import logger from "../../util/Logger";
 import type JSONObject from "../../util/json/JSONObject";
-import type Player from "./Player";
+import type Player from "./Player.ts";
 
 export default class PlayerNetwork implements IDispatchable {
 

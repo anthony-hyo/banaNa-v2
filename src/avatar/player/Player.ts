@@ -1,40 +1,42 @@
 import {differenceInDays, differenceInSeconds, differenceInYears, isAfter} from "date-fns";
 import {and, eq, sql} from "drizzle-orm";
 import {format} from "mysql2";
-import CoreValues from "../../aqw/CoreValues";
-import {Quests} from "../../aqw/Quests";
-import {Rank} from "../../aqw/Rank";
-import GameController from "../../controller/GameController";
-import PlayerController from "../../controller/PlayerController";
-import RoomController from "../../controller/RoomController";
-import database from "../../database/drizzle/database";
-import {areas, users, usersFactions, usersFriends, usersInventory, usersLogs} from "../../database/drizzle/schema";
-import type IArea from "../../database/interfaces/IArea";
-import type IClass from "../../database/interfaces/IClass";
-import type IEnhancement from "../../database/interfaces/IEnhancement";
-import type ISkill from "../../database/interfaces/ISkill";
-import type ISkillAura from "../../database/interfaces/ISkillAura";
-import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect";
-import type IUser from "../../database/interfaces/IUser";
-import type IUserFriend from "../../database/interfaces/IUserFriend";
-import UserNotFoundException from "../../exceptions/UserNotFoundException";
-import Guild from "../../guild/Guild";
-import type Party from "../../party/Party";
-import type Room from "../../room/Room";
-import Scheduler from "../../scheduler/Scheduler";
-import RemoveAura from "../../scheduler/tasks/RemoveAura";
-import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../../util/Const";
-import JSONArray from "../../util/json/JSONArray";
-import JSONObject from "../../util/json/JSONObject";
-import Avatar from "../Avatar";
-import {AvatarState} from "../AvatarState";
-import type AvatarStats from "../AvatarStats";
-import AvatarStatus from "../AvatarStatus";
-import type PlayerNetwork from "./PlayerNetwork";
-import PlayerData from "./data/PlayerData";
-import PlayerInventory from "./data/PlayerInventory";
-import PlayerPosition from "./data/PlayerPosition";
-import PlayerPreference from "./data/PlayerPreference";
+import CoreValues from "../../aqw/CoreValues.ts";
+import {Quests} from "../../aqw/Quests.ts";
+import {Rank} from "../../aqw/Rank.ts";
+import GameController from "../../controller/GameController.ts";
+import PlayerController from "../../controller/PlayerController.ts";
+import RoomController from "../../controller/RoomController.ts";
+import database from "../../database/drizzle/database.ts";
+import {areas, users, usersFactions, usersFriends, usersInventory, usersLogs} from "../../database/drizzle/schema.ts";
+import type IArea from "../../database/interfaces/IArea.ts";
+import type IClass from "../../database/interfaces/IClass.ts";
+import type IEnhancement from "../../database/interfaces/IEnhancement.ts";
+import type ISkill from "../../database/interfaces/ISkill.ts";
+import type ISkillAura from "../../database/interfaces/ISkillAura.ts";
+import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";
+import type IUser from "../../database/interfaces/IUser.ts";
+import type IUserFriend from "../../database/interfaces/IUserFriend.ts";
+import UserNotFoundException from "../../exceptions/UserNotFoundException.ts";
+import Guild from "../../guild/Guild.ts";
+import type Party from "../../party/Party.ts";
+import type Room from "../../room/Room.ts";
+import Scheduler from "../../scheduler/Scheduler.ts";
+import RemoveAura from "../../scheduler/tasks/RemoveAura.ts";
+import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../../util/Const.ts";
+import JSONArray from "../../util/json/JSONArray.ts";
+import JSONObject from "../../util/json/JSONObject.ts";
+import Avatar from "../Avatar.ts";
+import {AvatarState} from "../AvatarState.ts";
+import type AvatarStats from "../AvatarStats.ts";
+import AvatarStatus from "../AvatarStatus.ts";
+import type PlayerNetwork from "./PlayerNetwork.ts";
+import PlayerData from "./data/PlayerData.ts";
+import PlayerInventory from "./data/PlayerInventory.ts";
+import PlayerPosition from "./data/PlayerPosition.ts";
+import PlayerPreference from "./data/PlayerPreference.ts";
+import type IUserInventory from "../../database/interfaces/IUserInventory.ts";
+import logger from "../../util/Logger.ts";
 
 export default class Player extends Avatar {
 
@@ -87,6 +89,7 @@ export default class Player extends Avatar {
 	}
 
 	public kick(): void {
+		logger.silly('>>>>>>>>> kick');
 		//TODO: Kick
 	}
 
@@ -155,8 +158,6 @@ export default class Player extends Avatar {
 	public async levelUp(level: number): Promise<void> {
 		const newLevel: number = level >= CoreValues.getValue("intLevelMax") ? CoreValues.getValue("intLevelMax") : level;
 
-		this.properties.set(PlayerConst.LEVEL, newLevel);
-
 		this.sendStats(true);
 
 		this.network.writeObject(
@@ -176,10 +177,33 @@ export default class Player extends Avatar {
 	}
 
 	public async giveRewards(exp: number, gold: number, cp: number, rep: number, factionId: number, fromId: number, npcType: string): Promise<void> {
-		const xpBoost: boolean = this.properties.get(PlayerConst.BOOST_XP);
-		const goldBoost: boolean = this.properties.get(PlayerConst.BOOST_GOLD);
-		const repBoost: boolean = this.properties.get(PlayerConst.BOOST_REP);
-		const cpBoost: boolean = this.properties.get(PlayerConst.BOOST_CP);
+		const user: {
+			level: number,
+			dateClassPointBoostExpire: Date,
+			dateReputationBoostExpire: Date,
+			dateGoldBoostExpire: Date,
+			dateExperienceBoostExpire: Date
+		} | undefined = await database.query.users.findFirst({
+			columns: {
+				level: true,
+				dateClassPointBoostExpire: true,
+				dateGoldBoostExpire: true,
+				dateReputationBoostExpire: true,
+				dateExperienceBoostExpire: true,
+			},
+			where: eq(users.id, this.databaseId)
+		});
+
+		if (!user) {
+			throw new UserNotFoundException("The user could not be found in the database.");
+		}
+
+		const dateNow: Date = new Date();
+
+		const cpBoost: boolean = user.dateClassPointBoostExpire >= dateNow;
+		const goldBoost: boolean = user.dateGoldBoostExpire >= dateNow;
+		const repBoost: boolean = user.dateReputationBoostExpire >= dateNow;
+		const xpBoost: boolean = user.dateExperienceBoostExpire >= dateNow;
 
 		const calcExp: number = xpBoost ? exp * (1 + GameController.EXP_RATE) : exp * GameController.EXP_RATE;
 		const calcGold: number = goldBoost ? gold * (1 + GameController.GOLD_RATE) : gold * GameController.GOLD_RATE;
@@ -187,13 +211,7 @@ export default class Player extends Avatar {
 		const calcCp: number = cpBoost ? cp * (1 + GameController.CP_RATE) : cp * GameController.CP_RATE;
 
 		const maxLevel: number = CoreValues.getValue("intLevelMax");
-		const userLevel: number = this.properties.get(PlayerConst.LEVEL);
-		const expReward: number = userLevel < maxLevel ? calcExp : 0;
-
-		const classPoints: number = this.properties.get(PlayerConst.CLASS_POINTS);
-		let userCp: number = Math.min(calcCp + classPoints, 302500);
-
-		const curRank: number = Rank.getRankFromPoints(this.properties.get(PlayerConst.CLASS_POINTS));
+		const expReward: number = user.level < maxLevel ? calcExp : 0;
 
 		const addGoldExp: JSONObject = new JSONObject()
 			.element("cmd", "addGoldExp")
@@ -201,7 +219,7 @@ export default class Player extends Avatar {
 			.element("intGold", calcGold)
 			.element("typ", npcType);
 
-		if (userLevel < maxLevel) {
+		if (user.level < maxLevel) {
 			addGoldExp.element("intExp", expReward);
 
 			if (xpBoost) {
@@ -209,17 +227,38 @@ export default class Player extends Avatar {
 			}
 		}
 
-		if (curRank !== 10 && calcCp > 0) {
+		const equippedClass: IUserInventory | undefined = this.inventory.equippedClass;
+
+		if (!equippedClass) {
+			this.kick();
+			return;
+		}
+
+		let classPoints: number = equippedClass.quantity;
+
+		let rank: number = Rank.getRankFromPoints(classPoints);
+
+		if (rank < 10 && calcCp > 0) {
 			addGoldExp.element("iCP", calcCp);
 
 			if (cpBoost) {
 				addGoldExp.element("bonusCP", calcCp >> 1);
 			}
 
-			this.properties.set(PlayerConst.CLASS_POINTS, userCp);
+			//TODO: Max quantity 302500
+			await database
+				.update(usersInventory)
+				.set({
+					quantity: sql`${usersInventory.quantity} + ${calcCp}`,
+				})
+				.where(eq(usersInventory.id, equippedClass.id));
+
+			if (Rank.getRankFromPoints(equippedClass.quantity + calcCp) > rank) {
+				this.inventory.loadSkills();
+			}
 		}
 
-		if (factionId > 1) {
+		if (factionId > 0) {
 			const rewardRep: number = Math.min(calcRep, 302500);
 
 			addGoldExp
@@ -258,41 +297,6 @@ export default class Player extends Avatar {
 		}
 
 		this.network.writeObject(addGoldExp);
-
-		/*const userResult: QueryResult = this.world.db.jdbc.query("SELECT Gold, Exp FROM users WHERE id = ? FOR UPDATE", this.properties.get(PlayerConst.DATABASE_ID));
-		if (userResult.next()) {
-			let userXp: number = userResult.getInt("Exp") + expReward;
-			let userGold: number = userResult.getInt("Gold") + calcGold;
-			userResult.close();
-			while (userXp >= CoreValues.getExpToLevel(userLevel)) {
-				userXp -= CoreValues.getExpToLevel(userLevel);
-				userLevel++;
-			}
-
-			// Update Level
-			if (userLevel !== this.properties.get(PlayerConst.LEVEL)) {
-				this.levelUp(user, userLevel);
-				userXp = 0;
-			}
-
-			if (calcGold > 0 || (expReward > 0 && userLevel !== maxLevel)) {
-				this.world.db.jdbc.run("UPDATE users SET Gold = ?, Exp = ? WHERE id = ?", userGold, userXp, this.properties.get(PlayerConst.DATABASE_ID));
-			}
-			if (curRank !== 10 && calcCp > 0) {
-				const eqp: JSONObject = this.properties.get(PlayerConst.EQUIPMENT) as JSONObject;
-				if (eqp.has(EQUIPMENT_CLASS)) {
-					const oldItem: JSONObject = eqp.getJSONObject(EQUIPMENT_CLASS)!;
-					const itemId: number = oldItem.getInt("ItemID")!;
-					this.world.db.jdbc.run("UPDATE users_items SET Quantity = ? WHERE ItemID = ? AND UserID = ?", userCp, itemId, this.properties.get(PlayerConst.DATABASE_ID));
-
-					if (Rank.getRankFromPoints(userCp) > curRank) {
-						this.loadSkills(user, this.world.items.get(itemId), userCp);
-					}
-				}
-			}
-		}
-
-		userResult.close();*/
 	}
 
 	public hasAura(auraId: number): boolean {

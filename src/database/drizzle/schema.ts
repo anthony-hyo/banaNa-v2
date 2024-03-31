@@ -1651,16 +1651,16 @@ export const skills = mysqlTable("skills", {
 			.default("banaNa")
 			.notNull(),
 
-	animation:
-		varchar("animation", {
-			length: 64
-		})
-			.default('Attack1,PetAttack1,Attack2')
-			.notNull(),
-
 	description:
 		text("description")
 			.default('A basic attack, taught to all adventurers.')
+			.notNull(),
+
+	icon:
+		varchar("icon", {
+			length: 64
+		})
+			.default('iwd1')
 			.notNull(),
 
 	damage:
@@ -1678,11 +1678,11 @@ export const skills = mysqlTable("skills", {
 			.default(25)
 			.notNull(),
 
-	icon:
-		varchar("icon", {
-			length: 64
+	cooldown:
+		int("cooldown", {
+			unsigned: true
 		})
-			.default('iwd1')
+			.default(10000)
 			.notNull(),
 
 	range:
@@ -1697,30 +1697,30 @@ export const skills = mysqlTable("skills", {
 			.default("aa")
 			.notNull(),
 
-	target: targetEnum,
-
-	effect:
-		mysqlEnum('effect', ['', 'w', 'p', 'c'])
-			.default("")
-			.notNull(),
-
 	type:
 		mysqlEnum('type', ['aa', 'passive', 'i', 'p', 'm', 'mp', 'pm'])
 			.default("p")
 			.notNull(),
 
-	strl:
-		varchar("strl", {
+	target: targetEnum,
+
+	animation:
+		varchar("animation", {
+			length: 64
+		})
+			.default('Attack1,PetAttack1,Attack2')
+			.notNull(),
+
+	effectName:
+		varchar("effect_name", {
 			length: 32
 		})
 			.default("")
 			.notNull(),
 
-	cooldown:
-		int("cooldown", {
-			unsigned: true
-		})
-			.default(10000)
+	effectType:
+		mysqlEnum('effect_type', ['', 'w', 'p', 'c'])
+			.default("")
 			.notNull(),
 
 	hitTargets:
@@ -1737,7 +1737,7 @@ export const skills = mysqlTable("skills", {
 
 export const skillsRelations = relations(skills, ({ many }) => ({
 	classesSkills: many(classesSkills),
-	auras: many(skillsAuras),
+	effects: many(skillsAuras),
 }));
 
 export const skillsAuras = mysqlTable("skills_auras", {
@@ -1751,6 +1751,8 @@ export const skillsAuras = mysqlTable("skills_auras", {
 			.notNull(),
 
 	skillId: skillIdColumn,
+
+	target: targetEnum,
 
 	maxStack:
 		tinyint("max_stack", {
@@ -1777,7 +1779,7 @@ export const skillsAurasRelations = relations(skillsAuras, ({ one, many }) => ({
 		references: [skills.id],
 	}),
 
-	auraEffects: many(skillsAurasEffects),
+	effects: many(skillsAurasEffects),
 }));
 
 export const skillsAurasEffects = mysqlTable("skills_auras_effects", {
@@ -1802,6 +1804,8 @@ export const skillsAurasEffects = mysqlTable("skills_auras_effects", {
 				onDelete: "restrict",
 				onUpdate: "cascade"
 			}),
+
+	target: targetEnum,
 
 	value:
 		decimal("value", {

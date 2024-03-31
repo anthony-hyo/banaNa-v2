@@ -1,7 +1,22 @@
+import type ISkill from "./ISkill.ts";
+import type ITypeStat from "./ITypeStat.ts";
+
 export default interface ISkillAuraEffect {
 	id: number;
-	auraId: number;
-	stat: string;
+
+	skillAuraId: number;
+
+	typeStatId: number;
+
+	target: 's' | 'h' | 'f';
+
 	value: number;
-	type: string;
+
+	type: '+' | '-' | '*';
+
+	dateUpdated: Date;
+	dateCreated: Date;
+
+	skillAura: ISkill;
+	typeStat: ITypeStat;
 }
