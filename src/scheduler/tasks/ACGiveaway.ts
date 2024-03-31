@@ -2,7 +2,7 @@ import {eq, sql} from "drizzle-orm";
 import database from "../../database/drizzle/database";
 import {users} from "../../database/drizzle/schema";
 import type ITask from "../../interfaces/scheduler/ITask";
-import type Player from "../../player/Player";
+import type Player from "../../avatar/player/Player";
 import logger from "../../util/Logger";
 import Random from "../../util/Random";
 import JSONObject from "../../util/json/JSONObject";

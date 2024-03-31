@@ -1,5 +1,5 @@
 import type JSONObject from "../../util/json/JSONObject.ts";
-import type Player from "../../player/Player.ts";
+import type Player from "../../avatar/player/Player.ts";
 
 /**
  * IDispatchable Interface

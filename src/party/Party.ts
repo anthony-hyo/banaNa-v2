@@ -1,4 +1,4 @@
-import type Player from "../player/Player.ts";
+import type Player from "../avatar/player/Player.ts";
 import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 

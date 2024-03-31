@@ -3,7 +3,7 @@ import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {servers} from "../database/drizzle/schema.ts";
 import Config from "../config/Config.ts";
-import type Player from "../player/Player.ts";
+import type Player from "../avatar/player/Player.ts";
 import WarZoneQueue from "../scheduler/tasks/WarZoneQueue.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
 import {ACGiveaway} from "../scheduler/tasks/ACGiveaway.ts";

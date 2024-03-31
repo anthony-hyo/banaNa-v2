@@ -1,5 +1,5 @@
 import Room from "../room/Room.ts";
-import type Player from "../player/Player.ts";
+import type Player from "../avatar/player/Player.ts";
 import type IArea from "../database/interfaces/IArea.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import JSONObject from "../util/json/JSONObject.ts";

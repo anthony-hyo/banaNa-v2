@@ -16,7 +16,7 @@ import JSONObject from "../../util/json/JSONObject";
 import Avatar from "../Avatar";
 import type AvatarStats from "../AvatarStats";
 import type AvatarStatus from "../AvatarStatus";
-import type Player from "../player/Player";
+import type Player from "../avatar/player/Player";
 
 export class Monster extends Avatar implements IDispatchable {
 

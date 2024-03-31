@@ -3,7 +3,7 @@ import JSONObject from "../util/json/JSONObject.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import {format} from "date-fns";
 import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
-import Player from "../player/Player.ts";
+import Player from "../avatar/player/Player.ts";
 import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {guilds, users} from "../database/drizzle/schema.ts";

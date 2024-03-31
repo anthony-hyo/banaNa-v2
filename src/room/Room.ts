@@ -1,11 +1,11 @@
 import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
 import JSONObject from "../util/json/JSONObject.ts";
-import type Player from "../player/Player.ts";
+import type Player from "../avatar/player/Player.ts";
 import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {users} from "../database/drizzle/schema.ts";
 import type IArea from "../database/interfaces/IArea.ts";
-import PlayerConst from "../player/PlayerConst.ts";
+import PlayerConst from "../avatar/player/PlayerConst.ts";
 import {Monster} from "../monster/Monster.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import GameController from "../controller/GameController.ts";

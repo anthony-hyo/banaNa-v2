@@ -4,7 +4,7 @@ import type IItem from "../database/interfaces/IItem";
 import type ISkill from "../database/interfaces/ISkill";
 import type ISkillAuraEffect from "../database/interfaces/ISkillAuraEffect";
 import JSONObject from "../util/json/JSONObject";
-import type Player from "./player/Player.ts";
+import type Player from "./avatar/player/Player.ts";
 
 export default class AvatarStats {
 

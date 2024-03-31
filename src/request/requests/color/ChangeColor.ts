@@ -1,5 +1,5 @@
 import type IRequest from "../../../interfaces/request/IRequest.ts";
-import type Player from "../../../player/Player.ts";
+import type Player from "../../../avatar/player/Player.ts";
 import type RequestArg from "../../RequestArg.ts";
 import JSONObject from "../../../util/json/JSONObject.ts";
 import database from "../../../database/drizzle/database.ts";

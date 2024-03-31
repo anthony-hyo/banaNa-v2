@@ -1,5 +1,5 @@
 import type IRequest from "../../../../interfaces/request/IRequest";
-import type Player from "../../../../player/Player";
+import type Player from "../../../../avatar/player/Player";
 import type RequestArg from "../../../RequestArg.ts";
 import RequestFactory from "../../../RequestFactory.ts";
 import {RequestType} from "../../../RequestType.ts";

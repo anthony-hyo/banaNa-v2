@@ -1,4 +1,4 @@
-import type Player from "../../player/Player.ts";
+import type Player from "../../avatar/player/Player.ts";
 import type RequestArg from "../../request/RequestArg.ts";
 import {RequestType} from "../../request/RequestType.ts";
 

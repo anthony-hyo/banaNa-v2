@@ -1,7 +1,7 @@
 import * as net from "net";
 import {Server, Socket} from "net";
 import logger from "../util/Logger";
-import PlayerNetwork from "../player/PlayerNetwork";
+import PlayerNetwork from "../avatar/player/PlayerNetwork";
 
 export default class Network {
 

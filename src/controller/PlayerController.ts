@@ -1,9 +1,9 @@
 import type IUser from "../database/interfaces/IUser.ts";
-import Player from "../player/Player";
+import Player from "../avatar/player/Player";
 import logger from "../util/Logger";
 import GameController from "./GameController";
 import type {Socket} from "net";
-import PlayerNetwork from "../player/PlayerNetwork.ts";
+import PlayerNetwork from "../avatar/player/PlayerNetwork.ts";
 import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {users} from "../database/drizzle/schema.ts";

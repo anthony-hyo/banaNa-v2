@@ -1,6 +1,6 @@
 import type IRequest from "../../interfaces/request/IRequest.ts";
 import type RequestArg from "../RequestArg.ts";
-import type Player from "../../player/Player.ts";
+import type Player from "../../avatar/player/Player.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
 import CoreValues from "../../aqw/CoreValues.ts";
 import RoomController from "../../controller/RoomController.ts";

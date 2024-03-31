@@ -1,8 +1,7 @@
 import type IRequest from "../../../interfaces/request/IRequest.ts";
-import type Player from "../../../player/Player.ts";
+import type Player from "../../../avatar/player/Player.ts";
 import type RequestArg from "../../RequestArg.ts";
 import type IAreaCell from "../../../database/interfaces/IAreaCell.ts";
-import PlayerConst from "../../../player/PlayerConst.ts";
 import {RequestType} from "../../RequestType.ts";
 
 export default class MoveToCellById implements IRequest {

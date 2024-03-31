@@ -1,4 +1,4 @@
-import type {Socket} from "bun";
+import type {Socket} from "net";
 import type IDispatchable from "../../interfaces/entity/IDispatchable";
 import Decoder from "../../network/Decoder";
 import {DELIMITER} from "../../util/Const";

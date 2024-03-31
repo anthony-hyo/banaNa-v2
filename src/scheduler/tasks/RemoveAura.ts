@@ -1,8 +1,8 @@
 import type {Monster} from "../../monster/Monster.ts";
 import JSONArray from "../../util/json/JSONArray";
 import JSONObject from "../../util/json/JSONObject";
-import PlayerConst from "../../player/PlayerConst.ts";
-import type Player from "../../player/Player.ts";
+import PlayerConst from "../../avatar/player/PlayerConst.ts";
+import type Player from "../../avatar/player/Player.ts";
 import type ISkillAura from "../../database/interfaces/ISkillAura.ts";
 import type ITask from "../../interfaces/scheduler/ITask";
 import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";

@@ -1,6 +1,6 @@
 import {DecoderType} from "../util/Const";
 import {XMLParser} from "fast-xml-parser";
-import type PlayerNetwork from "../player/PlayerNetwork.ts";
+import type PlayerNetwork from "../avatar/player/PlayerNetwork.ts";
 import PlayerController from "../controller/PlayerController.ts";
 import RequestFactory from "../request/RequestFactory.ts";
 import RequestArg from "../request/RequestArg.ts";
