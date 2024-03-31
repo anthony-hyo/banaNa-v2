@@ -182,7 +182,9 @@ export const areas = mysqlTable("areas", {
 			.default(10)
 			.notNull(),
 
-	levelRequired: levelColumn('level_required'),
+	requiredLevel: levelColumn('required_level'),
+
+	requiredAccessId: levelColumn('required_access_id'),
 
 	isUpgradeOnly:
 		boolean("is_upgrade_only")

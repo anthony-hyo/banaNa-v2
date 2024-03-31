@@ -1,54 +1,16 @@
 import Room from "../room/Room.ts";
 import type Player from "../player/Player.ts";
 import type IArea from "../database/interfaces/IArea.ts";
-import database from "../database/drizzle/database.ts";
-import {eq} from "drizzle-orm";
-import {areas} from "../database/drizzle/schema.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 
 export default class RoomController {
 
-	private static count: number = 0;
+	private static count: number = 1;
 
-	private static roomList: Map<number, Room> = new Map<number, Room>;
+	private static readonly ROOMS: Map<string, Room> = new Map<string, Room>;
 
-	public static addRoom(rm: Room): void {
-		if (RoomController.roomList.has(rm.id)) {
-			return;
-		}
-
-		RoomController.roomList.set(rm.id, rm);
-	}
-
-	public static removeRoom(id: number): void {
-		RoomController.roomList.delete(id);
-	}
-
-	public static getRoom(roomId: number): Room | null {
-		const room: Room | undefined = RoomController.roomList.get(roomId);
-		return room !== undefined ? room : null;
-	}
-
-	public static getList(): Map<number, Room> {
-		return RoomController.roomList;
-	}
-
-	public static getRoomByName(name: string): Room | undefined {
-		let found: Room | undefined = undefined;
-
-		for (let room of RoomController.roomList.values()) {
-			if (room.name !== name) {
-				continue;
-			}
-
-			found = room;
-		}
-
-		return found;
-	}
-
-	public static async joinRoom(player: Player, newRoom: Room): Promise<void> {
+	public static async join(player: Player, newRoom: Room): Promise<void> {
 		if (player.room !== undefined) {
 			let oldRoom: Room | null = player.room;
 
@@ -60,7 +22,7 @@ export default class RoomController {
 				oldRoom.removePlayer(player);
 
 				if (oldRoom.players.size <= 0) {
-					RoomController.removeRoom(oldRoom.id);
+					RoomController.ROOMS.delete(oldRoom.name);
 				}
 			}
 		}
@@ -98,13 +60,13 @@ export default class RoomController {
 		}
 	}
 
-	public static getRoomCount(): number {
-		return RoomController.roomList.size;
-	}
+	public static lookOrCreate(area: IArea, name: string): Room {
+		let i: number = 1;
 
-	public static async look(name: string): Promise<Room | undefined> {
-		for (let i: number = 0; i < 20; i++) {
-			const room: Room | undefined = RoomController.getRoomByName(`${name}-${i}`);
+		name = name.toLowerCase();
+
+		while (i <= 20) {
+			const room: Room | undefined = RoomController.findByName(`${name}-${i}`);
 
 			if (!room) {
 				break;
@@ -113,37 +75,24 @@ export default class RoomController {
 			if (room.isNotFull) {
 				return room;
 			}
+
+			i++;
 		}
 
-		return RoomController.createRoom(name);
+		return RoomController.create(area, name, i);
 	}
 
-	public static async createRoom(name: string): Promise<Room | undefined> {
-		const mapName: string = name.split("-")[0] == "house" ? name : name.split("-")[0];
+	public static findByName(name: string): Room | undefined {
+		return RoomController.ROOMS.get(name.toLowerCase());
+	}
 
-		const data: IArea | undefined = await database.query.areas.findFirst({
-			with: {
-				cells: true,
-				items: {
-					with: {
-						item: true
-					}
-				},
-				monsters: {
-					with: {
-						monster: true,
-					}
-				},
-			},
-			where: eq(areas.name, mapName)
-		});
+	public static findOrCreate(area: IArea, name: string, key: number): Room {
+		const room: Room | undefined = RoomController.ROOMS.get(`${name}-${key}`.toLowerCase());
+		return room === undefined ? RoomController.create(area, name, key) : room;
+	}
 
-		if (!data) {
-			///player.network.writeArray("warning", "\"" + mapName + "\" is not a recognized map name.");
-			return undefined;
-		}
-
-		const room: Room = new Room(data, RoomController.count++, "");
+	public static create(area: IArea, name: string, key: number): Room {
+		const room: Room = new Room(area, RoomController.count++, `${name}-${key}`);
 
 		if (room.data.isPvP) {
 			room.isPvPDone = false;

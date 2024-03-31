@@ -22,7 +22,7 @@ export default class WarZoneQueue implements ITask {
 				for (const [warZone, players] of this.queues.entries()) {
 					if (players.length === WarZoneQueue.MAX_QUEUE) {
 						RoomController
-							.createRoom(`bludrutbrawl-1`)
+							.create(`bludrutbrawl`, 1)
 							.then((room: Room | undefined): void => {
 								for (let i: number = 0; i < WarZoneQueue.MAX_QUEUE; i++) {
 									const player: Player = players.shift()!;

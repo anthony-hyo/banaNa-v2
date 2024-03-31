@@ -10,7 +10,9 @@ export default interface IArea {
 	file: string;
 
 	maxPlayers: number;
-	levelRequired: number;
+
+	requiredLevel: number;
+	requiredAccessId: number;
 
 	isUpgradeOnly: boolean;
 	isStaffOnly: boolean;

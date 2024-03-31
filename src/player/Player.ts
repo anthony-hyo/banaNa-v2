@@ -1,6 +1,6 @@
 import Room from "../room/Room";
 import PlayerNetwork from "./PlayerNetwork";
-import {users, usersFactions, usersFriends, usersInventory, usersLogs} from "../database/drizzle/schema";
+import {areas, users, usersFactions, usersFriends, usersInventory, usersLogs} from "../database/drizzle/schema";
 import database from "../database/drizzle/database";
 import {and, eq, sql} from "drizzle-orm";
 import type IUser from "../database/interfaces/IUser.ts";
@@ -20,7 +20,7 @@ import type ISkillAuraEffect from "../database/interfaces/ISkillAuraEffect.ts";
 import PlayerConst from "./PlayerConst.ts";
 import GameController from "../controller/GameController.ts";
 import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
-import {differenceInDays, differenceInSeconds, differenceInYears, format} from "date-fns";
+import {differenceInDays, differenceInSeconds, differenceInYears, format, isAfter} from "date-fns";
 import type IUserFriend from "../database/interfaces/IUserFriend.ts";
 import PlayerController from "../controller/PlayerController.ts";
 import Scheduler from "../scheduler/Scheduler.ts";
@@ -32,6 +32,7 @@ import {AvatarState} from "../avatar/AvatarState.ts";
 import type AvatarStats from "../avatar/AvatarStats.ts";
 import PlayerData from "./PlayerData.ts";
 import Guild from "../guild/Guild.ts";
+import type IArea from "../database/interfaces/IArea.ts";
 
 export default class Player {
 
@@ -96,6 +97,9 @@ export default class Player {
 	public moveToCell(frame: string, pad: string, sendUpdate: boolean): void {
 		this.position.frame = frame;
 		this.position.pad = pad;
+
+		this.position.xAxis = 0;
+		this.position.yAxis = 0;
 
 		if (sendUpdate) {
 			this.room!.writeArrayExcept(this, "uotls", [this.network.name, `strPad:${pad},tx:0,strFrame:${frame},ty:0`]);
@@ -954,44 +958,58 @@ export default class Player {
 		);
 	}
 
-	public checkLimits(room: Room): boolean {
-		const areaName: string = room.name.split("-")[0] == "house" ? room.name : room.name.split("-")[0];
+	public async join(newRoom: Room, frame: string = 'Enter', pad: string = 'Spawn'): Promise<boolean> {
+		const user: IUser | undefined = await database.query.users.findFirst({
+			where: eq(users.id, this.databaseId)
+		});
 
-		if (room.data.levelRequired > parseInt(this.properties.get(PlayerConst.LEVEL))) {
-			this.network.writeArray("warning", ["\"" + areaName + "\" requires level " + room.data.levelRequired + " and above to enter."]);
-			return false;
-		} else if (room.data.isPvP) {
-			this.network.writeArray("warning", ["\"" + areaName + "\" is locked zone."]);
-			return true;
-		} /*else if (room.data.is_staff_only && !(this.isAdmin() || this.isModerator())) {
-			this.network.writeArray("warning", ["\"" + areaName + "\" is not a recognized map name."]);
-			return false;
-		}*/ else if (room.data.isUpgradeOnly && parseInt(this.properties.get(PlayerConst.UPGRADE_DAYS)) <= 0) {
-			this.network.writeArray("warning", ["\"" + areaName + "\" is member only."]);
-			return false;
-		} else if (room.players.has(this.network.id)) {
-			this.network.writeArray("warning", ["Cannot join a room you are currently in!"]);
-			return false;
-		} else if (room.players.size >= room.data.maxPlayers) {
-			this.network.writeArray("warning", ["Room join failed, destination room is full."]);
+		if (!user) {
 			return false;
 		}
+
+		if (newRoom.isFull) {
+			this.network.writeArray("warning", ["The destination room is currently full."]);
+			return false;
+		}
+
+		const area: IArea | undefined = await database.query.areas.findFirst({
+			where: eq(areas.id, newRoom.databaseId)
+		});
+
+		if (!area) {
+			return false;
+		}
+
+		if (newRoom.id == this.room?.id) {
+			this.network.writeArray("warning", ["You are already in this room!"]);
+			return false;
+		}
+
+		if (area.requiredLevel > user.level) {
+			this.network.writeArray("warning", [`You need to be at least level ${area.requiredLevel} to access this destination.`]);
+			return false;
+		}
+
+		const isUpgradeOnly: boolean = isAfter(new Date(), user.dateUpgradeExpire);
+
+		if (area.isUpgradeOnly && isUpgradeOnly) {
+			this.network.writeArray("warning", ["This destination is exclusive to VIP."]);
+			return false;
+		}
+
+		if (area.requiredAccessId > user.accessId) {
+			this.network.writeArray("warning", ["Access denied. Destination is inaccessible."]);
+			return false;
+		}
+
+		this.moveToCell(frame, pad, false);
+
+		await RoomController.join(this, newRoom);
+
+		await newRoom.moveToArea(this);
 
 		return true;
 	}
 
-	public async joinRoom(room: Room, frame: string = "Enter", pad: string = "Spawn"): Promise<void> {
-		this.position.frame = frame;
-		this.position.pad = pad;
-
-		this.position.xAxis = 0;
-		this.position.yAxis = 0;
-
-		await RoomController.joinRoom(this, room);
-
-		await this.room!.moveToArea(this);
-
-		this.network.writeArray("server", ["You joined \"" + this.room!.name + "\"!"]);
-	}
 
 }

@@ -239,6 +239,8 @@ export default class Room implements IDispatchable {
 		}
 
 		player.network.writeObject(moveToArea);
+
+		player.network.writeArray("server", ["You joined \"" + this.name + "\"!"]);
 	}
 
 	private getMonMap(): JSONArray {
