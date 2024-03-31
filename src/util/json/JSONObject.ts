@@ -3,10 +3,9 @@ import JSONArray from "./JSONArray.ts";
 
 export default class JSONObject {
 
-	private readonly properties: IJSONObject;
-
-	constructor(properties: IJSONObject = {}) {
-		this.properties = properties;
+	constructor(
+		private readonly properties: IJSONObject = {}
+	) {
 	}
 
 	public put(key: string, value: string | number | boolean | JSONObject | JSONArray): void {
@@ -73,11 +72,11 @@ export default class JSONObject {
 		return null;
 	}
 
-	public toJSON(): IJSONObject {
+	public get toJSON(): IJSONObject {
 		return this.properties;
 	}
 
-	public isEmpty(): boolean {
+	public get isEmpty(): boolean {
 		return Object.keys(this.properties).length === 0;
 	}
 

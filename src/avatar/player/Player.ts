@@ -427,19 +427,19 @@ export default class Player extends Avatar {
 			}
 		}
 
-		if (!ba.isEmpty()) {
+		if (!ba.isEmpty) {
 			tempStat.element("ba", ba);
 		}
 
-		if (!ar.isEmpty()) {
+		if (!ar.isEmpty) {
 			tempStat.element("ar", ar);
 		}
 
-		if (!Weapon.isEmpty()) {
+		if (!Weapon.isEmpty) {
 			tempStat.element("Weapon", Weapon);
 		}
 
-		if (!he.isEmpty()) {
+		if (!he.isEmpty) {
 			tempStat.element("he", he);
 		}
 

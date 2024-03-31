@@ -70,7 +70,7 @@ export default class PlayerNetwork implements IDispatchable {
 			t: `xt`,
 			b: {
 				r: -1,
-				o: data.toJSON()
+				o: data.toJSON
 			},
 		}));
 	}

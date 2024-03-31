@@ -1,35 +1,35 @@
-import JSONObject from "./JSONObject.ts";
+import type JSONObject from "./JSONObject.ts";
 
 export default class JSONArray implements Iterable<any> {
 
-	private readonly elements: any[];
-
-	constructor(elements: any[] = []) {
-		this.elements = elements;
+	constructor(
+		private readonly elements: Array<string | number | boolean | JSONObject | JSONArray> = []
+	) {
 	}
 
-	add(element: any): void {
+	public add(element: string | number | boolean | JSONObject | JSONArray): this {
 		this.elements.push(element);
+		return this;
 	}
 
-	get(index: number): any {
+	public get(index: number): any {
 		return this.elements[index];
 	}
 
-	element(key: number, value: any): this {
+	public element(key: number, value: string | number | boolean | JSONObject | JSONArray): this {
 		this.elements[key] = value;
 		return this;
 	}
 
-	size(): number {
+	public get size(): number {
 		return this.elements.length;
 	}
 
-	toJSON(): any[] {
+	public get toJSON(): Array<string | number | boolean | JSONObject | JSONArray> {
 		return this.elements;
 	}
 
-	[Symbol.iterator](): Iterator<any> {
+	public [Symbol.iterator](): Iterator<any> {
 		let index: number = 0;
 		const elements: any[] = this.elements;
 
@@ -48,17 +48,6 @@ export default class JSONArray implements Iterable<any> {
 				}
 			}
 		};
-	}
-
-	accumulate(key: string, value: any): this {
-		const array = this.elements.find(item => item.hasOwnProperty(key));
-		if (array) {
-			array[key].push(value);
-		} else {
-			const newArray = new JSONObject().element(key, [value]);
-			this.add(newArray);
-		}
-		return this;
 	}
 
 }
