@@ -1,4 +1,4 @@
-import type Player from "./Player.ts";
+import type Player from "../Player.ts";
 
 export default class PlayerData {
 

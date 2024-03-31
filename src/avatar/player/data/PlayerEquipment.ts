@@ -1,9 +1,8 @@
-import Player from "./Player.ts";
-import PlayerConst from "../player/PlayerConst.ts";
-import {Rank} from "../aqw/Rank.ts";
-import type IItem from "../database/interfaces/IItem.ts";
-import JSONArray from "../util/json/JSONArray.ts";
-import JSONObject from "../util/json/JSONObject.ts";
+import {Rank} from "../../../aqw/Rank";
+import type IItem from "../../../database/interfaces/IItem";
+import JSONArray from "../../../util/json/JSONArray";
+import JSONObject from "../../../util/json/JSONObject";
+import type Player from "../Player";
 
 export default class PlayerEquipment {
 

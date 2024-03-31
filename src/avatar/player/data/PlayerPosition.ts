@@ -1,10 +1,6 @@
-export default class AvatarPosition {
+export default class PlayerPosition {
 
 	private _frame: string = 'Enter';
-	private _pad: string = 'Spawn';
-
-	private _xAxis: number = 0;
-	private _yAxis: number = 0;
 
 	public get frame(): string {
 		return this._frame;
@@ -14,6 +10,8 @@ export default class AvatarPosition {
 		this._frame = value;
 	}
 
+	private _pad: string = 'Spawn';
+
 	public get pad(): string {
 		return this._pad;
 	}
@@ -22,6 +20,8 @@ export default class AvatarPosition {
 		this._pad = value;
 	}
 
+	private _xAxis: number = 0;
+
 	public get xAxis(): number {
 		return this._xAxis;
 	}
@@ -29,6 +29,8 @@ export default class AvatarPosition {
 	public set xAxis(value: number) {
 		this._xAxis = value;
 	}
+
+	private _yAxis: number = 0;
 
 	public get yAxis(): number {
 		return this._yAxis;

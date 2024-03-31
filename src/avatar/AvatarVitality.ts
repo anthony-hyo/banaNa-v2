@@ -14,12 +14,12 @@ export default class AvatarVitality {
 		return this._valueMax;
 	}
 
-	public set update(value: number) {
-		this._value = Math.max(0, Math.min(value, this.max));
-	}
-
 	public set max(value: number) {
 		this._valueMax = Math.max(0, this.max);
+	}
+
+	public set update(value: number) {
+		this._value = Math.max(0, Math.min(value, this.max));
 	}
 
 	public increaseBy(amount: number): void {

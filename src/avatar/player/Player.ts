@@ -1,60 +1,59 @@
-import Room from "../room/Room";
-import PlayerNetwork from "./PlayerNetwork";
-import {areas, users, usersFactions, usersFriends, usersInventory, usersLogs} from "../database/drizzle/schema";
-import database from "../database/drizzle/database";
+import {differenceInDays, differenceInSeconds, differenceInYears, isAfter} from "date-fns";
 import {and, eq, sql} from "drizzle-orm";
-import type IUser from "../database/interfaces/IUser.ts";
-import PlayerPreference from "./PlayerPreference.ts";
-import JSONObject from "../util/json/JSONObject.ts";
-import CoreValues from "../aqw/CoreValues.ts";
-import {Rank} from "../aqw/Rank.ts";
-import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../util/Const.ts";
-import type ISkillAura from "../database/interfaces/ISkillAura.ts";
-import JSONArray from "../util/json/JSONArray.ts";
-import type IEnhancement from "../database/interfaces/IEnhancement.ts";
-import {Quests} from "../aqw/Quests.ts";
-import Party from "../party/Party.ts";
-import type IClass from "../database/interfaces/IClass.ts";
-import type ISkill from "../database/interfaces/ISkill.ts";
-import type ISkillAuraEffect from "../database/interfaces/ISkillAuraEffect.ts";
-import PlayerConst from "./PlayerConst.ts";
-import GameController from "../controller/GameController.ts";
-import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
-import {differenceInDays, differenceInSeconds, differenceInYears, format, isAfter} from "date-fns";
-import type IUserFriend from "../database/interfaces/IUserFriend.ts";
-import PlayerController from "../controller/PlayerController.ts";
-import Scheduler from "../scheduler/Scheduler.ts";
-import RoomController from "../controller/RoomController.ts";
-import AvatarPosition from "../avatar/AvatarPosition.ts";
-import AvatarStatus from "../avatar/AvatarStatus.ts";
-import PlayerInventory from "./PlayerInventory.ts";
-import {AvatarState} from "../avatar/AvatarState.ts";
-import type AvatarStats from "../avatar/AvatarStats.ts";
-import PlayerData from "./PlayerData.ts";
-import Guild from "../guild/Guild.ts";
-import type IArea from "../database/interfaces/IArea.ts";
-import UserNotFoundException from "../exceptions/UserNotFoundException.ts";
+import {format} from "mysql2";
+import CoreValues from "../../aqw/CoreValues";
+import {Quests} from "../../aqw/Quests";
+import {Rank} from "../../aqw/Rank";
+import GameController from "../../controller/GameController";
+import PlayerController from "../../controller/PlayerController";
+import RoomController from "../../controller/RoomController";
+import database from "../../database/drizzle/database";
+import {areas, users, usersFactions, usersFriends, usersInventory, usersLogs} from "../../database/drizzle/schema";
+import type IArea from "../../database/interfaces/IArea";
+import type IClass from "../../database/interfaces/IClass";
+import type IEnhancement from "../../database/interfaces/IEnhancement";
+import type ISkill from "../../database/interfaces/ISkill";
+import type ISkillAura from "../../database/interfaces/ISkillAura";
+import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect";
+import type IUser from "../../database/interfaces/IUser";
+import type IUserFriend from "../../database/interfaces/IUserFriend";
+import UserNotFoundException from "../../exceptions/UserNotFoundException";
+import Guild from "../../guild/Guild";
+import type Party from "../../party/Party";
+import type Room from "../../room/Room";
+import Scheduler from "../../scheduler/Scheduler";
+import RemoveAura from "../../scheduler/tasks/RemoveAura";
+import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../../util/Const";
+import JSONArray from "../../util/json/JSONArray";
+import JSONObject from "../../util/json/JSONObject";
+import Avatar from "../Avatar";
+import {AvatarState} from "../AvatarState";
+import type AvatarStats from "../AvatarStats";
+import AvatarStatus from "../AvatarStatus";
+import type PlayerNetwork from "./PlayerNetwork";
+import PlayerData from "./data/PlayerData";
+import PlayerInventory from "./data/PlayerInventory";
+import PlayerPosition from "./data/PlayerPosition";
+import PlayerPreference from "./data/PlayerPreference";
 
-export default class Player {
+export default class Player extends Avatar {
 
 	public properties: Map<string, any> = new Map<string, any>();
 	public room: Room | undefined;
-
-	private readonly _databaseId: number;
-	private readonly _username: string;
-	private readonly _network: PlayerNetwork;
-	public readonly position: AvatarPosition = new AvatarPosition();
-
-	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
-
+	public readonly position: PlayerPosition = new PlayerPosition();
 	public readonly status: AvatarStatus = new AvatarStatus(2500, 1000, 100, AvatarState.NEUTRAL);
 	public readonly inventory: PlayerInventory = new PlayerInventory(this);
 	public readonly preference: PlayerPreference = new PlayerPreference(this);
 	public readonly data: PlayerData = new PlayerData(this);
-
 	public party: Party | undefined = undefined;
+	private readonly _databaseId: number;
+	private readonly _username: string;
+	private readonly _network: PlayerNetwork;
+	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
 
 	constructor(user: IUser, network: PlayerNetwork) {
+		super();
+
 		this._databaseId = user.id;
 		this._username = user.username;
 		this._network = network;
@@ -890,6 +889,59 @@ export default class Player {
 		this.properties.set(PlayerConst.RESPAWN_TIME, Date.now());
 	}
 
+	public async join(newRoom: Room, frame: string = 'Enter', pad: string = 'Spawn'): Promise<boolean> {
+		const user: IUser | undefined = await database.query.users.findFirst({
+			where: eq(users.id, this.databaseId)
+		});
+
+		if (!user) {
+			return false;
+		}
+
+		if (newRoom.isFull) {
+			this.network.writeArray("warning", ["The destination room is currently full."]);
+			return false;
+		}
+
+		const area: IArea | undefined = await database.query.areas.findFirst({
+			where: eq(areas.id, newRoom.databaseId)
+		});
+
+		if (!area) {
+			return false;
+		}
+
+		if (newRoom.id == this.room?.id) {
+			this.network.writeArray("warning", ["You are already in this room!"]);
+			return false;
+		}
+
+		if (area.requiredLevel > user.level) {
+			this.network.writeArray("warning", [`You need to be at least level ${area.requiredLevel} to access this destination.`]);
+			return false;
+		}
+
+		const isUpgradeOnly: boolean = isAfter(new Date(), user.dateUpgradeExpire);
+
+		if (area.isUpgradeOnly && isUpgradeOnly) {
+			this.network.writeArray("warning", ["This destination is exclusive to VIP."]);
+			return false;
+		}
+
+		if (area.requiredAccessId > user.accessId) {
+			this.network.writeArray("warning", ["Access denied. Destination is inaccessible."]);
+			return false;
+		}
+
+		this.moveToCell(frame, pad, false);
+
+		await RoomController.join(this, newRoom);
+
+		await newRoom.moveToArea(this);
+
+		return true;
+	}
+
 	private clearAuras(): void {
 		const removeAuras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS) as Set<RemoveAura>;
 
@@ -957,59 +1009,6 @@ export default class Player {
 				.element("cmd", "aura+p")
 				.element("tInf", "p:" + this.network.id),
 		);
-	}
-
-	public async join(newRoom: Room, frame: string = 'Enter', pad: string = 'Spawn'): Promise<boolean> {
-		const user: IUser | undefined = await database.query.users.findFirst({
-			where: eq(users.id, this.databaseId)
-		});
-
-		if (!user) {
-			return false;
-		}
-
-		if (newRoom.isFull) {
-			this.network.writeArray("warning", ["The destination room is currently full."]);
-			return false;
-		}
-
-		const area: IArea | undefined = await database.query.areas.findFirst({
-			where: eq(areas.id, newRoom.databaseId)
-		});
-
-		if (!area) {
-			return false;
-		}
-
-		if (newRoom.id == this.room?.id) {
-			this.network.writeArray("warning", ["You are already in this room!"]);
-			return false;
-		}
-
-		if (area.requiredLevel > user.level) {
-			this.network.writeArray("warning", [`You need to be at least level ${area.requiredLevel} to access this destination.`]);
-			return false;
-		}
-
-		const isUpgradeOnly: boolean = isAfter(new Date(), user.dateUpgradeExpire);
-
-		if (area.isUpgradeOnly && isUpgradeOnly) {
-			this.network.writeArray("warning", ["This destination is exclusive to VIP."]);
-			return false;
-		}
-
-		if (area.requiredAccessId > user.accessId) {
-			this.network.writeArray("warning", ["Access denied. Destination is inaccessible."]);
-			return false;
-		}
-
-		this.moveToCell(frame, pad, false);
-
-		await RoomController.join(this, newRoom);
-
-		await newRoom.moveToArea(this);
-
-		return true;
 	}
 
 

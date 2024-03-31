@@ -1,24 +1,24 @@
-import type IAreaMonster from "../database/interfaces/IAreaMonster.ts";
-import type IMonster from "../database/interfaces/IMonster.ts";
-import type IMonsterDrop from "../database/interfaces/IMonsterDrop.ts";
-import type ISkillAura from "../database/interfaces/ISkillAura.ts";
-import MonsterRespawn from "../scheduler/tasks/MonsterRespawn";
-import Random from "../util/Random";
-import JSONArray from "../util/json/JSONArray";
-import JSONObject from "../util/json/JSONObject";
-import PlayerConst from "../player/PlayerConst.ts";
-import schedule from "node-schedule";
-import RemoveAura from "../scheduler/tasks/RemoveAura.ts";
-import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
-import type Player from "../player/Player.ts";
-import type Room from "../room/Room.ts";
-import Scheduler from "../scheduler/Scheduler.ts";
-import GameController from "../controller/GameController.ts";
-import type IMonsterData from "../interfaces/monster/IMonsterData.ts";
-import type AvatarStatus from "../avatar/AvatarStatus.ts";
-import type AvatarStats from "../avatar/AvatarStats.ts";
+import GameController from "../../controller/GameController";
+import PlayerController from "../../controller/PlayerController";
+import type IAreaMonster from "../../database/interfaces/IAreaMonster";
+import type IMonster from "../../database/interfaces/IMonster";
+import type IMonsterDrop from "../../database/interfaces/IMonsterDrop";
+import type ISkillAura from "../../database/interfaces/ISkillAura";
+import type IDispatchable from "../../interfaces/entity/IDispatchable";
+import type IMonsterData from "../../interfaces/monster/IMonsterData";
+import type Room from "../../room/Room";
+import Scheduler from "../../scheduler/Scheduler";
+import MonsterRespawn from "../../scheduler/tasks/MonsterRespawn";
+import RemoveAura from "../../scheduler/tasks/RemoveAura";
+import Random from "../../util/Random";
+import JSONArray from "../../util/json/JSONArray";
+import JSONObject from "../../util/json/JSONObject";
+import Avatar from "../Avatar";
+import type AvatarStats from "../AvatarStats";
+import type AvatarStatus from "../AvatarStatus";
+import type Player from "../player/Player";
 
-export class Monster implements IDispatchable {
+export class Monster extends Avatar implements IDispatchable {
 
 	public attacking: schedule.Job | undefined;
 
@@ -37,6 +37,8 @@ export class Monster implements IDispatchable {
 	public readonly status: AvatarStatus;
 
 	constructor(mapMon: IAreaMonster, room: Room) {
+		super();
+
 		this.monsterId = mapMon.monsterId;
 		this.mapId = mapMon.monMapId;
 		this.frame = mapMon.frame;
@@ -64,15 +66,15 @@ export class Monster implements IDispatchable {
 
 		const userId: number = this.getRandomTarget();
 
-		const player: Player | null = ExtensionHelper.instance().getUserById(userId);
+		const player: Player | undefined = PlayerController.find(userId);
 
-		if (!player || (this.room.getId() !== player.getRoom()) || this.frame !== player.properties.get(PlayerConst.FRAME)) {
+		if (!player || (this.room.id !== player.room?.id) || this.frame !== player.position.frame) {
 			this.removeTarget(userId);
 			this.cancel();
 			return;
 		}
 
-		const monDmg: number = this.world.monsters.get(this.monsterId)!.dps;
+		const monDmg: number = this.data.monster!.damagePerSecond;
 		const minDmg: number = Math.floor(monDmg - (monDmg * 0.1));
 		const maxDmg: number = Math.ceil(monDmg + (monDmg * 0.1));
 
@@ -284,28 +286,6 @@ export class Monster implements IDispatchable {
 		} else {
 			attacking.cancel();
 		}
-	}
-
-	public setState(state: number): void {
-		this.state = state;
-	}
-
-	public setHealth(health: number): void {
-		this.health = health;
-		if (this.health < 0) {
-			this.health = 0;
-		}
-	}
-
-	public setMana(mana: number): void {
-		this.mana = mana;
-		if (this.mana < 0) {
-			this.mana = 0;
-		}
-	}
-
-	public getAuras(): ReadonlySet<RemoveAura> {
-		return this.auras;
 	}
 
 	public writeObject(data: JSONObject): void {

@@ -3,12 +3,6 @@ import {AvatarState} from "./AvatarState.ts";
 
 export default class AvatarStatus {
 
-	public _health: AvatarVitality;
-	public _mana: AvatarVitality;
-	public _stamina: AvatarVitality;
-
-	public _state: AvatarState;
-
 	constructor(health: number, mana: number, stamina: number, state: AvatarState) {
 		this._health = new AvatarVitality(health, health);
 		this._mana = new AvatarVitality(mana, mana);
@@ -17,17 +11,25 @@ export default class AvatarStatus {
 		this._state = state;
 	}
 
+	public _health: AvatarVitality;
+
 	public get health(): AvatarVitality {
 		return this._health;
 	}
+
+	public _mana: AvatarVitality;
 
 	public get mana(): AvatarVitality {
 		return this._mana;
 	}
 
+	public _stamina: AvatarVitality;
+
 	public get stamina(): AvatarVitality {
 		return this._stamina;
 	}
+
+	public _state: AvatarState;
 
 	public get state(): AvatarState {
 		return this._state;

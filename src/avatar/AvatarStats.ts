@@ -3,9 +3,8 @@ import type IEnhancement from "../database/interfaces/IEnhancement";
 import type IItem from "../database/interfaces/IItem";
 import type ISkill from "../database/interfaces/ISkill";
 import type ISkillAuraEffect from "../database/interfaces/ISkillAuraEffect";
-import type Player from "../player/Player";
-import PlayerConst from "../player/PlayerConst";
 import JSONObject from "../util/json/JSONObject";
+import type Player from "./player/Player";
 
 export default class AvatarStats {
 
@@ -34,7 +33,8 @@ export default class AvatarStats {
 	public cape: Map<string, number> = new Map<string, number>();
 
 	public effects: Set<ISkillAuraEffect> = new Set<ISkillAuraEffect>();
-
+	public physicalDamage: number = 0;
+	public magicDamage: number = 0;
 	private $cai: number = 1.0;
 	private $cao: number = 1.0;
 	private $cdi: number = 1.0;
@@ -88,14 +88,8 @@ export default class AvatarStats {
 	private _thi: number = 0.0; //total hit
 	private _tpa: number = 0.0;
 	private _tre: number = 0.0;
-
-	public physicalDamage: number = 0;
-
 	private minimumPhysicalDamage: number = 0;
 	private maximumPhysicalDamage: number = 0;
-
-	public magicDamage: number = 0;
-
 	private minimumMagicDamage: number = 0;
 	private maximumMagicDamage: number = 0;
 

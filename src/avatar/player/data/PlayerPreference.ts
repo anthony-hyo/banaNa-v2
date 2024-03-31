@@ -1,6 +1,6 @@
-import {Achievement} from "../aqw/Achievement.ts";
-import Preference from "../aqw/Preference.ts";
-import type Player from "./Player.ts";
+import {Achievement} from "../../../aqw/Achievement";
+import Preference from "../../../aqw/Preference";
+import type Player from "../Player";
 
 export default class PlayerPreference {
 

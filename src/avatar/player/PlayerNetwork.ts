@@ -1,10 +1,10 @@
-import Player from "./Player";
-import {Socket} from "net";
-import logger from "../util/Logger";
-import {DELIMITER} from "../util/Const";
-import Decoder from "../network/Decoder";
-import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
-import JSONObject from "../util/json/JSONObject.ts";
+import type {Socket} from "bun";
+import type IDispatchable from "../../interfaces/entity/IDispatchable";
+import Decoder from "../../network/Decoder";
+import {DELIMITER} from "../../util/Const";
+import logger from "../../util/Logger";
+import type JSONObject from "../../util/json/JSONObject";
+import type Player from "./Player";
 
 export default class PlayerNetwork implements IDispatchable {
 
