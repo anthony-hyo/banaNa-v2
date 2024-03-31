@@ -858,7 +858,7 @@ export default class Player extends Avatar {
 
 		if (withNetworkId) {
 			data
-				.element("ID", this.properties.get(PlayerConst.PVP_TEAM));
+				.element("ID", this.data.pvpTeam);
 		}
 
 		if (withStamina) {
@@ -868,7 +868,7 @@ export default class Player extends Avatar {
 		}
 
 		if (this.room && this.room.data.isPvP) {
-			data.element("pvpTeam", this.properties.get(PlayerConst.PVP_TEAM));
+			data.element("pvpTeam", this.data.pvpTeam);
 		}
 
 		return data;

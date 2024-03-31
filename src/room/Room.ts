@@ -164,9 +164,9 @@ export default class Room implements IDispatchable {
 			//TODO: Optimize
 			const players: Set<Player> = new Set<Player>();
 
-			for (const user of this.players.values()) {
-				if (user.properties.get(PlayerConst.PVP_TEAM) === winnerTeamId) {
-					players.add(user);
+			for (const player of this.players.values()) {
+				if (player.data.pvpTeam === winnerTeamId) {
+					players.add(player);
 				}
 			}
 
@@ -213,7 +213,7 @@ export default class Room implements IDispatchable {
 
 		if (this.data.isPvP) {
 			moveToArea
-				.element("pvpTeam", player.properties.get(PlayerConst.PVP_TEAM))
+				.element("pvpTeam", player.data.pvpTeam)
 				.element("PVPFactions", this.pvpFactions);
 
 			const pvpScore: JSONArray = new JSONArray();

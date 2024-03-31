@@ -29,9 +29,9 @@ export default class WarZoneQueue implements ITask {
 									player.properties.set(PlayerConst.ROOM_QUEUED, room);
 
 									if (i % 2 === 0) {
-										player.properties.set(PlayerConst.PVP_TEAM, 0);
+										player.data.pvpTeam = 0;
 									} else {
-										player.properties.set(PlayerConst.PVP_TEAM, 1);
+										player.data.pvpTeam = 1;
 									}
 
 									player.network.writeArray("server", ["A new Warzone battle has started!"]);
