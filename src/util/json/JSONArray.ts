@@ -25,7 +25,7 @@ export default class JSONArray implements Iterable<any> {
 		return this.elements.length;
 	}
 
-	public get toJSON(): Array<string | number | boolean | JSONObject | JSONArray> {
+	public toJSON(): Array<string | number | boolean | JSONObject | JSONArray> {
 		return this.elements;
 	}
 

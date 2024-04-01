@@ -72,7 +72,7 @@ export default class JSONObject {
 		return null;
 	}
 
-	public get toJSON(): IJSONObject {
+	public toJSON(): IJSONObject {
 		return this.properties;
 	}
 
