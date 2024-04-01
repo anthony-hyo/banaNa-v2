@@ -1,12 +1,14 @@
 import type IRequest from "../../../interfaces/request/IRequest.ts";
 import type Player from "../../../avatar/player/Player.ts";
 import type RequestArg from "../../RequestArg.ts";
-import {RequestType} from "../../RequestType.ts";
+import RequestType from "../../RequestType.ts";
+import RequestRegister from "../../RequestRegister.ts";
 
+@RequestRegister({
+	name: "mv",
+	type: RequestType.DEFAULT
+})
 export default class Move implements IRequest {
-
-	public readonly name: string = 'mv';
-	public readonly type: RequestType = RequestType.DEFAULT;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		const xAxis: number = args.getNumber(0);

@@ -4,12 +4,14 @@ import type Player from "../../avatar/player/Player.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
 import JSONArray from "../../util/json/JSONArray.ts";
 import PlayerController from "../../controller/PlayerController.ts";
-import {RequestType} from "../RequestType.ts";
+import RequestType from "../RequestType.ts";
+import RequestRegister from "../RequestRegister.ts";
 
+@RequestRegister({
+	name: "retrieveUserDatas",
+	type: RequestType.DEFAULT
+})
 export default class RetrieveUserDatas implements IRequest {
-
-	public readonly name: string = 'retrieveUserDatas';
-	public readonly type: RequestType = RequestType.DEFAULT;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		const jsonArray: JSONArray = new JSONArray();

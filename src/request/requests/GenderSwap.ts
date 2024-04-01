@@ -5,12 +5,14 @@ import JSONObject from "../../util/json/JSONObject.ts";
 import database from "../../database/drizzle/database.ts";
 import {hairs, users} from "../../database/drizzle/schema.ts";
 import {eq, sql} from "drizzle-orm";
-import {RequestType} from "../RequestType.ts";
+import RequestType from "../RequestType.ts";
+import RequestRegister from "../RequestRegister.ts";
 
+@RequestRegister({
+	name: "genderSwap",
+	type: RequestType.DEFAULT
+})
 export default class GenderSwap implements IRequest {
-
-	public readonly name: string = 'genderSwap';
-	public readonly type: RequestType = RequestType.DEFAULT;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		const { coins, hair } = (await database.query.users.findFirst({

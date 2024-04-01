@@ -2,7 +2,7 @@ import path from "path";
 import Helper from "../util/Helper";
 import logger from "../util/Logger";
 import type IRequest from "../interfaces/request/IRequest.ts";
-import {RequestType} from "./RequestType.ts";
+import RequestType from "./RequestType.ts";
 
 export default class RequestFactory {
 
@@ -38,35 +38,35 @@ export default class RequestFactory {
 
 		for (let file of files) {
 			try {
-				const { default: RequestClass } = await import(file);
-
-				const request = new RequestClass();
-
-				switch (request.type) {
-					case RequestType.DEFAULT:
-						logger.warn(`[Request] register DEFAULT ${request.name}`);
-
-						RequestFactory.defaultRequests.set(request.name, RequestClass);
-						break;
-					case RequestType.COMMAND_USER:
-						logger.warn(`[Request] register USER ${request.name}`);
-
-						RequestFactory.usersCommandsRequests.set(request.name, RequestClass);
-						break;
-					case RequestType.COMMAND_GUILD:
-						logger.warn(`[Request] register GUILD ${request.name}`);
-
-						RequestFactory.guildCommandsRequests.set(request.name, RequestClass);
-						break;
-					case RequestType.COMMAND_PARTY:
-						logger.warn(`[Request] register PARTY ${request.name}`);
-
-						RequestFactory.partyCommandsRequests.set(request.name, RequestClass);
-						break;
-				}
+				import(file);
 			} catch (e) {
 				logger.error(`[Request] register error`, e);
 			}
+		}
+	}
+
+	public static add(type: RequestType, name: string, request: IRequest) {
+		switch (type) {
+			case RequestType.DEFAULT:
+				logger.silly(`[Request] register DEFAULT ${name}`);
+
+				RequestFactory.defaultRequests.set(name, request);
+				break;
+			case RequestType.COMMAND_USER:
+				logger.silly(`[Request] register USER ${name}`);
+
+				RequestFactory.usersCommandsRequests.set(name, request);
+				break;
+			case RequestType.COMMAND_GUILD:
+				logger.silly(`[Request] register GUILD ${name}`);
+
+				RequestFactory.guildCommandsRequests.set(name, request);
+				break;
+			case RequestType.COMMAND_PARTY:
+				logger.silly(`[Request] register PARTY ${name}`);
+
+				RequestFactory.partyCommandsRequests.set(name, request);
+				break;
 		}
 	}
 

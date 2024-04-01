@@ -5,16 +5,18 @@ import JSONObject from "../../util/json/JSONObject.ts";
 import CoreValues from "../../aqw/CoreValues.ts";
 import RoomController from "../../controller/RoomController.ts";
 import type Room from "../../room/Room.ts";
-import {RequestType} from "../RequestType.ts";
+import RequestType from "../RequestType.ts";
 import type IArea from "../../database/interfaces/IArea.ts";
 import database from "../../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {areas} from "../../database/drizzle/schema.ts";
+import RequestRegister from "../RequestRegister.ts";
 
+@RequestRegister({
+	name: "firstJoin",
+	type: RequestType.DEFAULT
+})
 export default class RequestDefault implements IRequest {
-
-	public readonly name: string = 'firstJoin';
-	public readonly type: RequestType = RequestType.DEFAULT;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		player.network.writeObject(

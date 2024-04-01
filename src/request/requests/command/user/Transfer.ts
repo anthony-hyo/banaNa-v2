@@ -1,18 +1,20 @@
 import type IRequest from "../../../../interfaces/request/IRequest";
 import type Player from "../../../../avatar/player/Player";
 import type RequestArg from "../../../RequestArg.ts";
-import {RequestType} from "../../../RequestType.ts";
+import RequestType from "../../../RequestType.ts";
 import type Room from "../../../../room/Room.ts";
 import RoomController from "../../../../controller/RoomController.ts";
 import type IArea from "../../../../database/interfaces/IArea.ts";
 import database from "../../../../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {areas} from "../../../../database/drizzle/schema.ts";
+import RequestRegister from "../../../RequestRegister.ts";
 
+@RequestRegister({
+	name: "tfer",
+	type: RequestType.COMMAND_USER
+})
 export default class Transfer implements IRequest {
-
-	public readonly name: string = 'tfer';
-	public readonly type: RequestType = RequestType.COMMAND_USER;
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
 		const [roomName, roomKeyStr = '1'] = args.getString(2).split("-");

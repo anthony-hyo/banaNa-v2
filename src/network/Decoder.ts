@@ -6,7 +6,7 @@ import RequestFactory from "../request/RequestFactory.ts";
 import RequestArg from "../request/RequestArg.ts";
 import logger from "../util/Logger.ts";
 import type IRequest from "../interfaces/request/IRequest.ts";
-import {RequestType} from "../request/RequestType.ts";
+import RequestType from "../request/RequestType.ts";
 import UserNotFoundException from "../exceptions/UserNotFoundException.ts";
 
 export default class Decoder {
