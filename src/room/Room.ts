@@ -5,7 +5,7 @@ import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {users} from "../database/drizzle/schema.ts";
 import type IArea from "../database/interfaces/IArea.ts";
-import {Monster} from "../avatar/monster/Monster.ts";
+import Monster from "../avatar/monster/Monster.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import GameController from "../controller/GameController.ts";
 

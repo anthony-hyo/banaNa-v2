@@ -1,4 +1,4 @@
-import type {Monster} from "../../avatar/monster/Monster.ts";
+import type Monster from "../../avatar/monster/Monster.ts";
 import JSONArray from "../../util/json/JSONArray";
 import JSONObject from "../../util/json/JSONObject";
 import type Player from "../../avatar/player/Player.ts";

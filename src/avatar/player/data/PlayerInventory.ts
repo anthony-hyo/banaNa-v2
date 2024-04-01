@@ -4,7 +4,7 @@ import Equipment from "../../../util/Equipment.ts";
 import JSONObject from "../../../util/json/JSONObject.ts";
 import JSONArray from "../../../util/json/JSONArray.ts";
 import {Rank} from "../../../aqw/Rank.ts";
-import SKillReference from "../../../util/SkillReference.ts";
+import SkillReference from "../../../util/SkillReference.ts";
 
 export default class PlayerInventory {
 
@@ -183,31 +183,31 @@ export default class PlayerInventory {
 						.element("tgtMin", "1");
 
 					switch (skill.reference) {
-						case SKillReference.AUTO_ATTACK:
+						case SkillReference.AUTO_ATTACK:
 							active.element(
 								0,
 								jsonObject
 									.element("auto", true)
 							);
 							break;
-						case SKillReference.ATTACK_1:
+						case SkillReference.ATTACK_1:
 							active.element(1, jsonObject);
 							break;
-						case SKillReference.ATTACK_2:
+						case SkillReference.ATTACK_2:
 							active.element(
 								2,
 								jsonObject
 									.elementIf(rank < 2, "isOK", false)
 							);
 							break;
-						case SKillReference.ATTACK_3:
+						case SkillReference.ATTACK_3:
 							active.element(
 								3,
 								jsonObject
 									.elementIf(rank < 3, "isOK", false)
 							);
 							break;
-						case SKillReference.ATTACK_4:
+						case SkillReference.ATTACK_4:
 							active.element(
 								4,
 								jsonObject

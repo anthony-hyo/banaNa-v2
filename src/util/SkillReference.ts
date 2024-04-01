@@ -1,4 +1,4 @@
-enum SKillReference {
+enum SkillReference {
 	AUTO_ATTACK = "aa",
 
 	ATTACK_1 = "a1",
@@ -13,4 +13,4 @@ enum SKillReference {
 }
 
 
-export default SKillReference;
+export default SkillReference;

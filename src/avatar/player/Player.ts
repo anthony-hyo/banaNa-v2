@@ -37,6 +37,7 @@ import PlayerPosition from "./data/PlayerPosition.ts";
 import PlayerPreference from "./data/PlayerPreference.ts";
 import type IUserInventory from "../../database/interfaces/IUserInventory.ts";
 import logger from "../../util/Logger.ts";
+import AvatarCombat from "../AvatarCombat.ts";
 
 export default class Player extends Avatar {
 
@@ -52,6 +53,7 @@ export default class Player extends Avatar {
 	private readonly _username: string;
 	private readonly _network: PlayerNetwork;
 	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
+	public readonly skills: AvatarCombat = new AvatarCombat(this);
 
 	constructor(user: IUser, network: PlayerNetwork) {
 		super();

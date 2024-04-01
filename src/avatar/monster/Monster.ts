@@ -1,31 +1,25 @@
 import GameController from "../../controller/GameController";
-import PlayerController from "../../controller/PlayerController";
 import type IAreaMonster from "../../database/interfaces/IAreaMonster";
 import type IMonster from "../../database/interfaces/IMonster";
 import type IMonsterDrop from "../../database/interfaces/IMonsterDrop";
 import type ISkillAura from "../../database/interfaces/ISkillAura";
 import type IDispatchable from "../../interfaces/entity/IDispatchable";
-import type IMonsterData from "../../interfaces/monster/IMonsterData";
 import type Room from "../../room/Room";
 import Scheduler from "../../scheduler/Scheduler";
 import MonsterRespawn from "../../scheduler/tasks/MonsterRespawn";
 import RemoveAura from "../../scheduler/tasks/RemoveAura";
 import Random from "../../util/Random";
-import JSONArray from "../../util/json/JSONArray";
 import JSONObject from "../../util/json/JSONObject";
 import Avatar from "../Avatar";
-import type AvatarStats from "../AvatarStats";
-import type AvatarStatus from "../AvatarStatus";
-import type Player from "../avatar/player/Player";
+import AvatarStatus from "../AvatarStatus";
+import MonsterData from "./data/MonsterData.ts";
+import {AvatarState} from "../AvatarState.ts";
+import AvatarCombat from "../AvatarCombat.ts";
 
-export class Monster extends Avatar implements IDispatchable {
+export default class Monster extends Avatar implements IDispatchable {
 
 	public attacking: schedule.Job | undefined;
 
-	public monsterId: number;
-	public mapId: number;
-	public state: number;
-	public health: number;
 	public mana: number;
 	public frame: string;
 	public targets: Set<number>;
@@ -33,22 +27,20 @@ export class Monster extends Avatar implements IDispatchable {
 	public rand: Random;
 	public room: Room;
 
-	public readonly data: IMonsterData;
-	public readonly status: AvatarStatus;
+	public readonly data: MonsterData;
+	public readonly status: AvatarStatus = new AvatarStatus(2500, 1000, 100, AvatarState.NEUTRAL);
+	public readonly skills: AvatarCombat = new AvatarCombat(this);
 
-	constructor(mapMon: IAreaMonster, room: Room) {
+	constructor(areaMonster: IAreaMonster, room: Room) {
 		super();
 
-		this.monsterId = mapMon.monsterId;
-		this.mapId = mapMon.monMapId;
-		this.frame = mapMon.frame;
+		this.data = new MonsterData(this, areaMonster);
+
+		this.frame = areaMonster.frame;
 		this.room = room;
-		this.rand = new Random(mapMon.monMapId * mapMon.monsterId);
+		this.rand = new Random(areaMonster.monMapId * areaMonster.monsterId);
 		this.targets = new Set<number>();
 		this.auras = new Set<RemoveAura>();
-		this.state = 1;
-		this.health = world.monsters.get(this.monsterId)!.health;
-		this.mana = world.monsters.get(this.monsterId)!.mana;
 	}
 
 	public cancel(): void {
@@ -58,130 +50,22 @@ export class Monster extends Avatar implements IDispatchable {
 		}
 	}
 
-	public run(): void {
-		if (this.state === 0) {
-			this.attacking?.cancel();
-			return;
-		}
-
-		const userId: number = this.getRandomTarget();
-
-		const player: Player | undefined = PlayerController.find(userId);
-
-		if (!player || (this.room.id !== player.room?.id) || this.frame !== player.position.frame) {
-			this.removeTarget(userId);
-			this.cancel();
-			return;
-		}
-
-		const monDmg: number = this.data.monster!.damagePerSecond;
-		const minDmg: number = Math.floor(monDmg - (monDmg * 0.1));
-		const maxDmg: number = Math.ceil(monDmg + (monDmg * 0.1));
-
-		let damage: number = this.rand.nextInt(maxDmg - minDmg) + minDmg;
-
-		const stats: AvatarStats = player.properties.get(PlayerConst.STATS);
-
-		const crit: boolean = Math.random() < 0.2;
-		const dodge: boolean = Math.random() < stats.get$tdo();
-
-		damage = dodge ? 0 : crit ? damage * 1.25 : damage;
-
-		for (const ra of this.auras) {
-			const aura: ISkillAura = ra.getAura();
-			if (["stun", "freeze", "stone", "disabled"].includes(aura.category)) {
-				return;
-			}
-		}
-
-		const userAuras: Set<RemoveAura> = player.properties.get(PlayerConst.AURAS);
-		for (const ra of userAuras) {
-			const aura: ISkillAura = ra.getAura();
-			if (aura.category !== "d") {
-				damage *= 1 - aura.damageTakenDecrease;
-			}
-		}
-
-		let userHp: number = player.properties.get(PlayerConst.HP) - damage;
-		userHp = userHp <= 0 ? 0 : userHp;
-
-		player.properties.set(PlayerConst.HP, userHp);
-		player.properties.set(PlayerConst.STATE, PlayerConst.STATE_COMBAT);
-
-		if (player.properties.get(PlayerConst.HP) <= 0) {
-			player.die();
-			this.removeTarget(userId);
-			this.cancel();
-		}
-
-		const anims: JSONArray = new JSONArray();
-		const p: JSONObject = new JSONObject();
-		const userData: JSONObject = new JSONObject();
-		const sara: JSONArray = new JSONArray();
-		const saraObj: JSONObject = new JSONObject();
-		const ct: JSONObject = new JSONObject();
-
-		anims.add(new JSONObject()
-			.element("strFrame", player.properties.get(PlayerConst.FRAME))
-			.element("cInf", "m:" + this.mapId)
-			.element("fx", "m")
-			.element("tInf", "p:" + userId)
-			.element("animStr", "Attack1,Attack2")
-		);
-
-		userData.put("intMP", player.properties.get(PlayerConst.MP));
-		userData.put("intHP", player.properties.get(PlayerConst.HP));
-		userData.put("intState", player.properties.get(PlayerConst.STATE));
-
-		p.put(player.getName(), userData);
-
-		saraObj.put("actionResult", new JSONObject()
-			.element("hp", damage)
-			.element("cInf", "m:" + this.mapId)
-			.element("tInf", "p:" + userId)
-			.element("type", dodge ? "dodge" : crit ? "crit" : "hit")
-		);
-
-		saraObj.put("iRes", 1);
-
-		sara.add(saraObj);
-
-		const m: JSONObject = new JSONObject();
-		const monData: JSONObject = new JSONObject();
-
-		this.mana += this.world.monsters.get(this.monsterId)!.mana * 0.02;
-		this.mana = this.mana > this.world.monsters.get(this.monsterId)!.mana ? this.world.monsters.get(this.monsterId)!.mana : this.mana;
-
-		monData.put("intMP", this.mana);
-
-		m.put(String(this.mapId), monData);
-
-		ct.put("anims", anims);
-		ct.put("p", p);
-		ct.put("m", m);
-		ct.put("cmd", "ct");
-
-		this.writeObject(ct);
-
-		ct.put("sara", sara);
-
-		player.network.writeObject(ct);
-	}
-
 	public restore(): void {
-		this.state = 1;
-		this.health = this.world.monsters.get(this.monsterId)!.health;
-		this.mana = this.world.monsters.get(this.monsterId)!.mana;
+		this.status.state = AvatarState.NEUTRAL;
+
+		this.status.health.resetToFull();
+		this.status.mana.resetToFull();
+
 		this.targets.clear();
 
-		const monInfo: JSONObject = new JSONObject();
-		monInfo.put("intHP", this.health);
-		monInfo.put("intMP", this.mana);
-		monInfo.put("intState", this.state);
+		const monInfo: JSONObject = new JSONObject()
+			.element("intHP", this.status.health.value)
+			.element("intMP", this.status.mana.value)
+			.element("intState", this.status.state);
 
 		const mtls: JSONObject = new JSONObject();
 		mtls.put("cmd", "mtls");
-		mtls.put("id", this.mapId);
+		mtls.put("id", this.data);
 		mtls.put("o", monInfo);
 
 		this.writeObject(mtls);
@@ -269,10 +153,6 @@ export class Monster extends Avatar implements IDispatchable {
 
 	public removeTarget(userId: number): void {
 		this.targets.delete(userId);
-	}
-
-	public getState(): number {
-		return this.state;
 	}
 
 	public getRoom(): Room {
