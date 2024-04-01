@@ -17,7 +17,8 @@ export default class UserCommand implements IRequest {
 		const request: IRequest | undefined = RequestFactory.request(RequestType.COMMAND_USER, command);
 
 		if (!request) {
-			throw new Error(`User command not found`);
+			//throw new Error(`User command not found`);
+			return;
 		}
 
 		await request

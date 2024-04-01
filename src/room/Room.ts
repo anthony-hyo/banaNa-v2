@@ -14,21 +14,35 @@ export default class Room implements IDispatchable {
 	private readonly _players: Map<number, Player> = new Map<number, Player>();
 	private readonly _monsters: Map<number, Monster> = new Map<number, Monster>();
 
-	public isPvPDone: any;
+	public isPvPDone: boolean = false;
 
-	public blueTeamName: any;
-	public redTeamName: any;
+	public blueTeamName: string = "Team Blue";
+	public redTeamName: string = "Team Red";
 
-	public blueTeamScore: any;
-	public redTeamScore: any;
+	public blueTeamScore: number = 0;
+	public redTeamScore: number = 0;
 
-	public pvpFactions: any;
+	public pvpFactions: JSONArray = new JSONArray();
 
 	constructor(
 		public readonly data: IArea,
 		private readonly _id: number,
 		private readonly _name: string,
 	) {
+		if (this.data.isPvP) {
+			this.pvpFactions
+				.add(
+					new JSONObject()
+						.element("id", 8)
+						.element("sName", "Blue")
+				)
+				.add(
+					new JSONObject()
+						.element("id", 7)
+						.element("sName", "Red")
+				);
+		}
+
 		if (this.data.monsters) {
 			for (const monster of this.data.monsters) {
 				this.monsters.set(monster.monsterAreaId, new Monster(monster, this));
@@ -73,9 +87,6 @@ export default class Room implements IDispatchable {
 	public get isNotFull(): boolean {
 		return !this.isFull;
 	}
-
-
-
 
 
 	public addPlayer(player: Player): void {
@@ -194,10 +205,63 @@ export default class Room implements IDispatchable {
 	public async moveToArea(player: Player): Promise<void> {
 		const mapName: string = this.name.split("-")[0] == "house" ? this.name : this.name.split("-")[0];
 
-		const uoBranch: JSONArray = new JSONArray();
+		const userBranch: JSONArray = new JSONArray();
 
 		for (const player of this.players.values()) {
-			uoBranch.add(await player.jsonPartial(false, false));
+			userBranch.add(await player.jsonPartial(false, false));
+		}
+		const monsterBranch: JSONArray = new JSONArray();
+		const monsterDefinition: JSONArray = new JSONArray();
+		const monsterMap: JSONArray = new JSONArray();
+
+		for (const monster of this.monsters.values()) {
+			const mon: JSONObject = new JSONObject()
+				.element("MonID", String(monster.data.monsterId))
+				.element("MonMapID", String(monster.data.monsterAreaId))
+				.element("bRed", monster.data.isAggressive)
+				.element("iLvl", monster.data.monster!.level)
+				.element("intHP", monster.status.health.value)
+				.element("intHPMax", monster.status.health.max)
+				.element("intMP", monster.status.mana.value)
+				.element("intMPMax", monster.status.mana.max)
+				.element("intState", monster.status.state)
+				.element("wDPS", monster.data.monster!.damagePerSecond);
+
+			if (this.data.isPvP) {
+				const react: JSONArray = new JSONArray();
+
+				if (monster.data.monster!.teamId > 0) {
+					react.add(0);
+					react.add(1);
+				} else {
+					react.add(1);
+					react.add(0);
+				}
+
+				mon.element("react", react);
+			}
+
+			monsterBranch.add(mon);
+
+			monsterDefinition.add(
+				new JSONObject()
+					.element("MonID", monster.monsterId)
+					.element("intLevel", monster.data.monster!.level)
+					.element("sRace", monster.data.monster!.typeRace!.name)
+					.element("strBehave", "walk")
+					.element("strLinkage", monster.data.monster!.linkage)
+					.element("strMonFileName", monster.data.monster!.file)
+					.element("strMonName", monster.data.monster!.name)
+			);
+
+			monsterMap.add(
+				new JSONObject()
+					.element("MonID", monster.monsterId)
+					.element("MonMapID", monster.data.monsterAreaId)
+					.element("bRed", monster.data.isAggressive)
+					.element("intRSS", -1)
+					.element("strFrame", monster.data.frame)
+			);
 		}
 
 		const moveToArea: JSONObject = new JSONObject()
@@ -207,8 +271,8 @@ export default class Room implements IDispatchable {
 			.element("sExtra", "")
 			.element("strMapFileName", this.data.file)
 			.element("strMapName", mapName)
-			.element("uoBranch", uoBranch)
-			.element("monBranch", this.getMonBranch())
+			.element("uoBranch", userBranch)
+			.element("monBranch", monsterBranch)
 			.element("intType", 2);
 
 		if (this.data.isPvP) {
@@ -231,91 +295,15 @@ export default class Room implements IDispatchable {
 			moveToArea.element("pvpScore", pvpScore);
 		}
 
-		if (this.data.monsters) {
+		if (this.data.monsters!.length > 0) {
 			moveToArea
-				.element("mondef", this.getMonsterDefinition())
-				.element("monmap", this.getMonMap());
+				.element("mondef", monsterDefinition)
+				.element("monmap", monsterMap);
 		}
 
 		player.network.writeObject(moveToArea);
 
 		player.network.writeArray("server", ["You joined \"" + this.name + "\"!"]);
-	}
-
-	private getMonMap(): JSONArray {
-		const monMap: JSONArray = new JSONArray();
-
-		for (const monster of this.monsters.values()) {
-			monMap.add(new JSONObject()
-				.element("MonID", monster.monsterId)
-				.element("MonMapID", monster.data.monsterAreaId)
-				.element("bRed", 0)
-				.element("intRSS", -1)
-				.element("strFrame", monster.data.frame)
-			);
-		}
-
-		return monMap;
-	}
-
-	private getMonsterDefinition(): JSONArray {
-		const monDef: JSONArray = new JSONArray();
-
-		for (const monster of this.monsters.values()) {
-			monDef.add(
-				new JSONObject()
-					.element("MonID", monster.monsterId)
-					.element("intHP", monster.status.health.value)
-					.element("intHPMax", monster.status.health.max)
-					.element("intLevel", monster.data.monster!.level)
-					.element("intMP", monster.status.mana.value)
-					.element("intMPMax", monster.status.mana.max)
-					.element("sRace", monster.data.monster!.typeRace!.name)
-					.element("strBehave", "walk")
-					.element("strElement", monster.data.monster!.typeElement!.name)
-					.element("strLinkage", monster.data.monster!.linkage)
-					.element("strMonFileName", monster.data.monster!.file)
-					.element("strMonName", monster.data.monster!.name)
-			);
-		}
-
-		return monDef;
-	}
-
-	private getMonBranch(): JSONArray {
-		const monBranch: JSONArray = new JSONArray();
-
-		for (const monster of this.monsters.values()) {
-			const mon: JSONObject = new JSONObject()
-				.element("MonID", String(monster.data.monsterId))
-				.element("MonMapID", String(monster.data.monsterAreaId))
-				.element("bRed", "0")
-				.element("iLvl", monster.data.monster!.level)
-				.element("intHP", monster.status.health.value)
-				.element("intHPMax", monster.status.health.max)
-				.element("intMP", monster.status.mana.value)
-				.element("intMPMax", monster.status.mana.max)
-				.element("intState", monster.getState())
-				.element("wDPS", monster.data.monster!.damagePerSecond);
-
-			if (this.data.isPvP) {
-				const react: JSONArray = new JSONArray();
-
-				if (monster.data.monster!.teamId > 0) {
-					react.add(0);
-					react.add(1);
-				} else {
-					react.add(1);
-					react.add(0);
-				}
-
-				mon.element("react", react);
-			}
-
-			monBranch.add(mon);
-		}
-
-		return monBranch;
 	}
 
 	public writeObject(data: JSONObject): void {

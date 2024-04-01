@@ -1,7 +1,6 @@
 import Room from "../room/Room.ts";
 import type Player from "../avatar/player/Player.ts";
 import type IArea from "../database/interfaces/IArea.ts";
-import JSONArray from "../util/json/JSONArray.ts";
 import JSONObject from "../util/json/JSONObject.ts";
 
 export default class RoomController {
@@ -94,35 +93,7 @@ export default class RoomController {
 	public static create(area: IArea, name: string, key: number): Room {
 		RoomController.count++;
 
-		const room: Room = new Room(area, RoomController.count, `${name}-${key}`);
-
-		if (room.data.isPvP) {
-			room.isPvPDone = false;
-
-			room.blueTeamScore = 0;
-			room.redTeamScore = 0;
-
-			room.blueTeamName = "Team Blue";
-			room.redTeamName = "Team Red";
-
-			const PVPFactions: JSONArray = new JSONArray();
-
-			PVPFactions.add(
-				new JSONObject()
-					.element("id", 8)
-					.element("sName", "Blue")
-			);
-
-			PVPFactions.add(
-				new JSONObject()
-					.element("id", 7)
-					.element("sName", "Red")
-			);
-
-			room.pvpFactions = PVPFactions;
-		}
-
-		return room;
+		return new Room(area, RoomController.count, `${name}-${key}`);
 	}
 
 }

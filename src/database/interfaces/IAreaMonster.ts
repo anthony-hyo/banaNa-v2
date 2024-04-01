@@ -11,6 +11,8 @@ export default interface IAreaMonster {
 
 	frame: string;
 
+	isAggressive: boolean;
+
 	dateUpdated: Date;
 	dateCreated: Date;
 
