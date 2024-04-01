@@ -171,7 +171,7 @@ export default class Player extends Avatar {
 			.update(users)
 			.set({
 				level: newLevel,
-				experience: this.databaseId,
+				experience: 0,
 			})
 			.where(eq(users.id, this.databaseId));
 	}
