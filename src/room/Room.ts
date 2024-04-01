@@ -197,7 +197,7 @@ export default class Room implements IDispatchable {
 		const uoBranch: JSONArray = new JSONArray();
 
 		for (const player of this.players.values()) {
-			uoBranch.add(await player.jsonPartial(true, false));
+			uoBranch.add(await player.jsonPartial(false, false));
 		}
 
 		const moveToArea: JSONObject = new JSONObject()

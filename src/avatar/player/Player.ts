@@ -858,7 +858,7 @@ export default class Player extends Avatar {
 
 		if (withNetworkId) {
 			data
-				.element("ID", this.data.pvpTeam);
+				.element("ID", this.network.id);
 		}
 
 		if (withStamina) {

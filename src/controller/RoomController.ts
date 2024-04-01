@@ -92,7 +92,9 @@ export default class RoomController {
 	}
 
 	public static create(area: IArea, name: string, key: number): Room {
-		const room: Room = new Room(area, RoomController.count++, `${name}-${key}`);
+		RoomController.count++;
+
+		const room: Room = new Room(area, RoomController.count, `${name}-${key}`);
 
 		if (room.data.isPvP) {
 			room.isPvPDone = false;

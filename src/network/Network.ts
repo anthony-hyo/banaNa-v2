@@ -5,7 +5,7 @@ import PlayerNetwork from "../avatar/player/PlayerNetwork";
 
 export default class Network {
 
-	private count: number = 0;
+	private static count: number = 1;
 
 	public async init(): Promise<this> {
 		const server: Server = net.createServer();
@@ -15,9 +15,9 @@ export default class Network {
 
 			logger.warn(`[Network] new connection from: ${socket.remoteAddress}`);
 
-			this.count++;
+			Network.count++;
 
-			const playerNetwork: PlayerNetwork = new PlayerNetwork(this.count, undefined, undefined, socket);
+			const playerNetwork: PlayerNetwork = new PlayerNetwork(Network.count, undefined, undefined, socket);
 
 			socket.on('data', (data: any): void => playerNetwork.data(data));
 
