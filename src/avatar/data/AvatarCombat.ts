@@ -1,7 +1,7 @@
-import Avatar from "./Avatar.ts";
-import type ISkill from "../database/interfaces/ISkill.ts";
-import SkillReference from "../util/SkillReference.ts";
-import SKillReference from "../util/SkillReference.ts";
+import Avatar from "../Avatar.ts";
+import type ISkill from "../../database/interfaces/ISkill.ts";
+import SkillReference from "../../util/SkillReference.ts";
+import SKillReference from "../../util/SkillReference.ts";
 
 export default class AvatarCombat {
 

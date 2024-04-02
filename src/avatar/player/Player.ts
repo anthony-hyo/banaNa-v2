@@ -1,5 +1,5 @@
 import {differenceInDays, differenceInSeconds, differenceInYears, isAfter} from "date-fns";
-import {and, eq, sql} from "drizzle-orm";
+import {eq, sql} from "drizzle-orm";
 import {format} from "mysql2";
 import CoreValues from "../../aqw/CoreValues.ts";
 import {Quests} from "../../aqw/Quests.ts";
@@ -10,26 +10,19 @@ import RoomController from "../../controller/RoomController.ts";
 import database from "../../database/drizzle/database.ts";
 import {areas, users, usersFactions, usersFriends, usersInventory, usersLogs} from "../../database/drizzle/schema.ts";
 import type IArea from "../../database/interfaces/IArea.ts";
-import type IClass from "../../database/interfaces/IClass.ts";
 import type IEnhancement from "../../database/interfaces/IEnhancement.ts";
-import type ISkill from "../../database/interfaces/ISkill.ts";
-import type ISkillAura from "../../database/interfaces/ISkillAura.ts";
-import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";
 import type IUser from "../../database/interfaces/IUser.ts";
 import type IUserFriend from "../../database/interfaces/IUserFriend.ts";
 import UserNotFoundException from "../../exceptions/UserNotFoundException.ts";
 import Guild from "../../guild/Guild.ts";
 import type Party from "../../party/Party.ts";
 import type Room from "../../room/Room.ts";
-import Scheduler from "../../scheduler/Scheduler.ts";
-import RemoveAura from "../../scheduler/tasks/RemoveAura.ts";
 import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../../util/Const.ts";
 import JSONArray from "../../util/json/JSONArray.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
 import Avatar from "../Avatar.ts";
-import {AvatarState} from "../AvatarState.ts";
-import type AvatarStats from "../AvatarStats.ts";
-import AvatarStatus from "../AvatarStatus.ts";
+import {AvatarState} from "../helper/AvatarState.ts";
+import AvatarStats from "../data/AvatarStats.ts";
 import type PlayerNetwork from "./PlayerNetwork.ts";
 import PlayerData from "./data/PlayerData.ts";
 import PlayerInventory from "./data/PlayerInventory.ts";
@@ -37,19 +30,33 @@ import PlayerPosition from "./data/PlayerPosition.ts";
 import PlayerPreference from "./data/PlayerPreference.ts";
 import type IUserInventory from "../../database/interfaces/IUserInventory.ts";
 import logger from "../../util/Logger.ts";
-import AvatarCombat from "../AvatarCombat.ts";
+import AvatarCombat from "../data/AvatarCombat.ts";
+import AvatarType from "../helper/AvatarType.ts";
+import AvatarAuras from "../data/AvatarAuras.ts";
+import PlayerStatus from "./data/PlayerStatus.ts";
+import type IDispatchable from "../../interfaces/entity/IDispatchable.ts";
 
-export default class Player extends Avatar {
+export default class Player extends Avatar implements IDispatchable {
+
+	private readonly _databaseId: number;
+
+	public _room: Room | undefined;
+
+	private _frame: string = 'Enter';
+
+	private _pad: string = 'Enter';
+
+	public readonly _auras: AvatarAuras = new AvatarAuras(this);
+	public readonly _combat: AvatarCombat = new AvatarCombat(this);
+	public readonly _status: PlayerStatus = new PlayerStatus(2500, 1000, 100);
+	public readonly _stats: AvatarStats = new AvatarStats(this);
 
 	public properties: Map<string, any> = new Map<string, any>();
-	public room: Room | undefined;
 	public readonly position: PlayerPosition = new PlayerPosition();
-	public readonly status: AvatarStatus = new AvatarStatus(2500, 1000, 100, AvatarState.NEUTRAL);
 	public readonly inventory: PlayerInventory = new PlayerInventory(this);
 	public readonly preference: PlayerPreference = new PlayerPreference(this);
 	public readonly data: PlayerData = new PlayerData(this);
 	public party: Party | undefined = undefined;
-	private readonly _databaseId: number;
 	private readonly _username: string;
 	private readonly _network: PlayerNetwork;
 	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
@@ -65,7 +72,11 @@ export default class Player extends Avatar {
 		this._network.player = this;
 	}
 
-	public get databaseId(): number {
+	public override get id(): number {
+		return this.network.id;
+	}
+
+	public override get databaseId(): number {
 		return this._databaseId;
 	}
 
@@ -73,9 +84,67 @@ export default class Player extends Avatar {
 		return this._username;
 	}
 
+	public override get type(): AvatarType {
+		return AvatarType.PLAYER;
+	}
+
+	public override get room(): Room | undefined {
+		return this._room;
+	}
+
+	public override get frame(): string {
+		return this._frame;
+	}
+
+	public override set frame(frame: string) {
+		this._frame = frame;
+	}
+
+	public get pad(): string {
+		return this._pad;
+	}
+
+	public set pad(pad: string) {
+		this._pad = pad;
+	}
+
+	public override get auras(): AvatarAuras {
+		return this._auras;
+	}
+
+	public override get combat(): AvatarCombat {
+		return this._combat;
+	}
+
+	public override get stats(): AvatarStats {
+		return this._stats;
+	}
+
+	public override get status(): PlayerStatus {
+		return this._status;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	public get network(): PlayerNetwork {
 		return this._network;
 	}
+
 
 	public get preferences(): PlayerPreference {
 		return this._preferences;
@@ -99,12 +168,64 @@ export default class Player extends Avatar {
 
 	}
 
-	public moveToCell(frame: string, pad: string, sendUpdate: boolean): void {
-		this.position.frame = frame;
-		this.position.pad = pad;
+	public async join(newRoom: Room, frame: string = 'Enter', pad: string = 'Spawn'): Promise<boolean> {
+		const user: IUser | undefined = await database.query.users.findFirst({
+			where: eq(users.id, this.databaseId)
+		});
 
-		this.position.xAxis = 0;
-		this.position.yAxis = 0;
+		if (!user) {
+			return false;
+		}
+
+		if (newRoom.isFull) {
+			this.network.writeArray("warning", ["The destination room is currently full."]);
+			return false;
+		}
+
+		const area: IArea | undefined = await database.query.areas.findFirst({
+			where: eq(areas.id, newRoom.databaseId)
+		});
+
+		if (!area) {
+			return false;
+		}
+
+		if (newRoom.id == this.room?.id) {
+			this.network.writeArray("warning", ["You are already in this room!"]);
+			return false;
+		}
+
+		if (area.requiredLevel > user.level) {
+			this.network.writeArray("warning", [`You need to be at least level ${area.requiredLevel} to access this destination.`]);
+			return false;
+		}
+
+		const isUpgradeOnly: boolean = isAfter(new Date(), user.dateUpgradeExpire);
+
+		if (area.isUpgradeOnly && isUpgradeOnly) {
+			this.network.writeArray("warning", ["This destination is exclusive to VIP."]);
+			return false;
+		}
+
+		if (area.requiredAccessId > user.accessId) {
+			this.network.writeArray("warning", ["Access denied. Destination is inaccessible."]);
+			return false;
+		}
+
+		this.moveToCell(frame, pad, false);
+
+		await RoomController.join(this, newRoom);
+
+		await newRoom.moveToArea(this);
+
+		return true;
+	}
+
+	public moveToCell(frame: string, pad: string, sendUpdate: boolean): void {
+		this.frame = frame;
+		this.pad = pad;
+
+		this.position.move(0, 0);
 
 		if (sendUpdate) {
 			this.room!.writeArrayExcept(this, "uotls", [this.network.name, `strPad:${pad},tx:0,strFrame:${frame},ty:0`]);
@@ -137,24 +258,6 @@ export default class Player extends Avatar {
 					.elementIf(withState, "intState", this.status.state)
 				)
 		);
-	}
-
-	public async getBankCount(): Promise<number> {
-		const usersItemBankCount: {
-			count: number
-		}[] = await database
-			.select({
-				count: sql`COUNT(*)`.mapWith(Number)
-			})
-			.from(usersInventory)
-			.where(
-				and(
-					eq(usersInventory.userId, this.databaseId),
-					eq(usersInventory.isOnBank, true)
-				)
-			);
-
-		return usersItemBankCount[0].count;
 	}
 
 	public async levelUp(level: number): Promise<void> {
@@ -301,61 +404,28 @@ export default class Player extends Avatar {
 		this.network.writeObject(addGoldExp);
 	}
 
-	public hasAura(auraId: number): boolean {
-		const auras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS);
-
-		for (const ra of auras) {
-			const aura: ISkillAura = ra.getAura();
-
-			if (aura.id === auraId) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	public removeAura(ra: RemoveAura): void {
-		const removeAuras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS);
-		removeAuras.delete(ra);
-	}
-
-	public applyAura(aura: ISkillAura): RemoveAura {
-		const ra: RemoveAura = new RemoveAura(aura, this, undefined);
-
-		ra.setRunning(Scheduler.oneTime(ra, aura.duration));
-
-		// noinspection JSMismatchedCollectionQueryUpdate
-		const removeAuras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS);
-		removeAuras.add(ra);
-
-		return ra;
-	}
-
 	public updateStats(enhancement: IEnhancement, equipment: string): void {
 		const itemStats: Map<string, number> = CoreValues.getItemStats(enhancement, equipment);
-
-		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
 
 		switch (equipment) {
 			case EQUIPMENT_CLASS:
 				for (const [key, value] of itemStats) {
-					stats.armor.set(key, value);
+					this.stats.armor.set(key, value);
 				}
 				break;
 			case EQUIPMENT_WEAPON:
 				for (const [key, value] of itemStats) {
-					stats.weapon.set(key, value);
+					this.stats.weapon.set(key, value);
 				}
 				break;
 			case EQUIPMENT_CAPE:
 				for (const [key, value] of itemStats) {
-					stats.cape.set(key, value);
+					this.stats.cape.set(key, value);
 				}
 				break;
 			case EQUIPMENT_HELM:
 				for (const [key, value] of itemStats) {
-					stats.helm.set(key, value);
+					this.stats.helm.set(key, value);
 				}
 				break;
 			default:
@@ -495,14 +565,6 @@ export default class Player extends Avatar {
 		return friends;
 	}
 
-	public dropItem(itemId: number): void;
-
-	public dropItem(itemId: number, quantity: number): void;
-
-	public dropItem(itemId: number, quantity?: number): void {
-		//TODO: ..
-	}
-
 	public async setQuestValue(index: number, value: number): Promise<void> {
 		let update: object;
 
@@ -535,30 +597,6 @@ export default class Player extends Avatar {
 
 	public getQuestValue(index: number): number {
 		return index > 99 ? Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_2) as string, index - 100) : Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_1) as string, index);
-	}
-
-	public turnInItem(itemId: number, quantity: number): boolean {
-		const items: Map<number, number> = new Map<number, number>();
-		//TODO: ..
-		return this.turnInItems(items);
-	}
-
-	public turnInItems(items: Map<number, number>): boolean {
-		//TODO: ..
-		return false;
-	}
-
-	public addTemporaryItem(itemId: number, quantity: number): void {
-		const inventoryTemporary: Map<number, number> = this.properties.get(PlayerConst.TEMPORARY_INVENTORY);
-
-		const item: number | undefined = inventoryTemporary.get(itemId);
-
-		if (item) {
-			inventoryTemporary.set(itemId, item! + quantity);
-			return;
-		}
-
-		inventoryTemporary.set(itemId, quantity);
 	}
 
 	public async lost(): Promise<void> {
@@ -874,147 +912,6 @@ export default class Player extends Avatar {
 		}
 
 		return data;
-	}
-
-	public async respawn(): Promise<void> {
-		this.status.health.update = this.status.health.max;
-		this.status.mana.update = this.status.mana.max;
-
-		this.status.state = AvatarState.NEUTRAL;
-
-		this.clearAuras();
-		await this.sendUotls(true, false, true, false, false, true);
-	}
-
-	public die(): void {
-		this.status.health.update = 0;
-		this.status.mana.update = 0;
-
-		this.status.state = AvatarState.DEAD;
-
-		this.properties.set(PlayerConst.RESPAWN_TIME, Date.now());
-	}
-
-	public async join(newRoom: Room, frame: string = 'Enter', pad: string = 'Spawn'): Promise<boolean> {
-		const user: IUser | undefined = await database.query.users.findFirst({
-			where: eq(users.id, this.databaseId)
-		});
-
-		if (!user) {
-			return false;
-		}
-
-		if (newRoom.isFull) {
-			this.network.writeArray("warning", ["The destination room is currently full."]);
-			return false;
-		}
-
-		const area: IArea | undefined = await database.query.areas.findFirst({
-			where: eq(areas.id, newRoom.databaseId)
-		});
-
-		if (!area) {
-			return false;
-		}
-
-		if (newRoom.id == this.room?.id) {
-			this.network.writeArray("warning", ["You are already in this room!"]);
-			return false;
-		}
-
-		if (area.requiredLevel > user.level) {
-			this.network.writeArray("warning", [`You need to be at least level ${area.requiredLevel} to access this destination.`]);
-			return false;
-		}
-
-		const isUpgradeOnly: boolean = isAfter(new Date(), user.dateUpgradeExpire);
-
-		if (area.isUpgradeOnly && isUpgradeOnly) {
-			this.network.writeArray("warning", ["This destination is exclusive to VIP."]);
-			return false;
-		}
-
-		if (area.requiredAccessId > user.accessId) {
-			this.network.writeArray("warning", ["Access denied. Destination is inaccessible."]);
-			return false;
-		}
-
-		this.moveToCell(frame, pad, false);
-
-		await RoomController.join(this, newRoom);
-
-		await newRoom.moveToArea(this);
-
-		return true;
-	}
-
-	private clearAuras(): void {
-		const removeAuras: Set<RemoveAura> = this.properties.get(PlayerConst.AURAS) as Set<RemoveAura>;
-
-		for (const removeAura of removeAuras) {
-			removeAura.cancel();
-		}
-
-		removeAuras.clear();
-
-		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
-		stats.effects.clear();
-
-		this.network.writeObject(new JSONObject()
-			.element("cmd", "clearAuras")
-		);
-	}
-
-	private applyPassiveAuras(rank: number, classObj: IClass): void {
-		if (rank < 4) {
-			return;
-		}
-
-		const aurap: JSONObject = new JSONObject();
-		const auras: JSONArray = new JSONArray();
-
-		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
-
-		for (const skillId of classObj.skills) {
-			const skill: ISkill = this.world.skills.get(skillId);
-
-			if (skill.type === "passive" && skill.auraId) {
-				const aura: ISkillAura = this.world.auras.get(skill.auraId);
-
-				if (aura.effects.length != 0) {
-
-					const auraObj: JSONObject = new JSONObject();
-					const effects: JSONArray = new JSONArray();
-
-					for (const effectId of aura.effects) {
-						const ae: ISkillAuraEffect = this.world.effects.get(effectId);
-
-						effects.add(
-							new JSONObject()
-								.element("typ", ae.type)
-								.element("sta", ae.stat)
-								.element("id", ae.id)
-								.element("val", ae.value)
-						);
-
-						stats.effects.add(ae);
-					}
-
-					auraObj
-						.element("nam", aura.name)
-						.element("e", effects);
-
-					auras.add(auraObj);
-				}
-			}
-		}
-
-		this.network.writeObject(
-			aurap
-				.element("auras", auras)
-				.element("cmd", "aura+p")
-				.element("tInf", "p:" + this.network.id),
-		);
 	}
 
 

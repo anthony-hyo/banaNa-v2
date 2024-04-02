@@ -1,12 +1,11 @@
 import type {Socket} from "net";
-import type IDispatchable from "../../interfaces/entity/IDispatchable";
 import Decoder from "../../network/Decoder";
 import {DELIMITER} from "../../util/Const";
 import logger from "../../util/Logger";
 import type JSONObject from "../../util/json/JSONObject";
 import type Player from "./Player.ts";
 
-export default class PlayerNetwork implements IDispatchable {
+export default class PlayerNetwork {
 
 	public readonly decoder: Decoder = new Decoder(this);
 
@@ -63,7 +62,6 @@ export default class PlayerNetwork implements IDispatchable {
 		logger.debug(`[PlayerNetwork] sending ${data}`);
 		this.socket.write(data + DELIMITER);
 	}
-
 
 	public writeObject(data: JSONObject): void {
 		this.write(JSON.stringify({

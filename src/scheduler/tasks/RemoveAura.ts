@@ -6,7 +6,7 @@ import type ISkillAura from "../../database/interfaces/ISkillAura.ts";
 import type ITask from "../../interfaces/scheduler/ITask";
 import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";
 import schedule from "node-schedule";
-import type AvatarStats from "../../avatar/AvatarStats.ts";
+import type AvatarStats from "../../avatar/data/AvatarStats.ts";
 
 export default class RemoveAura implements ITask {
 

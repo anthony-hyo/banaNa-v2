@@ -1,10 +1,10 @@
-import CoreValues from "../aqw/CoreValues";
-import type IEnhancement from "../database/interfaces/IEnhancement";
-import type IItem from "../database/interfaces/IItem";
-import type ISkill from "../database/interfaces/ISkill";
-import type ISkillAuraEffect from "../database/interfaces/ISkillAuraEffect";
-import JSONObject from "../util/json/JSONObject";
-import type Player from "./avatar/player/Player.ts";
+import CoreValues from "../../aqw/CoreValues.ts";
+import type IEnhancement from "../../database/interfaces/IEnhancement.ts";
+import type IItem from "../../database/interfaces/IItem.ts";
+import type ISkill from "../../database/interfaces/ISkill.ts";
+import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";
+import JSONObject from "../../util/json/JSONObject.ts";
+import type Avatar from "../Avatar.ts";
 
 export default class AvatarStats {
 
@@ -94,7 +94,7 @@ export default class AvatarStats {
 	private maximumMagicDamage: number = 0;
 
 	public constructor(
-		private readonly player: Player
+		private readonly avatar: Avatar
 	) {
 		//IN ORDER DO NOT TOUCH
 		this.innate.set("STR", 0.0);

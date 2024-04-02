@@ -3,7 +3,7 @@ import database from "../database/drizzle/database.ts";
 import type ISettingCoreValue from "../database/interfaces/ISettingCoreValue.ts";
 import type IEnhancement from "../database/interfaces/IEnhancement.ts";
 import JSONObject from "../util/json/JSONObject.ts";
-import AvatarStats from "../avatar/AvatarStats.ts";
+import AvatarStats from "../avatar/data/AvatarStats.ts";
 
 export default class CoreValues {
 

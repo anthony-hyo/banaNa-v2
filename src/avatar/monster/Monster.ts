@@ -11,10 +11,10 @@ import RemoveAura from "../../scheduler/tasks/RemoveAura";
 import Random from "../../util/Random";
 import JSONObject from "../../util/json/JSONObject";
 import Avatar from "../Avatar";
-import AvatarStatus from "../AvatarStatus";
+import AvatarStatus from "../data/AvatarStatus.ts";
 import MonsterData from "./data/MonsterData.ts";
-import {AvatarState} from "../AvatarState.ts";
-import AvatarCombat from "../AvatarCombat.ts";
+import {AvatarState} from "../helper/AvatarState.ts";
+import AvatarCombat from "../data/AvatarCombat.ts";
 
 export default class Monster extends Avatar implements IDispatchable {
 

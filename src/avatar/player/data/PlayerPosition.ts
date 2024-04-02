@@ -1,43 +1,19 @@
 export default class PlayerPosition {
 
-	private _frame: string = 'Enter';
+	private _x: number = 0;
+	private _y: number = 0;
 
-	public get frame(): string {
-		return this._frame;
+	public get x(): number {
+		return this._x;
 	}
 
-	public set frame(value: string) {
-		this._frame = value;
+	public get y(): number {
+		return this._y;
 	}
 
-	private _pad: string = 'Spawn';
-
-	public get pad(): string {
-		return this._pad;
-	}
-
-	public set pad(value: string) {
-		this._pad = value;
-	}
-
-	private _xAxis: number = 0;
-
-	public get xAxis(): number {
-		return this._xAxis;
-	}
-
-	public set xAxis(value: number) {
-		this._xAxis = value;
-	}
-
-	private _yAxis: number = 0;
-
-	public get yAxis(): number {
-		return this._yAxis;
-	}
-
-	public set yAxis(value: number) {
-		this._yAxis = value;
+	public move(x: number, y: number) {
+		this._x = x;
+		this._y = y;
 	}
 
 }

@@ -5,6 +5,9 @@ import JSONObject from "../../../util/json/JSONObject.ts";
 import JSONArray from "../../../util/json/JSONArray.ts";
 import {Rank} from "../../../aqw/Rank.ts";
 import SkillReference from "../../../util/SkillReference.ts";
+import database from "../../../database/drizzle/database.ts";
+import {and, eq, sql} from "drizzle-orm";
+import {usersInventory} from "../../../database/drizzle/schema.ts";
 
 export default class PlayerInventory {
 
@@ -27,6 +30,8 @@ export default class PlayerInventory {
 		.add(new JSONObject());
 
 	public readonly equipped: Map<Equipment, IUserInventory> = new Map<Equipment, IUserInventory>();
+
+	public readonly temporary: Map<number, number> = new Map<number, number>();
 
 	constructor(
 		private readonly player: Player
@@ -69,8 +74,56 @@ export default class PlayerInventory {
 		return this.equipped.get(Equipment.HOUSE_ITEM);
 	}
 
-	equip(userItem: any, b: boolean) {
+	public async getBankCount(): Promise<number> {
+		const usersItemBankCount: {
+			count: number
+		}[] = await database
+			.select({
+				count: sql`COUNT(*)`.mapWith(Number)
+			})
+			.from(usersInventory)
+			.where(
+				and(
+					eq(usersInventory.userId, this.databaseId),
+					eq(usersInventory.isOnBank, true)
+				)
+			);
 
+		return usersItemBankCount[0].count;
+	}
+
+	public equip(userItem: IUserInventory, b: boolean) {
+
+	}
+
+	public dropItem(itemId: number): void;
+
+	public dropItem(itemId: number, quantity: number): void;
+
+	public dropItem(itemId: number, quantity?: number): void {
+		//TODO: ..
+	}
+
+	public turnInItem(itemId: number, quantity: number): boolean {
+		const items: Map<number, number> = new Map<number, number>();
+		//TODO: ..
+		return this.turnInItems(items);
+	}
+
+	public turnInItems(items: Map<number, number>): boolean {
+		//TODO: ..
+		return false;
+	}
+
+	public addTemporaryItem(itemId: number, quantity: number): void {
+		const temporaryQuantity: number | undefined = this.temporary.get(itemId);
+
+		if (temporaryQuantity) {
+			this.temporary.set(itemId, temporaryQuantity + quantity);
+			return;
+		}
+
+		this.temporary.set(itemId, quantity);
 	}
 
 	public updateClass(): void {
@@ -231,7 +284,6 @@ export default class PlayerInventory {
 		}
 
 		//this.clearAuras(user);
-		//this.applyPassiveAuras(user, rank, item.classObj);
 
 		this.player.network.writeObject(
 			new JSONObject()

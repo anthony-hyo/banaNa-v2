@@ -9,6 +9,10 @@ export default class PlayerPreference {
 	) {
 	}
 
+	private get(achievement: number, index: number): boolean {
+		return Achievement.get(achievement, index) === 0;
+	}
+
 	public set(pref: string, val: boolean): void {
 		throw new Error(`Not Implemented`);
 	}
@@ -43,10 +47,6 @@ export default class PlayerPreference {
 
 	public isNotAcceptingGoto(index: number): boolean {
 		return !this.get(Preference.GOTO, index);
-	}
-
-	private get(achievement: number, index: number): boolean {
-		return Achievement.get(achievement, index) === 0;
 	}
 
 }
