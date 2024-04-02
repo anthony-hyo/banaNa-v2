@@ -5,7 +5,7 @@ import JSONObject from "../util/json/JSONObject.ts";
 
 export default class RoomController {
 
-	private static count: number = 1;
+	private static count: number = 2;
 
 	private static readonly ROOMS: Map<string, Room> = new Map<string, Room>;
 

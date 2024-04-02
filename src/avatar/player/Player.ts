@@ -92,6 +92,10 @@ export default class Player extends Avatar implements IDispatchable {
 		return this._room;
 	}
 
+	public override set room(room: Room) {
+		this._room = room;
+	}
+
 	public override get frame(): string {
 		return this._frame;
 	}
@@ -889,11 +893,11 @@ export default class Player extends Avatar implements IDispatchable {
 			.element("intState", this.status.state)
 			.element("showCloak", this.preference.isShowingCloak(settings))
 			.element("showHelm", this.preference.isShowingHelm(settings))
-			.element("strFrame", this.position.frame)
-			.element("strPad", this.position.pad)
+			.element("strFrame", this.frame)
+			.element("strPad", this.pad)
 			.element("strUsername", this.username)
-			.element("tx", this.position.xAxis)
-			.element("ty", this.position.yAxis)
+			.element("tx", this.position.x)
+			.element("ty", this.position.y)
 			.element("uoName", this.network.name);
 
 		if (withNetworkId) {
