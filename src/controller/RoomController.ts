@@ -15,8 +15,8 @@ export default class RoomController {
 
 			if (oldRoom !== null) {
 				// noinspection HtmlUnknownAttribute
-				oldRoom.writeExcept(player, "<msg t='sys'><body action='userGone' r='" + oldRoom.id + "'><user id='" + player.network.id + "' /></body></msg>");
-				oldRoom.writeArrayExcept(player, "exitArea", [player.network.id, player.network.name]);
+				oldRoom.writeExcept(player, "<msg t='sys'><body action='userGone' r='" + oldRoom.id + "'><user id='" + player.avatarId + "' /></body></msg>");
+				oldRoom.writeArrayExcept(player, "exitArea", [player.avatarId, player.avatarName]);
 
 				oldRoom.removePlayer(player);
 
@@ -29,14 +29,14 @@ export default class RoomController {
 		if (newRoom !== null) {
 			newRoom.addPlayer(player);
 
-			player.network.writeObjectExcept(
+			player.writeObjectExcept(
 				player,
 				new JSONObject()
 					.element("cmd", "uotls")
 					.element("o", (await player.jsonPartial(true, false))
 						.element('cmd', 'uotls')
 					)
-					.element("unm", player.network.name)
+					.element("unm", player.avatarName)
 			);
 
 			// noinspection HtmlUnknownAttribute
@@ -46,16 +46,16 @@ export default class RoomController {
 
 			for (let [networkId, target] of newRoom.players) {
 				// noinspection HtmlUnknownAttribute
-				response += `<u i='${networkId}' m='0' s='0' p='${i}'><n><![CDATA[${target.network.name}]]></n><vars></vars></u>`;
+				response += `<u i='${networkId}' m='0' s='0' p='${i}'><n><![CDATA[${target.avatarName}]]></n><vars></vars></u>`;
 				i++;
 			}
 
 			response += `</uLs></body></msg>`;
 
-			player.network.write(response);
+			player.write(response);
 
 			// noinspection HtmlUnknownAttribute
-			newRoom.writeExcept(player, `<msg t='sys'><body action='uER' r='${newRoom.id}'><u i ='${player.network.id}' m='0'><n><![CDATA[${newRoom.name}]]></n><vars></vars></u></body></msg>`);
+			newRoom.writeExcept(player, `<msg t='sys'><body action='uER' r='${newRoom.id}'><u i ='${player.avatarId}' m='0'><n><![CDATA[${newRoom.name}]]></n><vars></vars></u></body></msg>`);
 		}
 	}
 

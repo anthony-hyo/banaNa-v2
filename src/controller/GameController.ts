@@ -150,31 +150,31 @@ export default class GameController implements IDispatchable {
 
 	public writeExcept(ignored: Player, data: string): void {
 		for (let player of PlayerController.players()) {
-			player.network.writeExcept(ignored, data);
+			player.writeExcept(ignored, data);
 		}
 	}
 
 	public writeObject(data: JSONObject): void {
 		for (let player of PlayerController.players()) {
-			player.network.writeObject(data);
+			player.writeObject(data);
 		}
 	}
 
 	public writeObjectExcept(ignored: Player, data: JSONObject): void {
 		for (let player of PlayerController.players()) {
-			player.network.writeObjectExcept(ignored, data);
+			player.writeObjectExcept(ignored, data);
 		}
 	}
 
 	public writeArray(command: string, data: Array<string | number>): void {
 		for (let player of PlayerController.players()) {
-			player.network.writeArray(command, data);
+			player.writeArray(command, data);
 		}
 	}
 
 	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
 		for (let player of PlayerController.players()) {
-			player.network.writeArrayExcept(ignored, command, data);
+			player.writeArrayExcept(ignored, command, data);
 		}
 	}
 

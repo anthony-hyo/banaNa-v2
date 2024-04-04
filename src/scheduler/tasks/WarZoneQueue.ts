@@ -34,9 +34,9 @@ export default class WarZoneQueue implements ITask {
 										player.data.pvpTeam = 1;
 									}
 
-									player.network.writeArray("server", ["A new Warzone battle has started!"]);
+									player.writeArray("server", ["A new Warzone battle has started!"]);
 
-									player.network.writeObject(
+									player.writeObject(
 										new JSONObject()
 											.element("cmd", "PVPI")
 											.element("warZone", warZone)

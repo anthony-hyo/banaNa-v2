@@ -32,7 +32,7 @@ export default class Party implements IDispatchable {
 	}
 
 	public onMemberJoin(player: Player): void {
-		this.members.set(player.network.id, player);
+		this.members.set(player.avatarId, player);
 		player.party = this;
 	}
 
@@ -44,7 +44,7 @@ export default class Party implements IDispatchable {
 			.element("unm", player.username)
 		);
 
-		this.members.delete(player.network.id);
+		this.members.delete(player.avatarId);
 
 		player.party = undefined;
 
@@ -58,7 +58,7 @@ export default class Party implements IDispatchable {
 			return;
 		}
 
-		if (this.owner.network.id === player.network.id) {
+		if (this.owner.avatarId === player.avatarId) {
 			const firstMember = this.members.values().next().value;
 
 			if (firstMember !== undefined) {
@@ -69,31 +69,31 @@ export default class Party implements IDispatchable {
 
 	public writeObject(data: JSONObject): void {
 		for (let member of this._members.values()) {
-			member.network.writeObject(data);
+			member.writeObject(data);
 		}
 	}
 
 	public writeArray(command: string, data: Array<string | number>): void {
 		for (let member of this._members.values()) {
-			member.network.writeArray(command, data);
+			member.writeArray(command, data);
 		}
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
 		for (let member of this._members.values()) {
-			member.network.writeExcept(ignored, data);
+			member.writeExcept(ignored, data);
 		}
 	}
 
 	public writeObjectExcept(ignored: Player, data: JSONObject): void {
 		for (let member of this._members.values()) {
-			member.network.writeObjectExcept(ignored, data);
+			member.writeObjectExcept(ignored, data);
 		}
 	}
 
 	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
 		for (let member of this._members.values()) {
-			member.network.writeArrayExcept(ignored, command, data);
+			member.writeArrayExcept(ignored, command, data);
 		}
 	}
 

@@ -17,13 +17,12 @@ import UserNotFoundException from "../../exceptions/UserNotFoundException.ts";
 import Guild from "../../guild/Guild.ts";
 import type Party from "../../party/Party.ts";
 import type Room from "../../room/Room.ts";
-import {EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../../util/Const.ts";
+import {DELIMITER, EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../../util/Const.ts";
 import JSONArray from "../../util/json/JSONArray.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
 import Avatar from "../Avatar.ts";
 import {AvatarState} from "../helper/AvatarState.ts";
 import AvatarStats from "../data/AvatarStats.ts";
-import type PlayerNetwork from "./PlayerNetwork.ts";
 import PlayerData from "./data/PlayerData.ts";
 import PlayerInventory from "./data/PlayerInventory.ts";
 import PlayerPosition from "./data/PlayerPosition.ts";
@@ -35,9 +34,13 @@ import AvatarType from "../helper/AvatarType.ts";
 import AvatarAuras from "../data/AvatarAuras.ts";
 import PlayerStatus from "./data/PlayerStatus.ts";
 import type IDispatchable from "../../interfaces/entity/IDispatchable.ts";
+import type {Socket} from "bun";
+import type INetworkData from "../../interfaces/network/INetworkData.ts";
+import Network from "../../network/Network.ts";
 
 export default class Player extends Avatar implements IDispatchable {
 
+	private readonly _id: number;
 	private readonly _databaseId: number;
 
 	public _room: Room | undefined;
@@ -48,7 +51,7 @@ export default class Player extends Avatar implements IDispatchable {
 
 	public readonly _auras: AvatarAuras = new AvatarAuras(this);
 	public readonly _combat: AvatarCombat = new AvatarCombat(this);
-	public readonly _status: PlayerStatus = new PlayerStatus(2500, 1000, 100);
+	public readonly _status: PlayerStatus = new PlayerStatus(this, 2500, 1000, 100);
 	public readonly _stats: AvatarStats = new AvatarStats(this);
 
 	public properties: Map<string, any> = new Map<string, any>();
@@ -58,22 +61,28 @@ export default class Player extends Avatar implements IDispatchable {
 	public readonly data: PlayerData = new PlayerData(this);
 	public party: Party | undefined = undefined;
 	private readonly _username: string;
-	private readonly _network: PlayerNetwork;
 	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
 	public readonly skills: AvatarCombat = new AvatarCombat(this);
 
-	constructor(user: IUser, network: PlayerNetwork) {
+
+	private readonly _socket: Socket<INetworkData>;
+
+	constructor(user: IUser, socket: Socket<INetworkData>) {
 		super();
+
+		this._id = Network.increaseAndGet;
 
 		this._databaseId = user.id;
 		this._username = user.username;
-		this._network = network;
-
-		this._network.player = this;
+		this._socket = socket;
 	}
 
-	public override get id(): number {
-		return this.network.id;
+	public override get avatarId(): number {
+		return this._id;
+	}
+
+	public override get avatarName(): string {
+		return this.username.toLowerCase();
 	}
 
 	public override get databaseId(): number {
@@ -129,24 +138,47 @@ export default class Player extends Avatar implements IDispatchable {
 	}
 
 
+	public write(data: string): void {
+		logger.debug(`[PlayerNetwork] sending ${data}`);
+		this._socket.write(data + DELIMITER);
+	}
 
+	public writeObject(data: JSONObject): void {
+		this.write(JSON.stringify({
+			t: `xt`,
+			b: {
+				r: -1,
+				o: data.toJSON()
+			},
+		}));
+	}
 
+	public writeArray(command: string, data: Array<string | number>): void {
+		this.write(`%xt%${command}%-1%${data.join('%')}%`);
+	}
 
+	public writeExcept(ignored: Player, data: string): void {
+		if (ignored.avatarId == this.avatarId) {
+			return;
+		}
 
+		this.write(data);
+	}
 
+	public writeObjectExcept(ignored: Player, data: JSONObject): void {
+		if (ignored.avatarId == this.avatarId) {
+			return;
+		}
 
+		this.writeObject(data);
+	}
 
+	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
+		if (ignored.avatarId == this.avatarId) {
+			return;
+		}
 
-
-
-
-
-
-
-
-
-	public get network(): PlayerNetwork {
-		return this._network;
+		this.writeArray(command, data);
 	}
 
 
@@ -182,7 +214,7 @@ export default class Player extends Avatar implements IDispatchable {
 		}
 
 		if (newRoom.isFull) {
-			this.network.writeArray("warning", ["The destination room is currently full."]);
+			this.writeArray("warning", ["The destination room is currently full."]);
 			return false;
 		}
 
@@ -195,24 +227,24 @@ export default class Player extends Avatar implements IDispatchable {
 		}
 
 		if (newRoom.id == this.room?.id) {
-			this.network.writeArray("warning", ["You are already in this room!"]);
+			this.writeArray("warning", ["You are already in this room!"]);
 			return false;
 		}
 
 		if (area.requiredLevel > user.level) {
-			this.network.writeArray("warning", [`You need to be at least level ${area.requiredLevel} to access this destination.`]);
+			this.writeArray("warning", [`You need to be at least level ${area.requiredLevel} to access this destination.`]);
 			return false;
 		}
 
 		const isUpgradeOnly: boolean = isAfter(new Date(), user.dateUpgradeExpire);
 
 		if (area.isUpgradeOnly && isUpgradeOnly) {
-			this.network.writeArray("warning", ["This destination is exclusive to VIP."]);
+			this.writeArray("warning", ["This destination is exclusive to VIP."]);
 			return false;
 		}
 
 		if (area.requiredAccessId > user.accessId) {
-			this.network.writeArray("warning", ["Access denied. Destination is inaccessible."]);
+			this.writeArray("warning", ["Access denied. Destination is inaccessible."]);
 			return false;
 		}
 
@@ -232,7 +264,7 @@ export default class Player extends Avatar implements IDispatchable {
 		this.position.move(0, 0);
 
 		if (sendUpdate) {
-			this.room!.writeArrayExcept(this, "uotls", [this.network.name, `strPad:${pad},tx:0,strFrame:${frame},ty:0`]);
+			this.room!.writeArrayExcept(this, "uotls", [this.avatarName, `strPad:${pad},tx:0,strFrame:${frame},ty:0`]);
 		}
 	}
 
@@ -252,7 +284,7 @@ export default class Player extends Avatar implements IDispatchable {
 		this.room!.writeObject(
 			new JSONObject()
 				.element("cmd", "uotls")
-				.element("unm", this.network.name)
+				.element("unm", this.avatarName)
 				.element("o", new JSONObject()
 					.elementIf(withHealth, "intHP", this.status.health.value)
 					.elementIf(withHealthMax, "intHPMax", this.status.health.max)
@@ -269,7 +301,7 @@ export default class Player extends Avatar implements IDispatchable {
 
 		this.sendStats(true);
 
-		this.network.writeObject(
+		this.writeObject(
 			new JSONObject()
 				.element("cmd", "levelUp")
 				.element("intLevel", newLevel)
@@ -392,7 +424,7 @@ export default class Player extends Avatar implements IDispatchable {
 					}
 				});
 
-			this.network.writeObject(
+			this.writeObject(
 				new JSONObject()
 					.element("cmd", "addFaction")
 					.element("faction", new JSONObject()
@@ -405,7 +437,7 @@ export default class Player extends Avatar implements IDispatchable {
 			);
 		}
 
-		this.network.writeObject(addGoldExp);
+		this.writeObject(addGoldExp);
 	}
 
 	public updateStats(enhancement: IEnhancement, equipment: string): void {
@@ -534,7 +566,7 @@ export default class Player extends Avatar implements IDispatchable {
 				.element("WIS", stats.innate.get("WIS"))
 		);
 
-		this.network.writeObject(
+		this.writeObject(
 			stu
 				.element("tempSta", tempStat)
 				.element("cmd", "stu")
@@ -591,7 +623,7 @@ export default class Player extends Avatar implements IDispatchable {
 			.set(update)
 			.where(eq(users.id, this.databaseId));
 
-		this.network.writeObject(
+		this.writeObject(
 			new JSONObject()
 				.element("cmd", "updateQuest")
 				.element("iIndex", index)
@@ -663,8 +695,8 @@ export default class Player extends Avatar implements IDispatchable {
 			const client: Player | undefined = PlayerController.findByUsername(userFriend.friend!.username);
 
 			if (client) {
-				client.network.writeObject(friendJSONObject);
-				client.network.writeArray(friendMessage[0], [friendMessage[1]]);
+				client.writeObject(friendJSONObject);
+				client.writeArray(friendMessage[0], [friendMessage[1]]);
 			}
 		}
 	}
@@ -706,7 +738,7 @@ export default class Player extends Avatar implements IDispatchable {
 
 		if (withNetworkId) {
 			data
-				.element("CharID", this.network.id);
+				.element("CharID", this.avatarId);
 		}
 
 		const dateNow: Date = new Date();
@@ -883,7 +915,7 @@ export default class Player extends Avatar implements IDispatchable {
 
 		const data: JSONObject = new JSONObject()
 			.element("afk", this.data.isAway)
-			.element("entID", this.network.id)
+			.element("entID", this.avatarId)
 			.element("entType", "p")
 			.element("intHP", this.status.health.value)
 			.element("intHPMax", this.status.health.max)
@@ -898,11 +930,11 @@ export default class Player extends Avatar implements IDispatchable {
 			.element("strUsername", this.username)
 			.element("tx", this.position.x)
 			.element("ty", this.position.y)
-			.element("uoName", this.network.name);
+			.element("uoName", this.avatarName);
 
 		if (withNetworkId) {
 			data
-				.element("ID", this.network.id);
+				.element("ID", this.avatarId);
 		}
 
 		if (withStamina) {

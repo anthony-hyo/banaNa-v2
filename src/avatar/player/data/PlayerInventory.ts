@@ -139,7 +139,7 @@ export default class PlayerInventory {
 			.element("iCP", equippedClass.quantity)
 			.element("sClassCat", equippedClass.item!.class!.category)
 			.element("sClassName", equippedClass.item!.name)
-			.element("uid", this.player.network.id);
+			.element("uid", this.player.avatarId);
 
 		this.player.room!.writeObjectExcept(this.player, updateClass);
 
@@ -159,7 +159,7 @@ export default class PlayerInventory {
 			updateClass.element("aMRM", equippedClass.item!.class!.manaRegenerationMethods);
 		}
 
-		this.player.network.writeObject(updateClass);
+		this.player.writeObject(updateClass);
 
 		this.loadSkills();
 	}
@@ -275,17 +275,17 @@ export default class PlayerInventory {
 		active.element(5, PlayerInventory.potion);
 
 		if (auras.size > 0) {
-			this.player.network.writeObject(
+			this.player.writeObject(
 				new JSONObject()
 					.element("cmd", "aura+p")
-					.element("tInf", `p:${this.player.network.id}`)
+					.element("tInf", `p:${this.player.avatarId}`)
 					.element("auras", auras)
 			);
 		}
 
 		//this.clearAuras(user);
 
-		this.player.network.writeObject(
+		this.player.writeObject(
 			new JSONObject()
 				.element("cmd", "sAct")
 				.element(

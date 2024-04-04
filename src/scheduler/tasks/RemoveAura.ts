@@ -42,7 +42,7 @@ export default class RemoveAura implements ITask {
 			.element("aura", auraInfo);
 
 		if (this.player !== null) {
-			auraRemove.element("tInf", "p:" + this.player!.network.id);
+			auraRemove.element("tInf", "p:" + this.player!.avatarId);
 		} else if (this.monster !== null) {
 			auraRemove.element("tInf", "m:" + this.monster!.mapId);
 		}
@@ -71,7 +71,7 @@ export default class RemoveAura implements ITask {
 				stats.sendStatChanges(stats, auraEffects);
 			}
 
-			this.player!.network.writeObject(ct);
+			this.player!.writeObject(ct);
 		} else if (this.monster !== null) {
 			this.monster!.removeAura(this);
 			this.monster!.writeObject(ct);

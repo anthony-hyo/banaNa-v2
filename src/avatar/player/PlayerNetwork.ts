@@ -78,7 +78,7 @@ export default class PlayerNetwork {
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
-		if (ignored.network.id == this.id) {
+		if (ignored.avatarId == this.id) {
 			return;
 		}
 
@@ -86,7 +86,7 @@ export default class PlayerNetwork {
 	}
 
 	public writeObjectExcept(ignored: Player, data: JSONObject): void {
-		if (ignored.network.id == this.id) {
+		if (ignored.avatarId == this.id) {
 			return;
 		}
 
@@ -94,7 +94,7 @@ export default class PlayerNetwork {
 	}
 
 	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
-		if (ignored.network.id == this.id) {
+		if (ignored.avatarId == this.id) {
 			return;
 		}
 

@@ -2,17 +2,18 @@ import type IUser from "../database/interfaces/IUser.ts";
 import Player from "../avatar/player/Player";
 import logger from "../util/Logger";
 import GameController from "./GameController";
-import type {Socket} from "net";
-import PlayerNetwork from "../avatar/player/PlayerNetwork.ts";
 import database from "../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
 import {users} from "../database/drizzle/schema.ts";
+import type INetworkData from "../interfaces/network/INetworkData.ts";
+import type {Socket} from "bun";
+import NetworkEncoder from "../network/NetworkEncoder.ts";
 
 export default class PlayerController {
 
 	public static PLAYERS: Map<number, Player> = new Map<number, Player>();
 
-	public static login(playerNetwork: PlayerNetwork, username: string, token: string): void {
+	public static login(socket: Socket<INetworkData>, username: string, token: string): void {
 		database.query.users
 			/*.findFirst({
 				where: and(
@@ -25,7 +26,7 @@ export default class PlayerController {
 				const networkName: string = user!.username.toLowerCase(); //TODO: Temporary fix
 
 				if (user === undefined) {
-					playerNetwork.writeArray(`loginResponse`, [`false`, `-1`, networkName, `Player Data for '${networkName}' could not be retrieved.<br>Please contact the staff to resolve the issue.`]);
+					NetworkEncoder.writeArray(socket, `loginResponse`, [`false`, `-1`, networkName, `Player Data for '${networkName}' could not be retrieved.<br>Please contact the staff to resolve the issue.`]);
 
 					this.removeConnection(networkName);
 					return;
@@ -39,7 +40,7 @@ export default class PlayerController {
 					.where(eq(users.id, user.id));
 
 				if (!GameController.instance().server.isOnline || (GameController.instance().server.isStaffOnly && user.accessId < 40)) {
-					playerNetwork.writeArray(`loginResponse`, [`false`, `-1`, networkName, `A game update/maintenance is currently ongoing.<br>Only the staff can enter the server at the moment.`]);
+					NetworkEncoder.writeArray(socket, `loginResponse`, [`false`, `-1`, networkName, `A game update/maintenance is currently ongoing.<br>Only the staff can enter the server at the moment.`]);
 
 					this.removeConnection(networkName);
 					return;
@@ -48,16 +49,18 @@ export default class PlayerController {
 				const exitingPlayer: Player | undefined = this.findByUsername(networkName);
 
 				if (exitingPlayer !== undefined) {
-					playerNetwork.writeArray(`loginResponse`, [`false`, `-1`, networkName, `You logged in from a different location.`]);
+					NetworkEncoder.writeArray(socket, `loginResponse`, [`false`, `-1`, networkName, `You logged in from a different location.`]);
 
 					this.removeConnection(networkName);
 				}
 
-				const player: Player = new Player(user, playerNetwork);
+				const player: Player = new Player(user, socket);
+
+				socket.data.player = player;
 
 				PlayerController.add(player);
 
-				playerNetwork.writeArray(`loginResponse`, [`true`, player.network.id, networkName, ``, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941"]);
+				NetworkEncoder.writeArray(socket, `loginResponse`, [`true`, player.avatarId, networkName, ``, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941"]);
 
 				database
 					.update(users)
@@ -69,11 +72,11 @@ export default class PlayerController {
 	}
 
 	public static add(player: Player): void {
-		this.PLAYERS.set(player.network.id, player);
+		this.PLAYERS.set(player.avatarId, player);
 	}
 
 	public static remove(player: Player): void {
-		this.PLAYERS.delete(player.network.id);
+		this.PLAYERS.delete(player.avatarId);
 	}
 
 	public static find(id: number): Player | undefined {
@@ -84,7 +87,7 @@ export default class PlayerController {
 		const nameCase: string = name.toLowerCase();
 
 		for (let player of this.players()) {
-			if (player.network.name == nameCase) {
+			if (player.avatarName == nameCase) {
 				return player;
 			}
 		}
@@ -94,16 +97,6 @@ export default class PlayerController {
 
 	public static players(): IterableIterator<Player> {
 		return this.PLAYERS.values();
-	}
-
-	public static sockets(): Array<Socket> {
-		const sockets: Array<Socket> = new Array<Socket>();
-
-		for (let player of this.players()) {
-			sockets.push(player.network.socket);
-		}
-
-		return sockets;
 	}
 
 	public static total(): number {

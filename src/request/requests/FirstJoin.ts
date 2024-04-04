@@ -19,7 +19,7 @@ import RequestRegister from "../RequestRegister.ts";
 export default class RequestDefault implements IRequest {
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
-		player.network.writeObject(
+		player.writeObject(
 			new JSONObject()
 				.element("cmd", "cvu")
 				.element("o", CoreValues.getData())

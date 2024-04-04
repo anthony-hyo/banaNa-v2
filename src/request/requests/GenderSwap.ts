@@ -38,7 +38,7 @@ export default class GenderSwap implements IRequest {
 		const deltaCoins: number = coins - cost;
 
 		if (deltaCoins < 0) {
-			player.network.writeArray('warning', ["You don't have enough ACs!"]);
+			player.writeArray('warning', ["You don't have enough ACs!"]);
 			return;
 		}
 
@@ -70,9 +70,9 @@ export default class GenderSwap implements IRequest {
 			})
 			.where(eq(users.id, player.databaseId));
 
-		player.network.writeObject(new JSONObject()
+		player.writeObject(new JSONObject()
 			.element("cmd", "genderSwap")
-			.element("uid", player.network.id)
+			.element("uid", player.avatarId)
 			.element("strHairFilename", newHair.file)
 			.element("bitSuccess", 1)
 			.element("HairID", newHair.id)

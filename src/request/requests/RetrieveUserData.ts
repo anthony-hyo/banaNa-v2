@@ -20,12 +20,12 @@ export default class RetrieveUserData implements IRequest {
 			return;
 		}
 
-		player.network.writeObject(new JSONObject()
+		player.writeObject(new JSONObject()
 			.element("cmd", "initUserData")
 			.element("data", await target.json(false, true, false))
 			.element("strFrame", target.position.frame)
 			.element("strPad", target.position.pad)
-			.element("uid", target.network.id)
+			.element("uid", target.avatarId)
 		);
 	}
 

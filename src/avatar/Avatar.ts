@@ -7,7 +7,9 @@ import AvatarCombat from "./data/AvatarCombat.ts";
 
 export default abstract class Avatar {
 
-	abstract get id(): number;
+	abstract get avatarId(): number;
+
+	abstract get avatarName(): string;
 
 	abstract get databaseId(): number;
 

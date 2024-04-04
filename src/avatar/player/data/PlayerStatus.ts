@@ -8,8 +8,8 @@ export default class PlayerStatus extends AvatarStatus {
 	public readonly _stamina: AvatarVitality;
 
 	constructor(
-		health: number, mana: number, stamina: number,
 		public readonly player: Player,
+		health: number, mana: number, stamina: number,
 	) {
 		super(health, mana);
 

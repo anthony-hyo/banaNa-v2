@@ -29,11 +29,11 @@ export default class RetrieveUserDatas implements IRequest {
 				.element("uid", userId)
 				.element("strFrame", playerRetrieved.position.frame)
 				.element("strPad", playerRetrieved.position.pad)
-				.element("data", await playerRetrieved.json(userId == player.network.id, false, true))
+				.element("data", await playerRetrieved.json(userId == player.avatarId, false, true))
 			);
 		}
 
-		player.network.writeObject(new JSONObject()
+		player.writeObject(new JSONObject()
 			.element("cmd", "initUserDatas")
 			.element("a", jsonArray)
 		);

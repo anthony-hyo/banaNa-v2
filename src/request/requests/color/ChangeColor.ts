@@ -48,7 +48,7 @@ export default class ChangeColor implements IRequest {
 			.where(eq(users.id, player.databaseId));
 
 		player.room!.writeObjectExcept(player, new JSONObject()
-			.element("uid", player.network.id)
+			.element("uid", player.avatarId)
 			.element("cmd", "changeColor")
 			.element("HairID", hairId)
 			.element("strHairName", hair.name)

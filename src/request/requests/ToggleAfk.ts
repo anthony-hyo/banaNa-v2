@@ -15,8 +15,8 @@ export default class ToggleAfk implements IRequest {
 
 		if (isAway != player.data.isAway) {
 			player.data.isAway = isAway;
-			player.network.writeArray("server", [(isAway ? "You are now Away From Keyboard (AFK)." : "You are no longer Away From Keyboard (AFK)")]);
-			player.room!.writeArray("uotls", [player.network.name, "afk:" + isAway]);
+			player.writeArray("server", [(isAway ? "You are now Away From Keyboard (AFK)." : "You are no longer Away From Keyboard (AFK)")]);
+			player.room!.writeArray("uotls", [player.avatarName, "afk:" + isAway]);
 		}
 	}
 

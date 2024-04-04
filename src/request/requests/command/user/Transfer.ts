@@ -39,7 +39,7 @@ export default class Transfer implements IRequest {
 		});
 
 		if (!area) {
-			player.network.writeArray("warning", [`"${roomName}" is not a recognized map name.`]);
+			player.writeArray("warning", [`"${roomName}" is not a recognized map name.`]);
 			return;
 		}
 

@@ -31,7 +31,7 @@ export default class ChangeArmorColor implements IRequest {
 		player.room!.writeObjectExcept(
 			player,
 			new JSONObject()
-				.element("uid", player.network.id)
+				.element("uid", player.avatarId)
 				.element("cmd", "changeArmorColor")
 				.element("intColorBase", colorBase)
 				.element("intColorTrim", colorTrim)

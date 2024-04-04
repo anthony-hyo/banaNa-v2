@@ -152,7 +152,7 @@ export default class AvatarStats {
 		stu.put("cmd", "stu");
 		stu.put("sta", sta);
 
-		this.player.network.writeObject(stu);
+		this.player.writeObject(stu);
 	}
 
 	public update(): void {

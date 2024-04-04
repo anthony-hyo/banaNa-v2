@@ -11,12 +11,12 @@ import RequestRegister from "../../../RequestRegister.ts";
 export default class Logout implements IRequest {
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
-		player.network.writeArray("warning", [`"Saving Data..`]);
-		player.network.writeArray("warning", [`Ending Session...`]);
-		player.network.writeArray("warning", [`Goodbye!`]);
+		player.writeArray("warning", [`"Saving Data..`]);
+		player.writeArray("warning", [`Ending Session...`]);
+		player.writeArray("warning", [`Goodbye!`]);
 
 		// noinspection HtmlUnknownAttribute
-		player.network.write(`<msg t='sys'><body action='logout' r='0'></body></msg>`);
+		player.write(`<msg t='sys'><body action='logout' r='0'></body></msg>`);
 	}
 
 }

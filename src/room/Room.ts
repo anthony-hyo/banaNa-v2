@@ -90,16 +90,16 @@ export default class Room implements IDispatchable {
 
 
 	public addPlayer(player: Player): void {
-		this._players.set(player.network.id, player);
+		this._players.set(player.avatarId, player);
 		player.room = this;
 	}
 
 	public removePlayer(player: Player): void {
-		this._players.delete(player.network.id);
+		this._players.delete(player.avatarId);
 	}
 
 	public exit(player: Player): void {
-		this.writeArrayExcept(player, "exitArea", [player.network.id, player.network.name]);
+		this.writeArrayExcept(player, "exitArea", [player.avatarId, player.avatarName]);
 
 		if (this.data.isPvP) {
 			this.writeArrayExcept(player, "server", [player.username + " has left the match."]);
@@ -129,19 +129,19 @@ export default class Room implements IDispatchable {
 			.element("typ", "kill")
 			.element("team", teamId);
 
-		if (monster.data.monster!.name.includes("Restorer")) {
+		if (monster.data.monster!.avatarName.includes("Restorer")) {
 			pvpe.element("val", "Restorer");
 			this.addPvPScore(50, teamId);
-		} else if (monster.data.monster!.name.includes("Brawler")) {
+		} else if (monster.data.monster!.avatarName.includes("Brawler")) {
 			pvpe.element("val", "Brawler");
 			this.addPvPScore(25, teamId);
-		} else if (monster.data.monster!.name.includes("Captain")) {
+		} else if (monster.data.monster!.avatarName.includes("Captain")) {
 			pvpe.element("val", "Captain");
 			this.addPvPScore(1000, teamId);
-		} else if (monster.data.monster!.name.includes("General")) {
+		} else if (monster.data.monster!.avatarName.includes("General")) {
 			pvpe.element("val", "General");
 			this.addPvPScore(100, teamId);
-		} else if (monster.data.monster!.name.includes("Knight")) {
+		} else if (monster.data.monster!.avatarName.includes("Knight")) {
 			pvpe.element("val", "Knight");
 			this.addPvPScore(100, teamId);
 		} else {
@@ -251,7 +251,7 @@ export default class Room implements IDispatchable {
 					.element("strBehave", "walk")
 					.element("strLinkage", monster.data.monster!.linkage)
 					.element("strMonFileName", monster.data.monster!.file)
-					.element("strMonName", monster.data.monster!.name)
+					.element("strMonName", monster.data.monster!.avatarName)
 			);
 
 			monsterMap.add(
@@ -301,43 +301,43 @@ export default class Room implements IDispatchable {
 				.element("monmap", monsterMap);
 		}
 
-		player.network.writeObject(moveToArea);
+		player.writeObject(moveToArea);
 
-		player.network.writeArray("server", ["You joined \"" + this.name + "\"!"]);
+		player.writeArray("server", ["You joined \"" + this.name + "\"!"]);
 	}
 
 	public writeObject(data: JSONObject): void {
 		for (let [, player] of this.players) {
-			player.network.writeObject(data);
+			player.writeObject(data);
 		}
 	}
 
 	public writeArray(command: string, data: Array<string | number>): void {
 		for (let [, player] of this.players) {
-			player.network.writeArray(command, data);
+			player.writeArray(command, data);
 		}
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
 		for (let [networkId, player] of this.players) {
-			if (networkId !== ignored.network.id) {
-				player.network.write(data);
+			if (networkId !== ignored.avatarId) {
+				player.write(data);
 			}
 		}
 	}
 
 	public writeObjectExcept(ignored: Player, data: JSONObject): void {
 		for (let [networkId, player] of this.players) {
-			if (networkId !== ignored.network.id) {
-				player.network.writeObject(data);
+			if (networkId !== ignored.avatarId) {
+				player.writeObject(data);
 			}
 		}
 	}
 
 	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
 		for (let [networkId, player] of this.players) {
-			if (networkId !== ignored.network.id) {
-				player.network.writeArray(command, data);
+			if (networkId !== ignored.avatarId) {
+				player.writeArray(command, data);
 			}
 		}
 	}

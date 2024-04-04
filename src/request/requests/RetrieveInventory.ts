@@ -69,11 +69,11 @@ export default class RetrieveInventory implements IRequest {
 			this.inventory_items.add(HelperItem.inventory(inventoryItem));
 		}
 
-		player.network.writeObject(GameController.instance().enhancementPatterns);
+		player.writeObject(GameController.instance().enhancementPatterns);
 
 		//player.stats.update(false);
 
-		player.network.writeObject(new JSONObject()
+		player.writeObject(new JSONObject()
 			.element("cmd", "loadInventoryBig")
 			.element("bankCount", await player.getBankCount())
 			.element("items", this.inventory_items)
@@ -94,7 +94,7 @@ export default class RetrieveInventory implements IRequest {
 		const boostCPSeconds: number = differenceInSeconds(user.dateClassPointBoostExpire, dateNow);
 
 		if (boostCPSeconds > 0) {
-			player.network.writeObject(new JSONObject()
+			player.writeObject(new JSONObject()
 				.element("op", "+")
 				.element("cmd", "cpboost")
 				.element("iSecsLeft", boostCPSeconds)
@@ -104,7 +104,7 @@ export default class RetrieveInventory implements IRequest {
 		const boostRepSeconds: number = differenceInSeconds(user.dateReputationBoostExpire, dateNow);
 
 		if (boostRepSeconds > 0) {
-			player.network.writeObject(new JSONObject()
+			player.writeObject(new JSONObject()
 				.element("op", "+")
 				.element("cmd", "repboost")
 				.element("iSecsLeft", boostRepSeconds)
@@ -114,7 +114,7 @@ export default class RetrieveInventory implements IRequest {
 		const boostCoinsSeconds: number = differenceInSeconds(user.dateCoinsBoostExpire, dateNow);
 
 		if (boostCoinsSeconds > 0) {
-			player.network.writeObject(new JSONObject()
+			player.writeObject(new JSONObject()
 				.element("op", "+")
 				.element("cmd", "cboost")
 				.element("iSecsLeft", boostCoinsSeconds)
@@ -124,7 +124,7 @@ export default class RetrieveInventory implements IRequest {
 		const boostGoldSeconds: number = differenceInSeconds(user.dateGoldBoostExpire, dateNow);
 
 		if (boostGoldSeconds > 0) {
-			player.network.writeObject(new JSONObject()
+			player.writeObject(new JSONObject()
 				.element("op", "+")
 				.element("cmd", "gboost")
 				.element("iSecsLeft", boostGoldSeconds)
@@ -134,14 +134,14 @@ export default class RetrieveInventory implements IRequest {
 		const boostExpSeconds: number = differenceInSeconds(user.dateExperienceBoostExpire, dateNow);
 
 		if (boostExpSeconds > 0) {
-			player.network.writeObject(new JSONObject()
+			player.writeObject(new JSONObject()
 				.element("op", "+")
 				.element("cmd", "xpboost")
 				.element("iSecsLeft", boostExpSeconds)
 			);
 		}
 
-		player.network.writeArray("server", ["Character load complete."]);
+		player.writeArray("server", ["Character load complete."]);
 
 		const friendJSONObject: JSONObject = new JSONObject()
 			.element("cmd", "updateFriend")
@@ -168,8 +168,8 @@ export default class RetrieveInventory implements IRequest {
 			const client: Player | undefined = PlayerController.findByUsername(userFriend.friend!.username);
 
 			if (client) {
-				client.network.writeObject(friendJSONObject);
-				client.network.writeArray(friendMessage[0], [friendMessage[1]]);
+				client.writeObject(friendJSONObject);
+				client.writeArray(friendMessage[0], [friendMessage[1]]);
 			}
 		}
 	}
