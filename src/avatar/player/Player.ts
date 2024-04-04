@@ -9,35 +9,32 @@ import RoomController from "../../controller/RoomController.ts";
 import database from "../../database/drizzle/database.ts";
 import {areas, users, usersFactions, usersFriends, usersInventory, usersLogs} from "../../database/drizzle/schema.ts";
 import type IArea from "../../database/interfaces/IArea.ts";
-import type IEnhancement from "../../database/interfaces/IEnhancement.ts";
 import type IUser from "../../database/interfaces/IUser.ts";
 import type IUserFriend from "../../database/interfaces/IUserFriend.ts";
 import UserNotFoundException from "../../exceptions/UserNotFoundException.ts";
 import Guild from "../../guild/Guild.ts";
 import Party from "../../party/Party.ts";
 import type Room from "../../room/Room.ts";
-import {DELIMITER, EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../../util/Const.ts";
+import {DELIMITER} from "../../util/Const.ts";
 import JSONArray from "../../util/json/JSONArray.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
 import Avatar from "../Avatar.ts";
-import {AvatarState} from "../helper/AvatarState.ts";
-import AvatarStats from "../data/AvatarStats.ts";
 import PlayerData from "./data/PlayerData.ts";
 import PlayerInventory from "./data/PlayerInventory.ts";
 import PlayerPosition from "./data/PlayerPosition.ts";
 import PlayerPreference from "./data/PlayerPreference.ts";
 import type IUserInventory from "../../database/interfaces/IUserInventory.ts";
 import logger from "../../util/Logger.ts";
-import AvatarCombat from "../data/AvatarCombat.ts";
 import AvatarType from "../helper/AvatarType.ts";
 import AvatarAuras from "../data/AvatarAuras.ts";
 import PlayerStatus from "./data/PlayerStatus.ts";
-import type IDispatchable from "../../interfaces/entity/IDispatchable.ts";
 import type {Socket} from "bun";
 import type INetworkData from "../../interfaces/network/INetworkData.ts";
 import Network from "../../network/Network.ts";
+import PlayerStats from "./data/PlayerStats.ts";
+import PlayerCombat from "./data/PlayerCombat.ts";
 
-export default class Player extends Avatar implements IDispatchable {
+export default class Player extends Avatar {
 
 	private readonly _avatarId: number;
 	private readonly _avatarName: string;
@@ -54,9 +51,9 @@ export default class Player extends Avatar implements IDispatchable {
 	private _pad: string = 'Enter';
 
 	private readonly _auras: AvatarAuras = new AvatarAuras(this);
-	private readonly _combat: AvatarCombat = new AvatarCombat(this);
+	private readonly _combat: PlayerCombat = new PlayerCombat(this);
 	private readonly _status: PlayerStatus = new PlayerStatus(this, 2500, 1000, 100);
-	private readonly _stats: AvatarStats = new AvatarStats(this);
+	private readonly _stats: PlayerStats = new PlayerStats(this);
 
 	private readonly _data: PlayerData = new PlayerData(this);
 	private readonly _inventory: PlayerInventory = new PlayerInventory(this);
@@ -125,11 +122,11 @@ export default class Player extends Avatar implements IDispatchable {
 		return this._auras;
 	}
 
-	public override get combat(): AvatarCombat {
+	public override get combat(): PlayerCombat {
 		return this._combat;
 	}
 
-	public override get stats(): AvatarStats {
+	public override get stats(): PlayerStats {
 		return this._stats;
 	}
 
@@ -195,11 +192,6 @@ export default class Player extends Avatar implements IDispatchable {
 
 		this.writeArray(command, data);
 	}
-
-
-
-
-
 
 
 	public async join(newRoom: Room, frame: string = 'Enter', pad: string = 'Spawn'): Promise<boolean> {
@@ -520,7 +512,7 @@ export default class Player extends Avatar implements IDispatchable {
 
 		const equipment: JSONObject = new JSONObject();
 
-		if (withEquipment) {
+		if (withEquipment && !self) {
 			for (const inventoryItem of user.inventory!) {
 				const equipData: JSONObject = new JSONObject()
 					.element("ItemID", inventoryItem.itemId)
@@ -606,7 +598,7 @@ export default class Player extends Avatar implements IDispatchable {
 	public async levelUp(level: number): Promise<void> {
 		const newLevel: number = level >= CoreValues.getValue("intLevelMax") ? CoreValues.getValue("intLevelMax") : level;
 
-		this.sendStats(true);
+		await this.stats.sendStats(true);
 
 		this.writeObject(
 			new JSONObject()
@@ -702,7 +694,7 @@ export default class Player extends Avatar implements IDispatchable {
 				.where(eq(usersInventory.id, equippedClass.id));
 
 			if (Rank.getRankFromPoints(equippedClass.quantity + calcCp) > rank) {
-				this.inventory.loadSkills();
+				this.combat.loadSkills();
 			}
 		}
 
@@ -747,35 +739,6 @@ export default class Player extends Avatar implements IDispatchable {
 		this.writeObject(addGoldExp);
 	}
 
-	public updateStats(enhancement: IEnhancement, equipment: string): void {
-		const itemStats: Map<string, number> = CoreValues.getItemStats(enhancement, equipment);
-
-		switch (equipment) {
-			case EQUIPMENT_CLASS:
-				for (const [key, value] of itemStats) {
-					this.stats.armor.set(key, value);
-				}
-				break;
-			case EQUIPMENT_WEAPON:
-				for (const [key, value] of itemStats) {
-					this.stats.weapon.set(key, value);
-				}
-				break;
-			case EQUIPMENT_CAPE:
-				for (const [key, value] of itemStats) {
-					this.stats.cape.set(key, value);
-				}
-				break;
-			case EQUIPMENT_HELM:
-				for (const [key, value] of itemStats) {
-					this.stats.helm.set(key, value);
-				}
-				break;
-			default:
-				throw new Error("equipment " + equipment + " cannot have stat values!");
-		}
-	}
-
 
 	public async sendUotls(withHealth: boolean, withHealthMax: boolean, withMana: boolean, withManaMax: boolean, withLevel: boolean, withState: boolean): Promise<void> {
 		const { level } = await database.query.users.findFirst({
@@ -790,6 +753,9 @@ export default class Player extends Avatar implements IDispatchable {
 			throw new UserNotFoundException("The user could not be found in the database.");
 		}
 
+		logger.silly(this.status.health);
+		logger.silly(this.status.health.value);
+
 		this.room?.writeObject(
 			new JSONObject()
 				.element("cmd", "uotls")
@@ -802,112 +768,6 @@ export default class Player extends Avatar implements IDispatchable {
 					.elementIf(withLevel, "intLevel", level)
 					.elementIf(withState, "intState", this.status.state)
 				)
-		);
-	}
-
-	public sendStats(levelUp: boolean): void {
-		const stu: JSONObject = new JSONObject();
-		const tempStat: JSONObject = new JSONObject();
-
-		const userLevel: number = this.properties.get(PlayerConst.LEVEL);
-
-		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
-		stats.update();
-
-		const END: number = stats.get$END() + stats.get_END();
-		const WIS: number = stats.get$WIS() + stats.get_WIS();
-
-		const intHPperEND: number = CoreValues.getValue("intHPperEND");
-		const intMPperWIS: number = CoreValues.getValue("intMPperWIS");
-
-		const addedHP: number = END * intHPperEND;
-
-		// Calculate new HP and MP
-		let userHp: number = CoreValues.getHealthByLevel(userLevel);
-		userHp += addedHP;
-
-		let userMp: number = CoreValues.getManaByLevel(userLevel) + WIS * intMPperWIS;
-
-		// Max
-		this.status.health.max = userHp;
-		this.status.mana.max = userMp;
-
-		// Current
-		if (this.status.state === AvatarState.NEUTRAL || levelUp) {
-			this.status.health.update = userHp;
-		}
-
-		if (this.status.state === AvatarState.NEUTRAL || levelUp) {
-			this.status.mana.update = userMp;
-		}
-
-		this.sendUotls(true, true, true, true, levelUp, false);
-
-		const stat: JSONObject = new JSONObject(stats);
-
-		const ba: JSONObject = new JSONObject();
-		const he: JSONObject = new JSONObject();
-		const Weapon: JSONObject = new JSONObject();
-
-		const ar: JSONObject = new JSONObject();
-
-		for (const [key, value] of stats.armor.entries()) {
-			if (value > 0) {
-				ar.element(key, Math.floor(value));
-			}
-		}
-
-		for (const [key, value] of stats.helm.entries()) {
-			if (value > 0) {
-				he.element(key, Math.floor(value));
-			}
-		}
-
-		for (const [key, value] of stats.weapon.entries()) {
-			if (value > 0) {
-				Weapon.element(key, Math.floor(value));
-			}
-		}
-
-		for (const [key, value] of stats.cape.entries()) {
-			if (value > 0) {
-				ba.element(key, Math.floor(value));
-			}
-		}
-
-		if (!ba.isEmpty) {
-			tempStat.element("ba", ba);
-		}
-
-		if (!ar.isEmpty) {
-			tempStat.element("ar", ar);
-		}
-
-		if (!Weapon.isEmpty) {
-			tempStat.element("Weapon", Weapon);
-		}
-
-		if (!he.isEmpty) {
-			tempStat.element("he", he);
-		}
-
-		tempStat.element(
-			"innate",
-			new JSONObject()
-				.element("INT", stats.innate.get("INT"))
-				.element("STR", stats.innate.get("STR"))
-				.element("DEX", stats.innate.get("DEX"))
-				.element("END", stats.innate.get("END"))
-				.element("LCK", stats.innate.get("LCK"))
-				.element("WIS", stats.innate.get("WIS"))
-		);
-
-		this.writeObject(
-			stu
-				.element("tempSta", tempStat)
-				.element("cmd", "stu")
-				.element("sta", stat)
-				.element("wDPS", stats.physicalDamage),
 		);
 	}
 

@@ -82,7 +82,7 @@ export default class GameController implements IDispatchable {
 
 		logger.info(`Settings initialized.`);
 
-		const enhancementPatterns: Array<IEnhancementPattern> = (await database.query.enhancementsPatterns.findMany());
+		const enhancementPatterns: Array<IEnhancementPattern> = await database.query.enhancementsPatterns.findMany();
 
 		const enhancementPatternsJSONObject: JSONObject = new JSONObject();
 
@@ -90,19 +90,21 @@ export default class GameController implements IDispatchable {
 			enhancementPatternsJSONObject.element(
 				enhancementPattern.id.toString(),
 				new JSONObject()
-					.element("ID", String(enhancementPattern.id))
+					.element("ID", enhancementPattern.id)
 					.element("sName", enhancementPattern.name)
 					.element("sDesc", enhancementPattern.category)
-					.element("iWIS", String(enhancementPattern.wisdom))
-					.element("iEND", String(enhancementPattern.endurance))
-					.element("iLCK", String(enhancementPattern.luck))
-					.element("iSTR", String(enhancementPattern.strength))
-					.element("iDEX", String(enhancementPattern.dexterity))
-					.element("iINT", String(enhancementPattern.intelligence))
+					.element("iWIS", enhancementPattern.wisdom)
+					.element("iEND", enhancementPattern.endurance)
+					.element("iLCK", enhancementPattern.luck)
+					.element("iSTR", enhancementPattern.strength)
+					.element("iDEX", enhancementPattern.dexterity)
+					.element("iINT", enhancementPattern.intelligence)
 			);
 		}
 
-		this.enhancementPatterns = enhancementPatternsJSONObject;
+		this.enhancementPatterns = new JSONObject()
+			.element("cmd", "enhp")
+			.element('o', enhancementPatternsJSONObject);
 
 		logger.info(`Enhancement Pattern initialized.`);
 

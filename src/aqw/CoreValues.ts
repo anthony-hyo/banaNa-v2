@@ -25,8 +25,16 @@ export default class CoreValues {
 		return 1000;
 	}
 
-	public static getManaByLevel(level: number): number {
+	public static getManaByLevelDatabase(level: number): number {
 		return 500;
+	}
+
+	public static getManaByLevel(level: number): number {
+		const base: number = CoreValues.getValue("PCmpBase1");
+		const delta: number = CoreValues.getValue("PCmpBase100");
+		const curve: number = CoreValues.getValue("curveExponent") + (base / delta);
+
+		return CoreValues.getBaseValueByLevel(base, delta, curve, level);
 	}
 
 	public static getHealthByLevelDatabase(level: number): number {

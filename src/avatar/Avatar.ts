@@ -1,11 +1,14 @@
 import type AvatarType from "./helper/AvatarType.ts";
 import type Room from "../room/Room.ts";
 import type AvatarStatus from "./data/AvatarStatus.ts";
-import AvatarStats from "./data/AvatarStats.ts";
-import AvatarAuras from "./data/AvatarAuras.ts";
-import AvatarCombat from "./data/AvatarCombat.ts";
+import type AvatarStats from "./data/AvatarStats.ts";
+import type AvatarAuras from "./data/AvatarAuras.ts";
+import type AvatarCombat from "./data/AvatarCombat.ts";
+import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
+import type Player from "./player/Player.ts";
+import type JSONObject from "../util/json/JSONObject.ts";
 
-export default abstract class Avatar {
+export default abstract class Avatar implements IDispatchable {
 
 	abstract get avatarId(): number;
 
@@ -28,5 +31,15 @@ export default abstract class Avatar {
 	abstract get stats(): AvatarStats;
 
 	abstract get status(): AvatarStatus;
+
+	abstract writeArray(command: string, data: Array<string | number>): void;
+
+	abstract writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void;
+
+	abstract writeExcept(ignored: Player, data: string): void;
+
+	abstract writeObject(data: JSONObject): void;
+
+	abstract writeObjectExcept(ignored: Player, data: JSONObject): void;
 
 }

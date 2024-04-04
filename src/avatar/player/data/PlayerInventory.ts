@@ -2,43 +2,18 @@ import type Player from "../Player.ts";
 import type IUserInventory from "../../../database/interfaces/IUserInventory.ts";
 import Equipment from "../../../util/Equipment.ts";
 import JSONObject from "../../../util/json/JSONObject.ts";
-import JSONArray from "../../../util/json/JSONArray.ts";
-import {Rank} from "../../../aqw/Rank.ts";
-import SkillReference from "../../../util/SkillReference.ts";
 import database from "../../../database/drizzle/database.ts";
 import {and, eq, sql} from "drizzle-orm";
 import {usersInventory} from "../../../database/drizzle/schema.ts";
 import type IItem from "../../../database/interfaces/IItem.ts";
-import CoreValues from "../../../aqw/CoreValues.ts";
-import ISkill from "../../../database/interfaces/ISkill.ts";
 
 export default class PlayerInventory {
-
-	private static readonly potion: JSONObject = new JSONObject()
-		.element("anim", "Cheer")
-		.element("cd", "" + 60000)
-		.element("desc", "Equip a potion or scroll from your inventory to use it here.")
-		.element("fx", "")
-		.element("icon", "icu1")
-		.element("isOK", 1)
-		.element("mp", "" + 0)
-		.element("nam", "Potions")
-		.element("range", 808)
-		.element("ref", "i1")
-		.element("str1", "")
-		.element("tgt", "f")
-		.element("typ", "i");
-
-	private static readonly emptyAuras: JSONArray = new JSONArray()
-		.add(new JSONObject());
 
 	private readonly equipped: Map<Equipment, IUserInventory> = new Map<Equipment, IUserInventory>();
 
 	private readonly temporary: Map<number, number> = new Map<number, number>();
 
-	private readonly itemStats: Map<string, Map<string, number>> = new Map<string, Map<string, number>>();
-
-	public static hasStats(equipment: string): boolean {
+	public static hasStats(equipment: Equipment): boolean {
 		return equipment === Equipment.WEAPON || equipment === Equipment.CLASS || equipment === Equipment.CAPE || equipment === Equipment.HELM;
 	}
 
@@ -83,10 +58,12 @@ export default class PlayerInventory {
 		return this.equipped.get(Equipment.HOUSE_ITEM);
 	}
 
-	public equip(userInventory: IUserInventory, updateStats: boolean) {
+	public async equip(userInventory: IUserInventory): Promise<void> {
 		const item: IItem = userInventory.item!;
 
-		this.equipped.set(<Equipment>item.typeItem!.equipment, userInventory);
+		const equipment: Equipment = <Equipment>item.typeItem!.equipment;
+
+		this.equipped.set(equipment, userInventory);
 
 		const ei: JSONObject = new JSONObject()
 			.element("ItemID", item.id)
@@ -103,7 +80,7 @@ export default class PlayerInventory {
 					.element("sType", item.typeItem!.name);
 				break;
 			case Equipment.CLASS:
-				this.updateClass(userInventory);
+				this.player.combat.updateClass(userInventory);
 				break;
 		}
 
@@ -116,11 +93,8 @@ export default class PlayerInventory {
 			})
 			.where(eq(usersInventory.id, userInventory.id));
 
-		if (PlayerInventory.hasStats(item.typeItem!.equipment)) {
-			this.itemStats.set(item.typeItem!.equipment, CoreValues.getItemStats(userInventory.enhancement!, item.typeItem!.equipment));
-			if (updateStats) {
-				this.player.stats.update(false);
-			}
+		if (PlayerInventory.hasStats(equipment)) {
+			this.player.stats.updateStats(equipment, userInventory.enhancement!);
 		}
 	}
 
@@ -160,172 +134,6 @@ export default class PlayerInventory {
 		}
 
 		this.temporary.set(itemId, quantity);
-	}
-
-	public updateClass(equippedClass: IUserInventory): void {
-		const updateClass: JSONObject = new JSONObject()
-			.element("cmd", "updateClass")
-			.element("iCP", equippedClass.quantity)
-			.element("sClassCat", equippedClass.item!.class!.category)
-			.element("sClassName", equippedClass.item!.name)
-			.element("uid", this.player.avatarId);
-
-		this.player.room?.writeObjectExcept(this.player, updateClass);
-
-		updateClass
-			.element("sDesc", equippedClass.item!.class!.description)
-			.element("sStats", equippedClass.item!.class!.statsDescription);
-
-		if (equippedClass.item!.class!.manaRegenerationMethods.includes(":")) {
-			const aMRM: JSONArray = new JSONArray();
-
-			for (const s of equippedClass.item!.class!.manaRegenerationMethods.split(",")) {
-				aMRM.add(s + "\r");
-			}
-
-			updateClass.element("aMRM", aMRM);
-		} else {
-			updateClass.element("aMRM", equippedClass.item!.class!.manaRegenerationMethods);
-		}
-
-		this.player.writeObject(updateClass);
-
-		this.loadSkills();
-	}
-
-	public loadSkills(): void {
-		const equippedClass: IUserInventory | undefined = this.equippedClass;
-
-		if (!equippedClass) {
-			this.player.kick('[loadSkills] equipped class is undefined');
-			return;
-		}
-
-		const rank: number = Rank.getRankFromPoints(equippedClass.quantity);
-
-		const active: JSONArray = new JSONArray();
-		const passive: JSONArray = new JSONArray();
-
-		const auras: JSONArray = new JSONArray();
-
-		for (const classSkill of equippedClass.item!.class!.skills!) {
-			const skill: ISkill = classSkill.skill!;
-
-			const jsonObject: JSONObject = new JSONObject()
-				.element("auras", PlayerInventory.emptyAuras)
-				.element("desc", skill.description)
-				.element("fx", skill.type)
-				.element("icon", skill.icon)
-				.element("id", skill.id)
-				.element("nam", skill.name)
-				.element("range", skill.range)
-				.element("ref", skill.reference)
-				.element("tgt", skill.target)
-				.element("typ", skill.type);
-
-			switch (skill.type) {
-				case "passive":
-					const isOK: boolean = rank >= 4;
-
-					passive.add(
-						jsonObject
-							.element("isOK", isOK)
-					);
-
-					if (isOK) {
-						const aurasEffects: JSONArray = new JSONArray();
-
-						for (const aura of skill.auras!) {
-							for (const effect of aura.effects!) {
-								aurasEffects.add(
-									new JSONObject()
-										.element("id", effect.id)
-										.element("sta", effect.typeStat!.stat)
-										.element("typ", effect.type)
-										.element("val", effect.value)
-								);
-							}
-						}
-
-						auras.add(
-							new JSONObject()
-								.element("nam", skill.name)
-								.element("e", aurasEffects)
-						);
-					}
-					break;
-				default:
-					jsonObject
-						.element("anim", skill.animation)
-						.element("cd", String(skill.cooldown))
-						.element("damage", skill.damage)
-						.element("dsrc", '')
-						.elementIf(skill.effectName.length != 0, "strl", skill.effectName)
-						.element("isOK", true)
-						.element("mp", skill.mana)
-						.element("tgtMax", skill.hitTargets)
-						.element("tgtMin", "1");
-
-					switch (skill.reference) {
-						case SkillReference.AUTO_ATTACK:
-							active.element(
-								0,
-								jsonObject
-									.element("auto", true)
-							);
-							break;
-						case SkillReference.ATTACK_1:
-							active.element(1, jsonObject);
-							break;
-						case SkillReference.ATTACK_2:
-							active.element(
-								2,
-								jsonObject
-									.elementIf(rank < 2, "isOK", false)
-							);
-							break;
-						case SkillReference.ATTACK_3:
-							active.element(
-								3,
-								jsonObject
-									.elementIf(rank < 3, "isOK", false)
-							);
-							break;
-						case SkillReference.ATTACK_4:
-							active.element(
-								4,
-								jsonObject
-									.elementIf(rank < 5, "isOK", false)
-							);
-							break;
-					}
-					break;
-			}
-		}
-
-		active.element(5, PlayerInventory.potion);
-
-		if (auras.size > 0) {
-			this.player.writeObject(
-				new JSONObject()
-					.element("cmd", "aura+p")
-					.element("tInf", `p:${this.player.avatarId}`)
-					.element("auras", auras)
-			);
-		}
-
-		//this.clearAuras(user);
-
-		this.player.writeObject(
-			new JSONObject()
-				.element("cmd", "sAct")
-				.element(
-					"actions",
-					new JSONObject()
-						.element("active", active)
-						.element("passive", passive)
-				)
-		);
 	}
 
 }

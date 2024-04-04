@@ -53,7 +53,7 @@ export default interface IItem {
 	typeRarity?: ITypeRarity;
 	typeElement?: ITypeElement;
 
-	class?: IClass;
+	class?: IClass | null;
 
 	enhancement?: IEnhancement;
 

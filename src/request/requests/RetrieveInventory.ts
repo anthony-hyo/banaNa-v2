@@ -92,7 +92,7 @@ export default class RetrieveInventory implements IRequest {
 
 		for (const inventoryItem of user.inventory!) {
 			if (inventoryItem.isEquipped) {
-				player.inventory.equip(inventoryItem, false);
+				await player.inventory.equip(inventoryItem);
 			}
 
 			const equipment: string = inventoryItem.item!.typeItem!.equipment;
@@ -107,7 +107,7 @@ export default class RetrieveInventory implements IRequest {
 
 		player.writeObject(GameController.instance().enhancementPatterns);
 
-		//player.stats.update(false);
+		await player.stats.update(); //TODO: MOVE OR DELETE - DUPLICATE
 
 		player.writeObject(new JSONObject()
 			.element("cmd", "loadInventoryBig")
@@ -208,6 +208,8 @@ export default class RetrieveInventory implements IRequest {
 				client.writeArray(friendMessage[0], [friendMessage[1]]);
 			}
 		}
+
+		await player.stats.sendStats(true); //TODO: MOVE OR DELETE - DUPLICATE
 	}
 
 }

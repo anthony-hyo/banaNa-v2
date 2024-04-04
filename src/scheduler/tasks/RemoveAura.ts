@@ -67,8 +67,8 @@ export default class RemoveAura implements ITask {
 					auraEffects.add(effect);
 				}
 
-				stats.update();
-				stats.sendStatChanges(stats, auraEffects);
+				//stats.update();
+				//stats.sendStatChanges(auraEffects);
 			}
 
 			this.player!.writeObject(ct);

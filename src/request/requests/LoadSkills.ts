@@ -11,7 +11,7 @@ import RequestRegister from "../RequestRegister.ts";
 export default class LoadSkills implements IRequest {
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
-		player.inventory.loadSkills();
+		player.combat.loadSkills();
 	}
 
 }
