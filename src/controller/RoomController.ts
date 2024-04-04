@@ -10,8 +10,8 @@ export default class RoomController {
 	private static readonly ROOMS: Map<string, Room> = new Map<string, Room>;
 
 	public static async join(player: Player, newRoom: Room): Promise<void> {
-		if (player.room !== undefined) {
-			let oldRoom: Room | null = player.room;
+		if (player.room) {
+			const oldRoom: Room = player.room;
 
 			if (oldRoom !== null) {
 				// noinspection HtmlUnknownAttribute

@@ -1,6 +1,7 @@
 import type Player from "../avatar/player/Player.ts";
 import type IDispatchable from "../interfaces/entity/IDispatchable.ts";
 import JSONObject from "../util/json/JSONObject.ts";
+import logger from "../util/Logger.ts";
 
 export default class Party implements IDispatchable {
 
@@ -8,11 +9,27 @@ export default class Party implements IDispatchable {
 
 	private readonly _members: Map<number, Player> = new Map<number, Player>;
 
+	private _owner!: Player;
+
+	public static async findOrCreate(id: number): Promise<Party> {
+		let guild: Party | undefined = Party.parties.get(id);
+
+		if (guild) {
+			return guild;
+		}
+
+		logger.debug(`Party ${id} was not found, creating a new one.`);
+
+		guild = new Party(id);
+
+		Party.parties.set(id, guild);
+
+		return guild;
+	}
+
 	constructor(
 		private readonly _id: number,
-		private _owner: Player
 	) {
-		this._owner.party = this;
 	}
 
 	public get id(): number {
@@ -33,7 +50,7 @@ export default class Party implements IDispatchable {
 
 	public onMemberJoin(player: Player): void {
 		this.members.set(player.avatarId, player);
-		player.party = this;
+		player.partyId = this.id;
 	}
 
 	public onMemberLeave(player: Player): void {
@@ -46,7 +63,7 @@ export default class Party implements IDispatchable {
 
 		this.members.delete(player.avatarId);
 
-		player.party = undefined;
+		player.partyId = undefined;
 
 		if (this.members.size <= 1) {
 			this.writeObject(new JSONObject()
@@ -54,7 +71,6 @@ export default class Party implements IDispatchable {
 			);
 
 			Party.parties.delete(this.id);
-
 			return;
 		}
 

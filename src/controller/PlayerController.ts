@@ -13,8 +13,8 @@ export default class PlayerController {
 
 	public static PLAYERS: Map<number, Player> = new Map<number, Player>();
 
-	public static login(socket: Socket<INetworkData>, username: string, token: string): void {
-		database.query.users
+	public static async login(socket: Socket<INetworkData>, username: string, token: string): Promise<void> {
+		const user: IUser | undefined = await database.query.users
 			/*.findFirst({
 				where: and(
 					eq(users.username, username),
@@ -22,53 +22,53 @@ export default class PlayerController {
 				)
 			})*/
 			.findFirst()
-			.then((user: IUser | undefined): void => {
-				const networkName: string = user!.username.toLowerCase(); //TODO: Temporary fix
 
-				if (user === undefined) {
-					NetworkEncoder.writeArray(socket, `loginResponse`, [`false`, `-1`, networkName, `Player Data for '${networkName}' could not be retrieved.<br>Please contact the staff to resolve the issue.`]);
+		const avatarName: string = user!.username.toLowerCase();
 
-					this.removeConnection(networkName);
-					return;
-				}
+		if (user === undefined) {
+			NetworkEncoder.writeArray(socket, `loginResponse`, [`false`, `-1`, avatarName, `Player Data for '${avatarName}' could not be retrieved.<br>Please contact the staff to resolve the issue.`]);
 
-				database
-					.update(users)
-					.set({
-						token: null
-					})
-					.where(eq(users.id, user.id));
+			await this.removeConnection(avatarName);
+			return;
+		}
 
-				if (!GameController.instance().server.isOnline || (GameController.instance().server.isStaffOnly && user.accessId < 40)) {
-					NetworkEncoder.writeArray(socket, `loginResponse`, [`false`, `-1`, networkName, `A game update/maintenance is currently ongoing.<br>Only the staff can enter the server at the moment.`]);
+		if (!GameController.instance().server.isOnline || (GameController.instance().server.isStaffOnly && user.accessId < 40)) {
+			NetworkEncoder.writeArray(socket, `loginResponse`, [`false`, `-1`, avatarName, `A game update/maintenance is currently ongoing.<br>Only the staff can enter the server at the moment.`]);
 
-					this.removeConnection(networkName);
-					return;
-				}
+			database
+				.update(users)
+				.set({
+					token: null
+				})
+				.where(eq(users.id, user.id));
 
-				const exitingPlayer: Player | undefined = this.findByUsername(networkName);
+			await this.removeConnection(avatarName);
+			return;
+		}
 
-				if (exitingPlayer !== undefined) {
-					NetworkEncoder.writeArray(socket, `loginResponse`, [`false`, `-1`, networkName, `You logged in from a different location.`]);
+		const exitingPlayer: Player | undefined = this.findByUsername(avatarName);
 
-					this.removeConnection(networkName);
-				}
+		if (exitingPlayer !== undefined) {
+			NetworkEncoder.writeArray(socket, `loginResponse`, [`false`, `-1`, avatarName, `You logged in from a different location.`]);
 
-				const player: Player = new Player(user, socket);
+			await this.removeConnection(avatarName);
+		}
 
-				socket.data.player = player;
+		const player: Player = new Player(user, socket);
 
-				PlayerController.add(player);
+		socket.data.player = player;
 
-				NetworkEncoder.writeArray(socket, `loginResponse`, [`true`, player.avatarId, networkName, ``, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941"]);
+		PlayerController.add(player);
 
-				database
-					.update(users)
-					.set({
-						currentServerId: 1
-					})
-					.where(eq(users.id, user.id));
-			});
+		NetworkEncoder.writeArray(socket, `loginResponse`, [`true`, player.avatarId, avatarName, ``, `2017-09-30T10:58:57`, GameController.instance().settings, "3.00941"]);
+
+		database
+			.update(users)
+			.set({
+				token: null,
+				currentServerId: 1
+			})
+			.where(eq(users.id, user.id));
 	}
 
 	public static add(player: Player): void {
@@ -103,11 +103,11 @@ export default class PlayerController {
 		return this.PLAYERS.size;
 	}
 
-	private static removeConnection(name: string): void {
+	private static async removeConnection(name: string): Promise<void> {
 		const player: Player | undefined = this.findByUsername(name);
 
 		if (player !== undefined) {
-			player.disconnect();
+			await player.disconnect();
 		}
 
 		logger.info(`User ${name} ${(this.findByUsername(name) === undefined ? "Connection still exist" : "Connection Removed")}`);

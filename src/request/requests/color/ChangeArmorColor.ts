@@ -28,7 +28,7 @@ export default class ChangeArmorColor implements IRequest {
 			})
 			.where(eq(users.id, player.databaseId));
 
-		player.room!.writeObjectExcept(
+		player.room?.writeObjectExcept(
 			player,
 			new JSONObject()
 				.element("uid", player.avatarId)

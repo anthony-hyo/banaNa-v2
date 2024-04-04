@@ -133,7 +133,9 @@ export default class Network {
 						const username: string = dataXML.msg.body.login.nick.split(`~`)[1];
 						const token: string = dataXML.msg.body.login.pword;
 
-						PlayerController.login(socket, username, token);
+						PlayerController
+							.login(socket, username, token)
+							.catch(logger.error);
 						break;
 					default:
 						//TODO: Kick or Ban

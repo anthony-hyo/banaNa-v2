@@ -31,7 +31,7 @@ export default class ChatMessage implements IRequest {
 				break;
 		}
 
-		player.room!.writeArray("chatm", [`${chatChannel}~${chatMessage}`, player.avatarName, player.room!.id]);
+		player.room?.writeArray("chatm", [`${chatChannel}~${chatMessage}`, player.avatarName, player.room!.id]);
 	}
 
 	private static filterMessage(match: string): string {

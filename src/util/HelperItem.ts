@@ -1,41 +1,52 @@
 import JSONObject from "./json/JSONObject.ts";
 import type IUserInventory from "../database/interfaces/IUserInventory.ts";
 import {differenceInHours} from "date-fns";
+import type IItem from "../database/interfaces/IItem.ts";
+import type ITypeItem from "../database/interfaces/ITypeItem.ts";
+import type ITypeElement from "../database/interfaces/ITypeElement.ts";
+import type IEnhancement from "../database/interfaces/IEnhancement.ts";
 
 export default class HelperItem {
 
 	public static inventory(inventory: IUserInventory): JSONObject {
+		const item: IItem = inventory.item!;
+
+		const typeElement: ITypeElement = item.typeElement!;
+		const typeItem: ITypeItem = item.typeItem!;
+
+		const enhancement: IEnhancement = inventory.enhancement!;
+
 		return new JSONObject()
 			.element("bEquip", inventory.isEquipped)
-			.element("bStaff", inventory.item!.isStaffOnly)
-			.element("metaValues", inventory.item!.meta || new JSONObject())
+			.element("bStaff", item.isStaffOnly)
+			.element("metaValues", item.meta || new JSONObject())
 			.element("sReqQuests", "")
-			.element("iRty", inventory.item!.typeRarityId)
-			.element("iCost", inventory.item!.cost)
-			.element("iRng", inventory.item!.range)
-			.element("sElmt", inventory.item!.typeElement!.name)
-			.element("iDPS", inventory.enhancement!.damage_per_second)
-			.element("EnhID", inventory.item!.enhancementId)
+			.element("iRty", item.typeRarityId)
+			.element("iCost", item.cost)
+			.element("iRng", item.range)
+			.element("sElmt", typeElement.name)
+			.element("iDPS", enhancement.damage_per_second)
+			.element("EnhID", item.enhancementId)
 			//.element("bQuest", 1)
-			.element("iQty", inventory.item!.quantity)
-			.element("sType", inventory.item!.typeItem!.name)
-			.element("sLink", inventory.item!.linkage)
-			.element("iQSIndex", inventory.item!.questStringIndex)
-			.element("ItemID", inventory.item!.id)
-			.element("bCoins", inventory.item!.isCoins)
-			.element("bTemp", inventory.item!.isTemporary)
-			.element("bHouse", inventory.item!.typeItem!.equipment == "hi" || inventory.item!.typeItem!.equipment == "ho")
+			.element("iQty", item.quantity)
+			.element("sType", typeItem.name)
+			.element("sLink", item.linkage)
+			.element("iQSIndex", item.questStringIndex)
+			.element("ItemID", item.id)
+			.element("bCoins", item.isCoins)
+			.element("bTemp", item.isTemporary)
+			.element("bHouse", typeItem.equipment == "hi" || typeItem.equipment == "ho")
 			.element("bPTR", 0)
-			.element("sIcon", inventory.item!.icon)
-			.element("bUpg", inventory.item!.isUpgradeOnly)
-			.element("CharItemID", inventory.item!.requiredClassItemId ?? 0)
+			.element("sIcon", item.icon)
+			.element("bUpg", item.isUpgradeOnly)
+			.element("CharItemID", item.requiredClassItemId ?? 0)
 			.element("bBank", inventory.isOnBank)
-			.element("sName", inventory.item!.name)
-			.element("iQSValue", inventory.item!.questStringValue)
-			.element("sDesc", inventory.item!.description)
-			.element("sES", inventory.item!.typeItem!.equipment)
-			.element("iLvl", inventory.item!.level)
-			.element("iStk", inventory.item!.stack)
+			.element("sName", item.name)
+			.element("iQSValue", item.questStringValue)
+			.element("sDesc", item.description)
+			.element("sES", typeItem.equipment)
+			.element("iLvl", item.level)
+			.element("iStk", item.stack)
 			.element("iHrs", differenceInHours(new Date(), inventory.dateCreated));
 	}
 

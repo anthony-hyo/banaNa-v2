@@ -11,7 +11,7 @@ import RequestRegister from "../../RequestRegister.ts";
 export default class ChatCanned implements IRequest {
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
-		player.room!.writeArray("cc", [args.getString(0), player.avatarName]);
+		player.room?.writeArray("cc", [args.getString(0), player.avatarName]);
 	}
 
 }

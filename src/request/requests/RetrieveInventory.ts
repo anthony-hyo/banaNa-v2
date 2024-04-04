@@ -75,7 +75,7 @@ export default class RetrieveInventory implements IRequest {
 
 		player.writeObject(new JSONObject()
 			.element("cmd", "loadInventoryBig")
-			.element("bankCount", await player.getBankCount())
+			.element("bankCount", await player.inventory.bankCount())
 			.element("items", this.inventory_items)
 			.element("hitems", this.house_items)
 			.element("factions", new JSONArray(

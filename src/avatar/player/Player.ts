@@ -1,6 +1,5 @@
-import {differenceInDays, differenceInSeconds, differenceInYears, isAfter} from "date-fns";
+import {differenceInDays, differenceInSeconds, differenceInYears, format, isAfter} from "date-fns";
 import {eq, sql} from "drizzle-orm";
-import {format} from "mysql2";
 import CoreValues from "../../aqw/CoreValues.ts";
 import {Quests} from "../../aqw/Quests.ts";
 import {Rank} from "../../aqw/Rank.ts";
@@ -15,7 +14,7 @@ import type IUser from "../../database/interfaces/IUser.ts";
 import type IUserFriend from "../../database/interfaces/IUserFriend.ts";
 import UserNotFoundException from "../../exceptions/UserNotFoundException.ts";
 import Guild from "../../guild/Guild.ts";
-import type Party from "../../party/Party.ts";
+import Party from "../../party/Party.ts";
 import type Room from "../../room/Room.ts";
 import {DELIMITER, EQUIPMENT_CAPE, EQUIPMENT_CLASS, EQUIPMENT_HELM, EQUIPMENT_WEAPON} from "../../util/Const.ts";
 import JSONArray from "../../util/json/JSONArray.ts";
@@ -41,7 +40,12 @@ import Network from "../../network/Network.ts";
 export default class Player extends Avatar implements IDispatchable {
 
 	private readonly _id: number;
+	private readonly _name: string;
+
 	private readonly _databaseId: number;
+	private readonly _username: string;
+
+	private readonly _socket: Socket<INetworkData>;
 
 	public _room: Room | undefined;
 
@@ -54,26 +58,22 @@ export default class Player extends Avatar implements IDispatchable {
 	public readonly _status: PlayerStatus = new PlayerStatus(this, 2500, 1000, 100);
 	public readonly _stats: AvatarStats = new AvatarStats(this);
 
-	public properties: Map<string, any> = new Map<string, any>();
-	public readonly position: PlayerPosition = new PlayerPosition();
-	public readonly inventory: PlayerInventory = new PlayerInventory(this);
-	public readonly preference: PlayerPreference = new PlayerPreference(this);
-	public readonly data: PlayerData = new PlayerData(this);
-	public party: Party | undefined = undefined;
-	private readonly _username: string;
-	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
-	public readonly skills: AvatarCombat = new AvatarCombat(this);
+	public readonly _data: PlayerData = new PlayerData(this);
+	public readonly _inventory: PlayerInventory = new PlayerInventory(this);
+	public readonly _position: PlayerPosition = new PlayerPosition();
+	public readonly _preferences: PlayerPreference = new PlayerPreference(this);
 
-
-	private readonly _socket: Socket<INetworkData>;
+	public partyId: number | undefined = undefined;
 
 	constructor(user: IUser, socket: Socket<INetworkData>) {
 		super();
 
 		this._id = Network.increaseAndGet;
+		this._name = user.username.toLowerCase();
 
 		this._databaseId = user.id;
 		this._username = user.username;
+
 		this._socket = socket;
 	}
 
@@ -82,7 +82,7 @@ export default class Player extends Avatar implements IDispatchable {
 	}
 
 	public override get avatarName(): string {
-		return this.username.toLowerCase();
+		return this._name;
 	}
 
 	public override get databaseId(): number {
@@ -137,6 +137,29 @@ export default class Player extends Avatar implements IDispatchable {
 		return this._status;
 	}
 
+	public get data(): PlayerData {
+		return this._data;
+	}
+
+	public get inventory(): PlayerInventory {
+		return this._inventory;
+	}
+
+	public get position(): PlayerPosition {
+		return this._position;
+	}
+
+	public get preferences(): PlayerPreference {
+		return this._preferences;
+	}
+
+
+
+
+
+
+
+
 
 	public write(data: string): void {
 		logger.debug(`[Player] sending '${data}'`);
@@ -182,27 +205,10 @@ export default class Player extends Avatar implements IDispatchable {
 	}
 
 
-	public get preferences(): PlayerPreference {
-		return this._preferences;
-	}
 
-	public log(violation: string, details: string): void {
-		database
-			.insert(usersLogs)
-			.values({
-				userId: this.databaseId,
-				details: details,
-			});
-	}
 
-	public kick(): void {
-		logger.silly('>>>>>>>>> kick');
-		//TODO: Kick
-	}
 
-	public disconnect(): void {
 
-	}
 
 	public async join(newRoom: Room, frame: string = 'Enter', pad: string = 'Spawn'): Promise<boolean> {
 		const user: IUser | undefined = await database.query.users.findFirst({
@@ -264,378 +270,29 @@ export default class Player extends Avatar implements IDispatchable {
 		this.position.move(0, 0);
 
 		if (sendUpdate) {
-			this.room!.writeArrayExcept(this, "uotls", [this.avatarName, `strPad:${pad},tx:0,strFrame:${frame},ty:0`]);
+			this.room?.writeArrayExcept(this, "uotls", [this.avatarName, `strPad:${pad},tx:0,strFrame:${frame},ty:0`]);
 		}
 	}
 
-	public async sendUotls(withHealth: boolean, withHealthMax: boolean, withMana: boolean, withManaMax: boolean, withLevel: boolean, withState: boolean): Promise<void> {
-		const { level } = await database.query.users.findFirst({
-			columns: {
-				level: true,
-				settings: true
-			},
-			where: eq(users.id, this.databaseId)
-		}) || {};
 
-		if (level == undefined) {
-			throw new UserNotFoundException("The user could not be found in the database.");
-		}
-
-		this.room!.writeObject(
-			new JSONObject()
-				.element("cmd", "uotls")
-				.element("unm", this.avatarName)
-				.element("o", new JSONObject()
-					.elementIf(withHealth, "intHP", this.status.health.value)
-					.elementIf(withHealthMax, "intHPMax", this.status.health.max)
-					.elementIf(withMana, "intMP", this.status.mana.value)
-					.elementIf(withManaMax, "intMPMax", this.status.mana.max)
-					.elementIf(withLevel, "intLevel", level)
-					.elementIf(withState, "intState", this.status.state)
-				)
-		);
+	public log(violation: string, details: string): void {
+		database
+			.insert(usersLogs)
+			.values({
+				userId: this.databaseId,
+				details: details,
+			});
 	}
 
-	public async levelUp(level: number): Promise<void> {
-		const newLevel: number = level >= CoreValues.getValue("intLevelMax") ? CoreValues.getValue("intLevelMax") : level;
 
-		this.sendStats(true);
-
-		this.writeObject(
-			new JSONObject()
-				.element("cmd", "levelUp")
-				.element("intLevel", newLevel)
-				.element("intExpToLevel", CoreValues.getExpToLevel(newLevel))
-		);
-
-		await database
-			.update(users)
-			.set({
-				level: newLevel,
-				experience: 0,
-			})
-			.where(eq(users.id, this.databaseId));
+	public kick(): void {
+		logger.silly('>>>>>>>>> kick');
+		//TODO: kick
 	}
 
-	public async giveRewards(exp: number, gold: number, cp: number, rep: number, factionId: number, fromId: number, npcType: string): Promise<void> {
-		const user: {
-			level: number,
-			dateClassPointBoostExpire: Date,
-			dateReputationBoostExpire: Date,
-			dateGoldBoostExpire: Date,
-			dateExperienceBoostExpire: Date
-		} | undefined = await database.query.users.findFirst({
-			columns: {
-				level: true,
-				dateClassPointBoostExpire: true,
-				dateGoldBoostExpire: true,
-				dateReputationBoostExpire: true,
-				dateExperienceBoostExpire: true,
-			},
-			where: eq(users.id, this.databaseId)
-		});
+	public async disconnect(): Promise<void> {
+		logger.silly('>>>>>>>>> disconnect');
 
-		if (!user) {
-			throw new UserNotFoundException("The user could not be found in the database.");
-		}
-
-		const dateNow: Date = new Date();
-
-		const cpBoost: boolean = user.dateClassPointBoostExpire >= dateNow;
-		const goldBoost: boolean = user.dateGoldBoostExpire >= dateNow;
-		const repBoost: boolean = user.dateReputationBoostExpire >= dateNow;
-		const xpBoost: boolean = user.dateExperienceBoostExpire >= dateNow;
-
-		const calcExp: number = xpBoost ? exp * (1 + GameController.EXP_RATE) : exp * GameController.EXP_RATE;
-		const calcGold: number = goldBoost ? gold * (1 + GameController.GOLD_RATE) : gold * GameController.GOLD_RATE;
-		const calcRep: number = repBoost ? rep * (1 + GameController.REP_RATE) : rep * GameController.REP_RATE;
-		const calcCp: number = cpBoost ? cp * (1 + GameController.CP_RATE) : cp * GameController.CP_RATE;
-
-		const maxLevel: number = CoreValues.getValue("intLevelMax");
-		const expReward: number = user.level < maxLevel ? calcExp : 0;
-
-		const addGoldExp: JSONObject = new JSONObject()
-			.element("cmd", "addGoldExp")
-			.element("id", fromId)
-			.element("intGold", calcGold)
-			.element("typ", npcType);
-
-		if (user.level < maxLevel) {
-			addGoldExp.element("intExp", expReward);
-
-			if (xpBoost) {
-				addGoldExp.element("bonusExp", expReward >> 1);
-			}
-		}
-
-		const equippedClass: IUserInventory | undefined = this.inventory.equippedClass;
-
-		if (!equippedClass) {
-			this.kick();
-			return;
-		}
-
-		let classPoints: number = equippedClass.quantity;
-
-		let rank: number = Rank.getRankFromPoints(classPoints);
-
-		if (rank < 10 && calcCp > 0) {
-			addGoldExp.element("iCP", calcCp);
-
-			if (cpBoost) {
-				addGoldExp.element("bonusCP", calcCp >> 1);
-			}
-
-			//TODO: Max quantity 302500
-			await database
-				.update(usersInventory)
-				.set({
-					quantity: sql`${usersInventory.quantity} + ${calcCp}`,
-				})
-				.where(eq(usersInventory.id, equippedClass.id));
-
-			if (Rank.getRankFromPoints(equippedClass.quantity + calcCp) > rank) {
-				this.inventory.loadSkills();
-			}
-		}
-
-		if (factionId > 0) {
-			const rewardRep: number = Math.min(calcRep, 302500);
-
-			addGoldExp
-				.element("FactionID", factionId)
-				.element("iRep", calcRep);
-
-			if (repBoost) {
-				addGoldExp.element("bonusRep", calcRep >> 1);
-			}
-
-			const factionResult = await database
-				.insert(usersFactions)
-				.values({
-					userId: this.databaseId,
-					factionId: factionId,
-					reputation: rewardRep,
-				})
-				.onDuplicateKeyUpdate({
-					set: {
-						reputation: sql`${usersFactions.reputation}
-                        + rewardRep`,
-					}
-				});
-
-			this.writeObject(
-				new JSONObject()
-					.element("cmd", "addFaction")
-					.element("faction", new JSONObject()
-						.element("FactionID", factionId)
-						.element("bitSuccess", 1)
-						.element("CharFactionID", factionResult[0].insertId)
-						.element("sName", "Nname") //TODO: Faction name
-						.element("iRep", calcRep)
-					)
-			);
-		}
-
-		this.writeObject(addGoldExp);
-	}
-
-	public updateStats(enhancement: IEnhancement, equipment: string): void {
-		const itemStats: Map<string, number> = CoreValues.getItemStats(enhancement, equipment);
-
-		switch (equipment) {
-			case EQUIPMENT_CLASS:
-				for (const [key, value] of itemStats) {
-					this.stats.armor.set(key, value);
-				}
-				break;
-			case EQUIPMENT_WEAPON:
-				for (const [key, value] of itemStats) {
-					this.stats.weapon.set(key, value);
-				}
-				break;
-			case EQUIPMENT_CAPE:
-				for (const [key, value] of itemStats) {
-					this.stats.cape.set(key, value);
-				}
-				break;
-			case EQUIPMENT_HELM:
-				for (const [key, value] of itemStats) {
-					this.stats.helm.set(key, value);
-				}
-				break;
-			default:
-				throw new Error("equipment " + equipment + " cannot have stat values!");
-		}
-	}
-
-	public sendStats(levelUp: boolean): void {
-		const stu: JSONObject = new JSONObject();
-		const tempStat: JSONObject = new JSONObject();
-
-		const userLevel: number = this.properties.get(PlayerConst.LEVEL);
-
-		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
-		stats.update();
-
-		const END: number = stats.get$END() + stats.get_END();
-		const WIS: number = stats.get$WIS() + stats.get_WIS();
-
-		const intHPperEND: number = CoreValues.getValue("intHPperEND");
-		const intMPperWIS: number = CoreValues.getValue("intMPperWIS");
-
-		const addedHP: number = END * intHPperEND;
-
-		// Calculate new HP and MP
-		let userHp: number = CoreValues.getHealthByLevel(userLevel);
-		userHp += addedHP;
-
-		let userMp: number = CoreValues.getManaByLevel(userLevel) + WIS * intMPperWIS;
-
-		// Max
-		this.status.health.max = userHp;
-		this.status.mana.max = userMp;
-
-		// Current
-		if (this.status.state === AvatarState.NEUTRAL || levelUp) {
-			this.status.health.update = userHp;
-		}
-
-		if (this.status.state === AvatarState.NEUTRAL || levelUp) {
-			this.status.mana.update = userMp;
-		}
-
-		this.sendUotls(true, true, true, true, levelUp, false);
-
-		const stat: JSONObject = new JSONObject(stats);
-
-		const ba: JSONObject = new JSONObject();
-		const he: JSONObject = new JSONObject();
-		const Weapon: JSONObject = new JSONObject();
-
-		const ar: JSONObject = new JSONObject();
-
-		for (const [key, value] of stats.armor.entries()) {
-			if (value > 0) {
-				ar.put(key, Math.floor(value));
-			}
-		}
-
-		for (const [key, value] of stats.helm.entries()) {
-			if (value > 0) {
-				he.put(key, Math.floor(value));
-			}
-		}
-
-		for (const [key, value] of stats.weapon.entries()) {
-			if (value > 0) {
-				Weapon.put(key, Math.floor(value));
-			}
-		}
-
-		for (const [key, value] of stats.cape.entries()) {
-			if (value > 0) {
-				ba.put(key, Math.floor(value));
-			}
-		}
-
-		if (!ba.isEmpty) {
-			tempStat.element("ba", ba);
-		}
-
-		if (!ar.isEmpty) {
-			tempStat.element("ar", ar);
-		}
-
-		if (!Weapon.isEmpty) {
-			tempStat.element("Weapon", Weapon);
-		}
-
-		if (!he.isEmpty) {
-			tempStat.element("he", he);
-		}
-
-		tempStat.element(
-			"innate",
-			new JSONObject()
-				.element("INT", stats.innate.get("INT"))
-				.element("STR", stats.innate.get("STR"))
-				.element("DEX", stats.innate.get("DEX"))
-				.element("END", stats.innate.get("END"))
-				.element("LCK", stats.innate.get("LCK"))
-				.element("WIS", stats.innate.get("WIS"))
-		);
-
-		this.writeObject(
-			stu
-				.element("tempSta", tempStat)
-				.element("cmd", "stu")
-				.element("sta", stat)
-				.element("wDPS", stats.physicalDamage),
-		);
-	}
-
-	public async getFriends(): Promise<JSONArray> {
-		const friends: JSONArray = new JSONArray();
-
-		const userFriends: IUserFriend[] = await database.query.usersFriends.findMany({
-			with: {
-				friend: {
-					with: {
-						currentServer: true
-					}
-				}
-			},
-			where: eq(usersFriends.userId, this.databaseId)
-		});
-
-		for (let userFriend of userFriends) {
-			friends.add(new JSONObject()
-				.element("iLvl", userFriend.friend!.level)
-				.element("ID", userFriend.friend!.id)
-				.element("sName", userFriend.friend!.user!.username)
-				.element("sServer", userFriend.friend!.currentServerId ? 'Offline' : userFriend.friend!.currentServer!.name)
-			);
-		}
-
-		return friends;
-	}
-
-	public async setQuestValue(index: number, value: number): Promise<void> {
-		let update: object;
-
-		if (index > 99) {
-			this.properties.set(PlayerConst.QUESTS_2, Quests.updateValue(this.properties.get(PlayerConst.QUESTS_2), index - 100, value));
-
-			update = {
-				quests2: this.properties.get(PlayerConst.QUESTS_2)
-			};
-		} else {
-			this.properties.set(PlayerConst.QUESTS_1, Quests.updateValue(this.properties.get(PlayerConst.QUESTS_1), index, value));
-
-			update = {
-				quests1: this.properties.get(PlayerConst.QUESTS_1)
-			};
-		}
-
-		await database
-			.update(users)
-			.set(update)
-			.where(eq(users.id, this.databaseId));
-
-		this.writeObject(
-			new JSONObject()
-				.element("cmd", "updateQuest")
-				.element("iIndex", index)
-				.element("iValue", value)
-		);
-	}
-
-	public getQuestValue(index: number): number {
-		return index > 99 ? Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_2) as string, index - 100) : Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_1) as string, index);
-	}
-
-	public async lost(): Promise<void> {
 		const user: IUser | undefined = await database.query.users.findFirst({
 			with: {
 				guild: {
@@ -658,8 +315,10 @@ export default class Player extends Avatar implements IDispatchable {
 		}
 
 		//Party
-		if (this.party) {
-			this.party.onMemberLeave(this);
+		if (this.partyId) {
+			const party: Party = await Party.findOrCreate(this.partyId);
+
+			party.onMemberLeave(this);
 		}
 
 		//Guild
@@ -700,6 +359,7 @@ export default class Player extends Avatar implements IDispatchable {
 			}
 		}
 	}
+
 
 	public async json(self: boolean, withNetworkId: boolean, withEquipment: boolean): Promise<JSONObject> {
 		const user: IUser | undefined = await database.query.users.findFirst({
@@ -923,8 +583,8 @@ export default class Player extends Avatar implements IDispatchable {
 			.element("intMP", this.status.mana.value)
 			.element("intMPMax", this.status.mana.max)
 			.element("intState", this.status.state)
-			.element("showCloak", this.preference.isShowingCloak(settings))
-			.element("showHelm", this.preference.isShowingHelm(settings))
+			.element("showCloak", this.preferences.isShowingCloak(settings))
+			.element("showHelm", this.preferences.isShowingHelm(settings))
 			.element("strFrame", this.frame)
 			.element("strPad", this.pad)
 			.element("strUsername", this.username)
@@ -943,11 +603,380 @@ export default class Player extends Avatar implements IDispatchable {
 				.element("intSPMax", this.status.stamina.max);
 		}
 
-		if (this.room && this.room.data.isPvP) {
+		if (this.room?.data.isPvP) {
 			data.element("pvpTeam", this.data.pvpTeam);
 		}
 
 		return data;
+	}
+
+
+	public async levelUp(level: number): Promise<void> {
+		const newLevel: number = level >= CoreValues.getValue("intLevelMax") ? CoreValues.getValue("intLevelMax") : level;
+
+		this.sendStats(true);
+
+		this.writeObject(
+			new JSONObject()
+				.element("cmd", "levelUp")
+				.element("intLevel", newLevel)
+				.element("intExpToLevel", CoreValues.getExpToLevel(newLevel))
+		);
+
+		await database
+			.update(users)
+			.set({
+				level: newLevel,
+				experience: 0,
+			})
+			.where(eq(users.id, this.databaseId));
+	}
+
+	public async giveRewards(exp: number, gold: number, cp: number, rep: number, factionId: number, fromId: number, npcType: string): Promise<void> {
+		const user: {
+			level: number,
+			dateClassPointBoostExpire: Date,
+			dateReputationBoostExpire: Date,
+			dateGoldBoostExpire: Date,
+			dateExperienceBoostExpire: Date
+		} | undefined = await database.query.users.findFirst({
+			columns: {
+				level: true,
+				dateClassPointBoostExpire: true,
+				dateGoldBoostExpire: true,
+				dateReputationBoostExpire: true,
+				dateExperienceBoostExpire: true,
+			},
+			where: eq(users.id, this.databaseId)
+		});
+
+		if (!user) {
+			throw new UserNotFoundException("The user could not be found in the database.");
+		}
+
+		const dateNow: Date = new Date();
+
+		const cpBoost: boolean = user.dateClassPointBoostExpire >= dateNow;
+		const goldBoost: boolean = user.dateGoldBoostExpire >= dateNow;
+		const repBoost: boolean = user.dateReputationBoostExpire >= dateNow;
+		const xpBoost: boolean = user.dateExperienceBoostExpire >= dateNow;
+
+		const calcExp: number = xpBoost ? exp * (1 + GameController.EXP_RATE) : exp * GameController.EXP_RATE;
+		const calcGold: number = goldBoost ? gold * (1 + GameController.GOLD_RATE) : gold * GameController.GOLD_RATE;
+		const calcRep: number = repBoost ? rep * (1 + GameController.REP_RATE) : rep * GameController.REP_RATE;
+		const calcCp: number = cpBoost ? cp * (1 + GameController.CP_RATE) : cp * GameController.CP_RATE;
+
+		const maxLevel: number = CoreValues.getValue("intLevelMax");
+		const expReward: number = user.level < maxLevel ? calcExp : 0;
+
+		const addGoldExp: JSONObject = new JSONObject()
+			.element("cmd", "addGoldExp")
+			.element("id", fromId)
+			.element("intGold", calcGold)
+			.element("typ", npcType);
+
+		if (user.level < maxLevel) {
+			addGoldExp.element("intExp", expReward);
+
+			if (xpBoost) {
+				addGoldExp.element("bonusExp", expReward >> 1);
+			}
+		}
+
+		const equippedClass: IUserInventory | undefined = this.inventory.equippedClass;
+
+		if (!equippedClass) {
+			this.kick();
+			return;
+		}
+
+		let classPoints: number = equippedClass.quantity;
+
+		let rank: number = Rank.getRankFromPoints(classPoints);
+
+		if (rank < 10 && calcCp > 0) {
+			addGoldExp.element("iCP", calcCp);
+
+			if (cpBoost) {
+				addGoldExp.element("bonusCP", calcCp >> 1);
+			}
+
+			//TODO: Max quantity 302500
+			await database
+				.update(usersInventory)
+				.set({
+					quantity: sql`${usersInventory.quantity} + ${calcCp}`,
+				})
+				.where(eq(usersInventory.id, equippedClass.id));
+
+			if (Rank.getRankFromPoints(equippedClass.quantity + calcCp) > rank) {
+				this.inventory.loadSkills();
+			}
+		}
+
+		if (factionId > 0) {
+			const rewardRep: number = Math.min(calcRep, 302500);
+
+			addGoldExp
+				.element("FactionID", factionId)
+				.element("iRep", calcRep);
+
+			if (repBoost) {
+				addGoldExp.element("bonusRep", calcRep >> 1);
+			}
+
+			const factionResult = await database
+				.insert(usersFactions)
+				.values({
+					userId: this.databaseId,
+					factionId: factionId,
+					reputation: rewardRep,
+				})
+				.onDuplicateKeyUpdate({
+					set: {
+						reputation: sql`${usersFactions.reputation}
+                        + rewardRep`,
+					}
+				});
+
+			this.writeObject(
+				new JSONObject()
+					.element("cmd", "addFaction")
+					.element("faction", new JSONObject()
+						.element("FactionID", factionId)
+						.element("bitSuccess", 1)
+						.element("CharFactionID", factionResult[0].insertId)
+						.element("sName", "Nname") //TODO: Faction name
+						.element("iRep", calcRep)
+					)
+			);
+		}
+
+		this.writeObject(addGoldExp);
+	}
+
+	public updateStats(enhancement: IEnhancement, equipment: string): void {
+		const itemStats: Map<string, number> = CoreValues.getItemStats(enhancement, equipment);
+
+		switch (equipment) {
+			case EQUIPMENT_CLASS:
+				for (const [key, value] of itemStats) {
+					this.stats.armor.set(key, value);
+				}
+				break;
+			case EQUIPMENT_WEAPON:
+				for (const [key, value] of itemStats) {
+					this.stats.weapon.set(key, value);
+				}
+				break;
+			case EQUIPMENT_CAPE:
+				for (const [key, value] of itemStats) {
+					this.stats.cape.set(key, value);
+				}
+				break;
+			case EQUIPMENT_HELM:
+				for (const [key, value] of itemStats) {
+					this.stats.helm.set(key, value);
+				}
+				break;
+			default:
+				throw new Error("equipment " + equipment + " cannot have stat values!");
+		}
+	}
+
+
+	public async sendUotls(withHealth: boolean, withHealthMax: boolean, withMana: boolean, withManaMax: boolean, withLevel: boolean, withState: boolean): Promise<void> {
+		const { level } = await database.query.users.findFirst({
+			columns: {
+				level: true,
+				settings: true
+			},
+			where: eq(users.id, this.databaseId)
+		}) || {};
+
+		if (level == undefined) {
+			throw new UserNotFoundException("The user could not be found in the database.");
+		}
+
+		this.room?.writeObject(
+			new JSONObject()
+				.element("cmd", "uotls")
+				.element("unm", this.avatarName)
+				.element("o", new JSONObject()
+					.elementIf(withHealth, "intHP", this.status.health.value)
+					.elementIf(withHealthMax, "intHPMax", this.status.health.max)
+					.elementIf(withMana, "intMP", this.status.mana.value)
+					.elementIf(withManaMax, "intMPMax", this.status.mana.max)
+					.elementIf(withLevel, "intLevel", level)
+					.elementIf(withState, "intState", this.status.state)
+				)
+		);
+	}
+
+	public sendStats(levelUp: boolean): void {
+		const stu: JSONObject = new JSONObject();
+		const tempStat: JSONObject = new JSONObject();
+
+		const userLevel: number = this.properties.get(PlayerConst.LEVEL);
+
+		const stats: AvatarStats = this.properties.get(PlayerConst.STATS);
+		stats.update();
+
+		const END: number = stats.get$END() + stats.get_END();
+		const WIS: number = stats.get$WIS() + stats.get_WIS();
+
+		const intHPperEND: number = CoreValues.getValue("intHPperEND");
+		const intMPperWIS: number = CoreValues.getValue("intMPperWIS");
+
+		const addedHP: number = END * intHPperEND;
+
+		// Calculate new HP and MP
+		let userHp: number = CoreValues.getHealthByLevel(userLevel);
+		userHp += addedHP;
+
+		let userMp: number = CoreValues.getManaByLevel(userLevel) + WIS * intMPperWIS;
+
+		// Max
+		this.status.health.max = userHp;
+		this.status.mana.max = userMp;
+
+		// Current
+		if (this.status.state === AvatarState.NEUTRAL || levelUp) {
+			this.status.health.update = userHp;
+		}
+
+		if (this.status.state === AvatarState.NEUTRAL || levelUp) {
+			this.status.mana.update = userMp;
+		}
+
+		this.sendUotls(true, true, true, true, levelUp, false);
+
+		const stat: JSONObject = new JSONObject(stats);
+
+		const ba: JSONObject = new JSONObject();
+		const he: JSONObject = new JSONObject();
+		const Weapon: JSONObject = new JSONObject();
+
+		const ar: JSONObject = new JSONObject();
+
+		for (const [key, value] of stats.armor.entries()) {
+			if (value > 0) {
+				ar.put(key, Math.floor(value));
+			}
+		}
+
+		for (const [key, value] of stats.helm.entries()) {
+			if (value > 0) {
+				he.put(key, Math.floor(value));
+			}
+		}
+
+		for (const [key, value] of stats.weapon.entries()) {
+			if (value > 0) {
+				Weapon.put(key, Math.floor(value));
+			}
+		}
+
+		for (const [key, value] of stats.cape.entries()) {
+			if (value > 0) {
+				ba.put(key, Math.floor(value));
+			}
+		}
+
+		if (!ba.isEmpty) {
+			tempStat.element("ba", ba);
+		}
+
+		if (!ar.isEmpty) {
+			tempStat.element("ar", ar);
+		}
+
+		if (!Weapon.isEmpty) {
+			tempStat.element("Weapon", Weapon);
+		}
+
+		if (!he.isEmpty) {
+			tempStat.element("he", he);
+		}
+
+		tempStat.element(
+			"innate",
+			new JSONObject()
+				.element("INT", stats.innate.get("INT"))
+				.element("STR", stats.innate.get("STR"))
+				.element("DEX", stats.innate.get("DEX"))
+				.element("END", stats.innate.get("END"))
+				.element("LCK", stats.innate.get("LCK"))
+				.element("WIS", stats.innate.get("WIS"))
+		);
+
+		this.writeObject(
+			stu
+				.element("tempSta", tempStat)
+				.element("cmd", "stu")
+				.element("sta", stat)
+				.element("wDPS", stats.physicalDamage),
+		);
+	}
+
+	public async getFriends(): Promise<JSONArray> {
+		const friends: JSONArray = new JSONArray();
+
+		const userFriends: IUserFriend[] = await database.query.usersFriends.findMany({
+			with: {
+				friend: {
+					with: {
+						currentServer: true
+					}
+				}
+			},
+			where: eq(usersFriends.userId, this.databaseId)
+		});
+
+		for (let userFriend of userFriends) {
+			friends.add(new JSONObject()
+				.element("iLvl", userFriend.friend!.level)
+				.element("ID", userFriend.friend!.id)
+				.element("sName", userFriend.friend!.user!.username)
+				.element("sServer", userFriend.friend!.currentServerId ? 'Offline' : userFriend.friend!.currentServer!.name)
+			);
+		}
+
+		return friends;
+	}
+
+	public async setQuestValue(index: number, value: number): Promise<void> {
+		let update: object;
+
+		if (index > 99) {
+			this.properties.set(PlayerConst.QUESTS_2, Quests.updateValue(this.properties.get(PlayerConst.QUESTS_2), index - 100, value));
+
+			update = {
+				quests2: this.properties.get(PlayerConst.QUESTS_2)
+			};
+		} else {
+			this.properties.set(PlayerConst.QUESTS_1, Quests.updateValue(this.properties.get(PlayerConst.QUESTS_1), index, value));
+
+			update = {
+				quests1: this.properties.get(PlayerConst.QUESTS_1)
+			};
+		}
+
+		await database
+			.update(users)
+			.set(update)
+			.where(eq(users.id, this.databaseId));
+
+		this.writeObject(
+			new JSONObject()
+				.element("cmd", "updateQuest")
+				.element("iIndex", index)
+				.element("iValue", value)
+		);
+	}
+
+	public getQuestValue(index: number): number {
+		return index > 99 ? Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_2) as string, index - 100) : Quests.lookAtValue(this.properties.get(PlayerConst.QUESTS_1) as string, index);
 	}
 
 

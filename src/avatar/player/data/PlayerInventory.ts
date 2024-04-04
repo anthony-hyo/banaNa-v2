@@ -74,7 +74,11 @@ export default class PlayerInventory {
 		return this.equipped.get(Equipment.HOUSE_ITEM);
 	}
 
-	public async getBankCount(): Promise<number> {
+	public equip(userItem: IUserInventory, b: boolean) {
+
+	}
+
+	public async bankCount(): Promise<number> {
 		const usersItemBankCount: {
 			count: number
 		}[] = await database
@@ -84,7 +88,7 @@ export default class PlayerInventory {
 			.from(usersInventory)
 			.where(
 				and(
-					eq(usersInventory.userId, this.databaseId),
+					eq(usersInventory.userId, this.player.databaseId),
 					eq(usersInventory.isOnBank, true)
 				)
 			);
@@ -92,22 +96,8 @@ export default class PlayerInventory {
 		return usersItemBankCount[0].count;
 	}
 
-	public equip(userItem: IUserInventory, b: boolean) {
-
-	}
-
-	public dropItem(itemId: number): void;
-
-	public dropItem(itemId: number, quantity: number): void;
-
-	public dropItem(itemId: number, quantity?: number): void {
+	public dropItem(itemId: number, quantity: number): void {
 		//TODO: ..
-	}
-
-	public turnInItem(itemId: number, quantity: number): boolean {
-		const items: Map<number, number> = new Map<number, number>();
-		//TODO: ..
-		return this.turnInItems(items);
 	}
 
 	public turnInItems(items: Map<number, number>): boolean {
@@ -141,7 +131,7 @@ export default class PlayerInventory {
 			.element("sClassName", equippedClass.item!.name)
 			.element("uid", this.player.avatarId);
 
-		this.player.room!.writeObjectExcept(this.player, updateClass);
+		this.player.room?.writeObjectExcept(this.player, updateClass);
 
 		updateClass
 			.element("sDesc", equippedClass.item!.class!.description)

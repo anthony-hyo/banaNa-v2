@@ -11,14 +11,13 @@ import RequestRegister from "../../RequestRegister.ts";
 export default class Move implements IRequest {
 
 	public async handler(player: Player, args: RequestArg): Promise<void> {
-		const xAxis: number = args.getNumber(0);
-		const yAxis: number = args.getNumber(1);
+		const x: number = args.getNumber(0);
+		const y: number = args.getNumber(1);
 		const speed: number = args.getNumber(2);
 
-		player.position.xAxis = xAxis;
-		player.position.yAxis = yAxis;
+		player.position.move(x, y);
 
-		player.room!.writeArrayExcept(player, "uotls", [player.avatarName, `tx:${xAxis},ty:${yAxis},sp:${speed},strFrame:${player.position.frame}`]);
+		player.room?.writeArrayExcept(player, "uotls", [player.avatarName, `tx:${x},ty:${y},sp:${speed},strFrame:${player.frame}`]);
 	}
 
 }
