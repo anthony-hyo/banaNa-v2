@@ -39,37 +39,37 @@ import Network from "../../network/Network.ts";
 
 export default class Player extends Avatar implements IDispatchable {
 
-	private readonly _id: number;
-	private readonly _name: string;
+	private readonly _avatarId: number;
+	private readonly _avatarName: string;
 
 	private readonly _databaseId: number;
 	private readonly _username: string;
 
 	private readonly _socket: Socket<INetworkData>;
 
-	public _room: Room | undefined;
+	private _room: Room | undefined;
 
 	private _frame: string = 'Enter';
 
 	private _pad: string = 'Enter';
 
-	public readonly _auras: AvatarAuras = new AvatarAuras(this);
-	public readonly _combat: AvatarCombat = new AvatarCombat(this);
-	public readonly _status: PlayerStatus = new PlayerStatus(this, 2500, 1000, 100);
-	public readonly _stats: AvatarStats = new AvatarStats(this);
+	private readonly _auras: AvatarAuras = new AvatarAuras(this);
+	private readonly _combat: AvatarCombat = new AvatarCombat(this);
+	private readonly _status: PlayerStatus = new PlayerStatus(this, 2500, 1000, 100);
+	private readonly _stats: AvatarStats = new AvatarStats(this);
 
-	public readonly _data: PlayerData = new PlayerData(this);
-	public readonly _inventory: PlayerInventory = new PlayerInventory(this);
-	public readonly _position: PlayerPosition = new PlayerPosition();
-	public readonly _preferences: PlayerPreference = new PlayerPreference(this);
+	private readonly _data: PlayerData = new PlayerData(this);
+	private readonly _inventory: PlayerInventory = new PlayerInventory(this);
+	private readonly _position: PlayerPosition = new PlayerPosition();
+	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
 
-	public partyId: number | undefined = undefined;
+	private partyId: number | undefined = undefined;
 
 	constructor(user: IUser, socket: Socket<INetworkData>) {
 		super();
 
-		this._id = Network.increaseAndGet;
-		this._name = user.username.toLowerCase();
+		this._avatarId = Network.increaseAndGet;
+		this._avatarName = user.username.toLowerCase();
 
 		this._databaseId = user.id;
 		this._username = user.username;
@@ -78,11 +78,11 @@ export default class Player extends Avatar implements IDispatchable {
 	}
 
 	public override get avatarId(): number {
-		return this._id;
+		return this._avatarId;
 	}
 
 	public override get avatarName(): string {
-		return this._name;
+		return this._avatarName;
 	}
 
 	public override get databaseId(): number {
@@ -152,14 +152,6 @@ export default class Player extends Avatar implements IDispatchable {
 	public get preferences(): PlayerPreference {
 		return this._preferences;
 	}
-
-
-
-
-
-
-
-
 
 	public write(data: string): void {
 		logger.debug(`[Player] sending '${data}'`);
@@ -632,7 +624,7 @@ export default class Player extends Avatar implements IDispatchable {
 			.where(eq(users.id, this.databaseId));
 	}
 
-	public async giveRewards(exp: number, gold: number, cp: number, rep: number, factionId: number, fromId: number, npcType: string): Promise<void> {
+	public async giveRewards(experience: number, gold: number, classPoint: number, reputation: number, factionId: number, avatarId: number, npcType: AvatarType): Promise<void> {
 		const user: {
 			level: number,
 			dateClassPointBoostExpire: Date,
@@ -661,17 +653,17 @@ export default class Player extends Avatar implements IDispatchable {
 		const repBoost: boolean = user.dateReputationBoostExpire >= dateNow;
 		const xpBoost: boolean = user.dateExperienceBoostExpire >= dateNow;
 
-		const calcExp: number = xpBoost ? exp * (1 + GameController.EXP_RATE) : exp * GameController.EXP_RATE;
+		const calcExp: number = xpBoost ? experience * (1 + GameController.EXP_RATE) : experience * GameController.EXP_RATE;
 		const calcGold: number = goldBoost ? gold * (1 + GameController.GOLD_RATE) : gold * GameController.GOLD_RATE;
-		const calcRep: number = repBoost ? rep * (1 + GameController.REP_RATE) : rep * GameController.REP_RATE;
-		const calcCp: number = cpBoost ? cp * (1 + GameController.CP_RATE) : cp * GameController.CP_RATE;
+		const calcRep: number = repBoost ? reputation * (1 + GameController.REP_RATE) : reputation * GameController.REP_RATE;
+		const calcCp: number = cpBoost ? classPoint * (1 + GameController.CP_RATE) : classPoint * GameController.CP_RATE;
 
 		const maxLevel: number = CoreValues.getValue("intLevelMax");
 		const expReward: number = user.level < maxLevel ? calcExp : 0;
 
 		const addGoldExp: JSONObject = new JSONObject()
 			.element("cmd", "addGoldExp")
-			.element("id", fromId)
+			.element("id", avatarId)
 			.element("intGold", calcGold)
 			.element("typ", npcType);
 
@@ -690,9 +682,9 @@ export default class Player extends Avatar implements IDispatchable {
 			return;
 		}
 
-		let classPoints: number = equippedClass.quantity;
+		let classPointsCurrent: number = equippedClass.quantity;
 
-		let rank: number = Rank.getRankFromPoints(classPoints);
+		let rank: number = Rank.getRankFromPoints(classPointsCurrent);
 
 		if (rank < 10 && calcCp > 0) {
 			addGoldExp.element("iCP", calcCp);

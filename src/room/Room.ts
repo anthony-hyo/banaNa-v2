@@ -8,6 +8,8 @@ import type IArea from "../database/interfaces/IArea.ts";
 import Monster from "../avatar/monster/Monster.ts";
 import JSONArray from "../util/json/JSONArray.ts";
 import GameController from "../controller/GameController.ts";
+import type IAreaMonster from "../database/interfaces/IAreaMonster.ts";
+import type IMonster from "../database/interfaces/IMonster.ts";
 
 export default class Room implements IDispatchable {
 
@@ -129,23 +131,23 @@ export default class Room implements IDispatchable {
 			.element("typ", "kill")
 			.element("team", teamId);
 
-		if (monster.data.monster!.avatarName.includes("Restorer")) {
+		if (monster.avatarName.includes("Restorer")) {
 			pvpe.element("val", "Restorer");
 			this.addPvPScore(50, teamId);
-		} else if (monster.data.monster!.avatarName.includes("Brawler")) {
+		} else if (monster.avatarName.includes("Brawler")) {
 			pvpe.element("val", "Brawler");
 			this.addPvPScore(25, teamId);
-		} else if (monster.data.monster!.avatarName.includes("Captain")) {
+		} else if (monster.avatarName.includes("Captain")) {
 			pvpe.element("val", "Captain");
 			this.addPvPScore(1000, teamId);
-		} else if (monster.data.monster!.avatarName.includes("General")) {
+		} else if (monster.avatarName.includes("General")) {
 			pvpe.element("val", "General");
 			this.addPvPScore(100, teamId);
-		} else if (monster.data.monster!.avatarName.includes("Knight")) {
+		} else if (monster.avatarName.includes("Knight")) {
 			pvpe.element("val", "Knight");
 			this.addPvPScore(100, teamId);
 		} else {
-			this.addPvPScore(monster.data.monster!.level, teamId);
+			this.addPvPScore(monster.data.areaMonster!.monster!.level, teamId);
 		}
 
 		if (pvpe.has("val")) {
@@ -215,22 +217,25 @@ export default class Room implements IDispatchable {
 		const monsterMap: JSONArray = new JSONArray();
 
 		for (const monster of this.monsters.values()) {
+			const areaMonster: IAreaMonster = monster.data.areaMonster;
+			const monsterData: IMonster = areaMonster.monster!;
+
 			const mon: JSONObject = new JSONObject()
-				.element("MonID", String(monster.data.monsterId))
-				.element("MonMapID", String(monster.data.monsterAreaId))
-				.element("bRed", monster.data.isAggressive)
-				.element("iLvl", monster.data.monster!.level)
+				.element("MonID", monsterData.id)
+				.element("MonMapID", areaMonster.monsterAreaId)
+				.element("bRed", areaMonster.isAggressive)
+				.element("iLvl", monsterData.level)
 				.element("intHP", monster.status.health.value)
 				.element("intHPMax", monster.status.health.max)
 				.element("intMP", monster.status.mana.value)
 				.element("intMPMax", monster.status.mana.max)
 				.element("intState", monster.status.state)
-				.element("wDPS", monster.data.monster!.damagePerSecond);
+				.element("wDPS", monsterData.damagePerSecond);
 
 			if (this.data.isPvP) {
 				const react: JSONArray = new JSONArray();
 
-				if (monster.data.monster!.teamId > 0) {
+				if (monsterData.teamId > 0) {
 					react.add(0);
 					react.add(1);
 				} else {
@@ -245,22 +250,22 @@ export default class Room implements IDispatchable {
 
 			monsterDefinition.add(
 				new JSONObject()
-					.element("MonID", monster.monsterId)
-					.element("intLevel", monster.data.monster!.level)
-					.element("sRace", monster.data.monster!.typeRace!.name)
+					.element("MonID", monsterData.id)
+					.element("intLevel", monsterData.level)
+					.element("sRace", monsterData.typeRace!.name)
 					.element("strBehave", "walk")
-					.element("strLinkage", monster.data.monster!.linkage)
-					.element("strMonFileName", monster.data.monster!.file)
-					.element("strMonName", monster.data.monster!.avatarName)
+					.element("strLinkage", monsterData.linkage)
+					.element("strMonFileName", monsterData.file)
+					.element("strMonName", monsterData.name)
 			);
 
 			monsterMap.add(
 				new JSONObject()
-					.element("MonID", monster.monsterId)
-					.element("MonMapID", monster.data.monsterAreaId)
-					.element("bRed", monster.data.isAggressive)
+					.element("MonID", monsterData.id)
+					.element("MonMapID", areaMonster.monsterAreaId)
+					.element("bRed", areaMonster.isAggressive)
 					.element("intRSS", -1)
-					.element("strFrame", monster.data.frame)
+					.element("strFrame", areaMonster.frame)
 			);
 		}
 

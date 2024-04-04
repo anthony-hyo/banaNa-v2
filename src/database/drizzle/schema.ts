@@ -303,6 +303,11 @@ export const areasMonsters = mysqlTable("areas_monsters", {
 			.default('Enter')
 			.notNull(),
 
+	isAggressive:
+		boolean("is_aggressive")
+			.default(false)
+			.notNull(),
+
 	dateUpdated: dateUpdatedColumn,
 
 	dateCreated: dateCreatedColumn,

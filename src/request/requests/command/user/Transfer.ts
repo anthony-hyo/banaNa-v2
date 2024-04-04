@@ -26,12 +26,51 @@ export default class Transfer implements IRequest {
 				cells: true,
 				items: {
 					with: {
-						item: true
+						item: {
+							with: {
+								typeItem: true,
+								//typeRarity: true,
+								//typeElement: true,
+
+								//class: true,
+
+								//enhancement: true,
+
+								//requiredFaction: true,
+								//requiredClassItem: true,
+								//requirements: true,
+							}
+						}
 					}
 				},
 				monsters: {
 					with: {
-						monster: true,
+						monster: {
+							with: {
+								typeElement: true,
+								typeRace: true,
+								settingLevel: true,
+								drops: {
+									with: {
+										item: {
+											with: {
+												typeItem: true,
+												//typeRarity: true,
+												//typeElement: true,
+
+												//class: true,
+
+												//enhancement: true,
+
+												//requiredFaction: true,
+												//requiredClassItem: true,
+												//requirements: true,
+											}
+										}
+									}
+								},
+							}
+						},
 					}
 				},
 			},

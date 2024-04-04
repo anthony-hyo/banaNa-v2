@@ -25,21 +25,60 @@ export default class RequestDefault implements IRequest {
 				.element("o", CoreValues.getData())
 		);
 
-		const roomName: string = "battleon";
-		const roomFrame: string = "Enter";
-		const roomPad: string = "Spawn";
+		const roomName: string = "classhall";
+		const roomFrame: string = "r4";
+		const roomPad: string = "Right";
 
 		const area: IArea | undefined = await database.query.areas.findFirst({
 			with: {
 				cells: true,
 				items: {
 					with: {
-						item: true
+						item: {
+							with: {
+								typeItem: true,
+								//typeRarity: true,
+								//typeElement: true,
+
+								//class: true,
+
+								//enhancement: true,
+
+								//requiredFaction: true,
+								//requiredClassItem: true,
+								//requirements: true,
+							}
+						}
 					}
 				},
 				monsters: {
 					with: {
-						monster: true,
+						monster: {
+							with: {
+								typeElement: true,
+								typeRace: true,
+								settingLevel: true,
+								drops: {
+									with: {
+										item: {
+											with: {
+												typeItem: true,
+												//typeRarity: true,
+												//typeElement: true,
+
+												//class: true,
+
+												//enhancement: true,
+
+												//requiredFaction: true,
+												//requiredClassItem: true,
+												//requirements: true,
+											}
+										}
+									}
+								},
+							}
+						},
 					}
 				},
 			},

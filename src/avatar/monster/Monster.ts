@@ -1,191 +1,139 @@
-import GameController from "../../controller/GameController";
 import type IAreaMonster from "../../database/interfaces/IAreaMonster";
-import type IMonster from "../../database/interfaces/IMonster";
-import type IMonsterDrop from "../../database/interfaces/IMonsterDrop";
-import type ISkillAura from "../../database/interfaces/ISkillAura";
 import type IDispatchable from "../../interfaces/entity/IDispatchable";
 import type Room from "../../room/Room";
-import Scheduler from "../../scheduler/Scheduler";
-import MonsterRespawn from "../../scheduler/tasks/MonsterRespawn";
-import RemoveAura from "../../scheduler/tasks/RemoveAura";
-import Random from "../../util/Random";
 import JSONObject from "../../util/json/JSONObject";
 import Avatar from "../Avatar";
-import AvatarStatus from "../data/AvatarStatus.ts";
 import MonsterData from "./data/MonsterData.ts";
-import {AvatarState} from "../helper/AvatarState.ts";
 import AvatarCombat from "../data/AvatarCombat.ts";
+import AvatarAuras from "../data/AvatarAuras.ts";
+import AvatarStats from "../data/AvatarStats.ts";
+import MonsterStatus from "./data/MonsterStatus.ts";
+import AvatarType from "../helper/AvatarType.ts";
+import Network from "../../network/Network.ts";
+import schedule from "node-schedule";
+import type Player from "../player/Player.ts";
 
 export default class Monster extends Avatar implements IDispatchable {
 
-	public attacking: schedule.Job | undefined;
+	private readonly _avatarId: number;
+	private readonly _avatarName: string;
 
-	public mana: number;
-	public frame: string;
-	public targets: Set<number>;
-	public auras: Set<RemoveAura>;
-	public rand: Random;
-	public room: Room;
+	private readonly _databaseId: number;
+	private readonly _name: string;
 
-	public readonly data: MonsterData;
-	public readonly status: AvatarStatus = new AvatarStatus(2500, 1000, 100, AvatarState.NEUTRAL);
-	public readonly skills: AvatarCombat = new AvatarCombat(this);
+	private _room: Room | undefined;
+
+	private _frame: string = 'Enter';
+
+	private _pad: string = 'Enter';
+
+	private readonly _auras: AvatarAuras = new AvatarAuras(this);
+	private readonly _combat: AvatarCombat = new AvatarCombat(this);
+	private readonly _status: MonsterStatus = new MonsterStatus(this, 2500, 1000);
+	private readonly _stats: AvatarStats = new AvatarStats(this);
+
+	private readonly _data: MonsterData;
+
+	private attacking: schedule.Job | undefined;
 
 	constructor(areaMonster: IAreaMonster, room: Room) {
 		super();
 
-		this.data = new MonsterData(this, areaMonster);
+		this._avatarId = Network.increaseAndGet;
+		this._avatarName = areaMonster.monster!.name.toLowerCase();
 
-		this.frame = areaMonster.frame;
-		this.room = room;
-		this.rand = new Random(areaMonster.monMapId * areaMonster.monsterId);
-		this.targets = new Set<number>();
-		this.auras = new Set<RemoveAura>();
+		this._databaseId = areaMonster.monsterId;
+		this._name = areaMonster.monster!.name;
+
+
+		this._data = new MonsterData(this, areaMonster);
+
+		this._frame = areaMonster.frame;
+		this._room = room;
 	}
 
-	public cancel(): void {
-		if (this.targets.size === 0 && this.state > 0) {
-			this.restore();
-			this.attacking?.cancel();
-		}
+	public override get avatarId(): number {
+		return this._avatarId;
 	}
 
-	public restore(): void {
-		this.status.state = AvatarState.NEUTRAL;
-
-		this.status.health.resetToFull();
-		this.status.mana.resetToFull();
-
-		this.targets.clear();
-
-		const monInfo: JSONObject = new JSONObject()
-			.element("intHP", this.status.health.value)
-			.element("intMP", this.status.mana.value)
-			.element("intState", this.status.state);
-
-		const mtls: JSONObject = new JSONObject();
-		mtls.element("cmd", "mtls");
-		mtls.element("id", this.data);
-		mtls.element("o", monInfo);
-
-		this.writeObject(mtls);
+	public override get avatarName(): string {
+		return this._avatarName;
 	}
 
-	public async die(): Promise<void> {
-		if (this.state === 0) {
-			return;
-		}
-		this.attacking?.cancel();
-
-		for (const ra of this.auras) {
-			ra.run();
-			ra.cancel();
-		}
-
-		this.auras.clear();
-
-		this.health = 0;
-		this.mana = 0;
-		this.state = 0;
-
-		Scheduler.oneTime(new MonsterRespawn(this), 4);
-
-		const mon: IMonster = this.world.monsters.get(this.monsterId)!;
-
-		const drops: Set<IMonsterDrop> = new Set<IMonsterDrop>();
-
-		for (const md of mon.monstersDrops) {
-			if (Math.random() <= md.chance * GameController.DROP_RATE) {
-				drops.add(md);
-			}
-		}
-
-		for (const userId of this.targets) {
-			const user: Player | null = ExtensionHelper.instance().getUserById(userId);
-			if (user) {
-				for (const md of drops) {
-					user.dropItem(md.itemId, md.quantity);
-				}
-
-				await user.giveRewards(mon.experience, mon.gold, mon.reputation, 0, -1, this.mapId, "m");
-			}
-		}
+	public override get databaseId(): number {
+		return this._databaseId;
 	}
 
-	public hasAura(auraId: number): boolean {
-		for (const ra of this.auras) {
-			const aura: ISkillAura = ra.getAura();
-			if (aura.id === auraId) {
-				return true;
-			}
-		}
-		return false;
+	public get name(): string {
+		return this._name;
 	}
 
-	public removeAura(ra: RemoveAura): void {
-		this.auras.delete(ra);
+	public override get type(): AvatarType {
+		return AvatarType.MONSTER;
 	}
 
-	public applyAura(aura: ISkillAura): RemoveAura {
-		const ra: RemoveAura = new RemoveAura(aura, undefined, this);
-
-		ra.setRunning(Scheduler.oneTime(ra, aura.duration));
-
-		this.auras.add(ra);
-
-		return ra;
+	public override get room(): Room | undefined {
+		return this._room;
 	}
 
-	public getRandomTarget(): number {
-		const setArray: number[] = Array.from(this.targets);
-		return setArray[this.rand.nextInt(setArray.length)];
+	public override set room(room: Room) {
+		this._room = room;
 	}
 
-	public getTargets(): ReadonlySet<number> {
-		return this.targets;
+	public override get frame(): string {
+		return this._frame;
 	}
 
-	public addTarget(userId: number): void {
-		if (!this.targets.has(userId)) {
-			this.targets.add(userId);
-		}
+	public override set frame(frame: string) {
+		this._frame = frame;
 	}
 
-	public removeTarget(userId: number): void {
-		this.targets.delete(userId);
+	public get pad(): string {
+		return this._pad;
 	}
 
-	public getRoom(): Room {
-		return this.room;
+	public set pad(pad: string) {
+		this._pad = pad;
 	}
 
-	public setAttacking(attacking: schedule.Job): void {
-		if (!this.attacking || this.attacking.cancelled) {
-			this.state = 2;
-			this.attacking = attacking;
-		} else {
-			attacking.cancel();
-		}
+	public override get auras(): AvatarAuras {
+		return this._auras;
+	}
+
+	public override get combat(): AvatarCombat {
+		return this._combat;
+	}
+
+	public override get stats(): AvatarStats {
+		return this._stats;
+	}
+
+	public override get status(): MonsterStatus {
+		return this._status;
+	}
+
+	public get data(): MonsterData {
+		return this._data;
 	}
 
 	public writeObject(data: JSONObject): void {
-		this.room.writeObject(data);
+		this.room?.writeObject(data);
 	}
 
 	public writeArray(command: string, data: Array<string | number>): void {
-		this.room.writeArray(command, data);
+		this.room?.writeArray(command, data);
 	}
 
 	public writeExcept(ignored: Player, data: string): void {
-		this.room.writeExcept(ignored, data);
+		this.room?.writeExcept(ignored, data);
 	}
 
 	public writeObjectExcept(ignored: Player, data: JSONObject): void {
-		this.room.writeObjectExcept(ignored, data);
+		this.room?.writeObjectExcept(ignored, data);
 	}
 
 	public writeArrayExcept(ignored: Player, command: string, data: Array<string | number>): void {
-		this.room.writeArrayExcept(ignored, command, data);
+		this.room?.writeArrayExcept(ignored, command, data);
 	}
 
 }
