@@ -139,18 +139,18 @@ export default class AvatarStats {
 
 		for (let ae of effects) {
 			if (ae.stat === "tha") {
-				sta.put("$tha", this.haste);
+				sta.element("$tha", this.haste);
 			} else if (ae.stat === "tdo") {
-				sta.put("$tdo", this.evasion);
+				sta.element("$tdo", this.evasion);
 			} else if (ae.stat === "thi") {
-				sta.put("$thi", this.hit);
+				sta.element("$thi", this.hit);
 			} else if (ae.stat === "tcr") {
-				sta.put("$tcr", this.criticalHit);
+				sta.element("$tcr", this.criticalHit);
 			}
 		}
 
-		stu.put("cmd", "stu");
-		stu.put("sta", sta);
+		stu.element("cmd", "stu");
+		stu.element("sta", sta);
 
 		this.player.writeObject(stu);
 	}

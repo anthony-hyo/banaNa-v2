@@ -149,7 +149,7 @@ export default class CoreValues {
 		const map: JSONObject = new JSONObject();
 
 		for (let [key, value] of CoreValues.CORE_VALUES.entries()) {
-			map.put(key, value);
+			map.element(key, value);
 		}
 
 		return map;

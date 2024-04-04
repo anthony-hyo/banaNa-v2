@@ -1,13 +1,18 @@
-import type JSONObject from "./JSONObject.ts";
+import type {JSONValue} from "./JSONValue.ts";
 
 export default class JSONArray implements Iterable<any> {
 
 	constructor(
-		private readonly elements: Array<string | number | boolean | JSONObject | JSONArray> = []
+		private readonly elements: Array<JSONValue> = []
 	) {
 	}
 
-	public add(element: string | number | boolean | JSONObject | JSONArray): this {
+	public element(key: number, value: JSONValue): this {
+		this.elements[key] = value;
+		return this;
+	}
+
+	public add(element: JSONValue): this {
 		this.elements.push(element);
 		return this;
 	}
@@ -16,16 +21,11 @@ export default class JSONArray implements Iterable<any> {
 		return this.elements[index];
 	}
 
-	public element(key: number, value: string | number | boolean | JSONObject | JSONArray): this {
-		this.elements[key] = value;
-		return this;
-	}
-
 	public get size(): number {
 		return this.elements.length;
 	}
 
-	public toJSON(): Array<string | number | boolean | JSONObject | JSONArray> {
+	public toJSON(): Array<JSONValue> {
 		return this.elements;
 	}
 

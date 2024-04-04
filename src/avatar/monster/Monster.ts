@@ -64,9 +64,9 @@ export default class Monster extends Avatar implements IDispatchable {
 			.element("intState", this.status.state);
 
 		const mtls: JSONObject = new JSONObject();
-		mtls.put("cmd", "mtls");
-		mtls.put("id", this.data);
-		mtls.put("o", monInfo);
+		mtls.element("cmd", "mtls");
+		mtls.element("id", this.data);
+		mtls.element("o", monInfo);
 
 		this.writeObject(mtls);
 	}

@@ -861,25 +861,25 @@ export default class Player extends Avatar implements IDispatchable {
 
 		for (const [key, value] of stats.armor.entries()) {
 			if (value > 0) {
-				ar.put(key, Math.floor(value));
+				ar.element(key, Math.floor(value));
 			}
 		}
 
 		for (const [key, value] of stats.helm.entries()) {
 			if (value > 0) {
-				he.put(key, Math.floor(value));
+				he.element(key, Math.floor(value));
 			}
 		}
 
 		for (const [key, value] of stats.weapon.entries()) {
 			if (value > 0) {
-				Weapon.put(key, Math.floor(value));
+				Weapon.element(key, Math.floor(value));
 			}
 		}
 
 		for (const [key, value] of stats.cape.entries()) {
 			if (value > 0) {
-				ba.put(key, Math.floor(value));
+				ba.element(key, Math.floor(value));
 			}
 		}
 
