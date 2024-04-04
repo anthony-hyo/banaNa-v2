@@ -357,7 +357,7 @@ export const classesRelations = relations(classes, ({ one, many }) => ({
 		references: [items.classId],
 	}),
 
-	skills: many(classes)
+	skills: many(classesSkills)
 }));
 
 export const classesSkills = mysqlTable("classes_skills", {
@@ -1742,7 +1742,7 @@ export const skills = mysqlTable("skills", {
 
 export const skillsRelations = relations(skills, ({ many }) => ({
 	classesSkills: many(classesSkills),
-	effects: many(skillsAuras),
+	auras: many(skillsAuras),
 }));
 
 export const skillsAuras = mysqlTable("skills_auras", {
@@ -1831,9 +1831,9 @@ export const skillsAurasEffects = mysqlTable("skills_auras_effects", {
 });
 
 export const skillsAurasEffectsRelations = relations(skillsAurasEffects, ({ one }) => ({
-	skillAura: one(skills, {
+	skillAura: one(skillsAuras, {
 		fields: [skillsAurasEffects.skillAuraId],
-		references: [skills.id],
+		references: [skillsAuras.id],
 	}),
 	typeStat: one(typesStats, {
 		fields: [skillsAurasEffects.typeStatId],

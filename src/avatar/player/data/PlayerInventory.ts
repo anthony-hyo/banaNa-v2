@@ -10,6 +10,7 @@ import {and, eq, sql} from "drizzle-orm";
 import {usersInventory} from "../../../database/drizzle/schema.ts";
 import type IItem from "../../../database/interfaces/IItem.ts";
 import CoreValues from "../../../aqw/CoreValues.ts";
+import ISkill from "../../../database/interfaces/ISkill.ts";
 
 export default class PlayerInventory {
 
@@ -31,9 +32,15 @@ export default class PlayerInventory {
 	private static readonly emptyAuras: JSONArray = new JSONArray()
 		.add(new JSONObject());
 
-	public readonly equipped: Map<Equipment, IUserInventory> = new Map<Equipment, IUserInventory>();
+	private readonly equipped: Map<Equipment, IUserInventory> = new Map<Equipment, IUserInventory>();
 
-	public readonly temporary: Map<number, number> = new Map<number, number>();
+	private readonly temporary: Map<number, number> = new Map<number, number>();
+
+	private readonly itemStats: Map<string, Map<string, number>> = new Map<string, Map<string, number>>();
+
+	public static hasStats(equipment: string): boolean {
+		return equipment === Equipment.WEAPON || equipment === Equipment.CLASS || equipment === Equipment.CAPE || equipment === Equipment.HELM;
+	}
 
 	constructor(
 		private readonly player: Player
@@ -76,8 +83,45 @@ export default class PlayerInventory {
 		return this.equipped.get(Equipment.HOUSE_ITEM);
 	}
 
-	public equip(userItem: IUserInventory, b: boolean) {
+	public equip(userInventory: IUserInventory, updateStats: boolean) {
+		const item: IItem = userInventory.item!;
 
+		this.equipped.set(<Equipment>item.typeItem!.equipment, userInventory);
+
+		const ei: JSONObject = new JSONObject()
+			.element("ItemID", item.id)
+			.element("cmd", "equipItem")
+			.element("sFile", item.file)
+			.element("sLink", item.linkage)
+			.element("strES", item.typeItem!.equipment)
+			.element("uid", this.player.avatarId);
+
+
+		switch (item.typeItem!.equipment) {
+			case Equipment.WEAPON:
+				ei
+					.element("sType", item.typeItem!.name);
+				break;
+			case Equipment.CLASS:
+				this.updateClass(userInventory);
+				break;
+		}
+
+		this.player.room?.writeObject(ei);
+
+		database
+			.update(usersInventory)
+			.set({
+				isEquipped: true
+			})
+			.where(eq(usersInventory.id, userInventory.id));
+
+		if (PlayerInventory.hasStats(item.typeItem!.equipment)) {
+			this.itemStats.set(item.typeItem!.equipment, CoreValues.getItemStats(userInventory.enhancement!, item.typeItem!.equipment));
+			if (updateStats) {
+				this.player.stats.update(false);
+			}
+		}
 	}
 
 	public async bankCount(): Promise<number> {
@@ -118,14 +162,7 @@ export default class PlayerInventory {
 		this.temporary.set(itemId, quantity);
 	}
 
-	public updateClass(): void {
-		const equippedClass: IUserInventory | undefined = this.equippedClass;
-
-		if (!equippedClass) {
-			this.player.kick();
-			return;
-		}
-
+	public updateClass(equippedClass: IUserInventory): void {
 		const updateClass: JSONObject = new JSONObject()
 			.element("cmd", "updateClass")
 			.element("iCP", equippedClass.quantity)
@@ -171,7 +208,9 @@ export default class PlayerInventory {
 
 		const auras: JSONArray = new JSONArray();
 
-		for (const skill of equippedClass.item!.class!.skills) {
+		for (const classSkill of equippedClass.item!.class!.skills!) {
+			const skill: ISkill = classSkill.skill!;
+
 			const jsonObject: JSONObject = new JSONObject()
 				.element("auras", PlayerInventory.emptyAuras)
 				.element("desc", skill.description)
@@ -197,11 +236,11 @@ export default class PlayerInventory {
 						const aurasEffects: JSONArray = new JSONArray();
 
 						for (const aura of skill.auras!) {
-							for (const effect of aura.effects) {
+							for (const effect of aura.effects!) {
 								aurasEffects.add(
 									new JSONObject()
 										.element("id", effect.id)
-										.element("sta", effect.typeStat.stat)
+										.element("sta", effect.typeStat!.stat)
 										.element("typ", effect.type)
 										.element("val", effect.value)
 								);

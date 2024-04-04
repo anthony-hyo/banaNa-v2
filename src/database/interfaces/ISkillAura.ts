@@ -16,7 +16,7 @@ export default interface ISkillAura {
 	dateUpdated: Date;
 	dateCreated: Date;
 
-	skill: ISkill;
+	skill?: ISkill;
 
-	effects: Array<ISkillAuraEffect>;
+	effects?: Array<ISkillAuraEffect>;
 }

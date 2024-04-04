@@ -37,7 +37,7 @@ export default class Database {
 			user: 'root',
 			password: 'a321',
 			database: 'banana',
-			connectionLimit: 25
+			connectionLimit: 25,
 		});
 
 		this._drizzle = drizzle(this._pool, {

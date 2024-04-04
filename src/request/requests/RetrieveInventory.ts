@@ -39,11 +39,47 @@ export default class RetrieveInventory implements IRequest {
 						item: {
 							with: {
 								typeItem: true,
+								typeRarity: true,
 								typeElement: true,
-								enhancement: true,
+
+								class: {
+									with: {
+										skills: {
+											with: {
+												skill: {
+													with: {
+														auras: {
+															with: {
+																effects: {
+																	with: {
+																		typeStat: true
+																	}
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								},
+
+								enhancement: {
+									with: {
+										pattern: true
+									}
+								},
+
+								requiredFaction: true,
+								requiredClassItem: true,
+								//requirements: true,
 							}
 						},
-						enhancement: true,
+						enhancement: {
+							with: {
+								pattern: true
+							}
+						},
 					}
 				}
 			},
