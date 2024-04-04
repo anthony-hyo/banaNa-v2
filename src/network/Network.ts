@@ -175,7 +175,7 @@ export default class Network {
 					.handler(player, RequestArg.parse(args))
 					.catch((error: Error | UserNotFoundException) => {
 						if (error instanceof UserNotFoundException) {
-							player!.kick();
+							player.kick(error.message);
 							return;
 						}
 

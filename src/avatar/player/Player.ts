@@ -277,8 +277,8 @@ export default class Player extends Avatar implements IDispatchable {
 	}
 
 
-	public kick(): void {
-		logger.silly('>>>>>>>>> kick');
+	public kick(reason: string): void {
+		logger.silly('>>>>>>>>> kick', reason);
 		//TODO: kick
 	}
 
@@ -678,7 +678,7 @@ export default class Player extends Avatar implements IDispatchable {
 		const equippedClass: IUserInventory | undefined = this.inventory.equippedClass;
 
 		if (!equippedClass) {
-			this.kick();
+			this.kick('[giveRewards] equipped class is undefined');
 			return;
 		}
 

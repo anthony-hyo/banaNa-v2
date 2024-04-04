@@ -30,7 +30,7 @@ export default class GenderSwap implements IRequest {
 		}) || {});
 
 		if (!coins || !hair) {
-			player.kick();
+			player.kick('[GenderSwap] coins and hair are undefined');
 			return;
 		}
 
@@ -58,7 +58,7 @@ export default class GenderSwap implements IRequest {
 		});
 
 		if (!newHair) {
-			player.kick();
+			player.kick('[GenderSwap] hair is undefined');
 			return;
 		}
 

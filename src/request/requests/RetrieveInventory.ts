@@ -15,6 +15,7 @@ import type IUserFaction from "../../database/interfaces/IUserFaction.ts";
 import {differenceInSeconds} from "date-fns";
 import RequestType from "../RequestType.ts";
 import RequestRegister from "../RequestRegister.ts";
+import UserNotFoundException from "../../exceptions/UserNotFoundException.ts";
 
 @RequestRegister({
 	name: "retrieveInventory",
@@ -50,8 +51,7 @@ export default class RetrieveInventory implements IRequest {
 		});
 
 		if (!user) {
-			player.kick();
-			return;
+			throw new UserNotFoundException("The user could not be found in the database.");
 		}
 
 		for (const inventoryItem of user.inventory!) {

@@ -16,7 +16,7 @@ export default class RetrieveUserData implements IRequest {
 		const target: Player | undefined = PlayerController.find(args.getNumber(0));
 
 		if (!target) {
-			player.kick();
+			player.kick('[RetrieveUserData] target is undefined');
 			return;
 		}
 

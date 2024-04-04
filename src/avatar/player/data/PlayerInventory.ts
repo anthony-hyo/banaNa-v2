@@ -8,6 +8,8 @@ import SkillReference from "../../../util/SkillReference.ts";
 import database from "../../../database/drizzle/database.ts";
 import {and, eq, sql} from "drizzle-orm";
 import {usersInventory} from "../../../database/drizzle/schema.ts";
+import type IItem from "../../../database/interfaces/IItem.ts";
+import CoreValues from "../../../aqw/CoreValues.ts";
 
 export default class PlayerInventory {
 
@@ -158,7 +160,7 @@ export default class PlayerInventory {
 		const equippedClass: IUserInventory | undefined = this.equippedClass;
 
 		if (!equippedClass) {
-			this.player.kick();
+			this.player.kick('[loadSkills] equipped class is undefined');
 			return;
 		}
 

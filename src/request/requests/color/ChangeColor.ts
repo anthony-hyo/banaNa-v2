@@ -29,7 +29,7 @@ export default class ChangeColor implements IRequest {
 		});
 
 		if (!hair) {
-			player.kick();
+			player.kick('[ChangeColor] hair is undefined');
 			return;
 		}
 
