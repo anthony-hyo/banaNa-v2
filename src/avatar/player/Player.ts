@@ -139,7 +139,7 @@ export default class Player extends Avatar implements IDispatchable {
 
 
 	public write(data: string): void {
-		logger.debug(`[PlayerNetwork] sending ${data}`);
+		logger.debug(`[Player] sending '${data}'`);
 		this._socket.write(data + DELIMITER);
 	}
 

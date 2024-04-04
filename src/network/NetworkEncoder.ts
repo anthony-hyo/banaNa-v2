@@ -22,9 +22,8 @@ export default class NetworkEncoder {
 
 
 	public static write(socket: Socket<INetworkData>, data: string): void {
-		logger.debug(`[NetworkEncoder] write '${data}'`);
+		logger.debug(`[NetworkEncoder] sending '${data}'`);
 		socket.write(data + DELIMITER);
-		socket.flush();
 	}
 
 }
