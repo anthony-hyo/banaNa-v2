@@ -1,16 +1,16 @@
-import type IRequest from "../../interfaces/request/IRequest.ts";
-import type RequestArg from "../RequestArg.ts";
-import type Player from "../../avatar/player/Player.ts";
-import JSONObject from "../../util/json/JSONObject.ts";
-import CoreValues from "../../aqw/CoreValues.ts";
-import RoomController from "../../controller/RoomController.ts";
-import type Room from "../../room/Room.ts";
-import RequestType from "../RequestType.ts";
-import type IArea from "../../database/interfaces/IArea.ts";
-import database from "../../database/drizzle/database.ts";
+import type IRequest from "../../../interfaces/request/IRequest.ts";
+import type RequestArg from "../../RequestArg.ts";
+import type Player from "../../../avatar/player/Player.ts";
+import JSONObject from "../../../util/json/JSONObject.ts";
+import CoreValues from "../../../aqw/CoreValues.ts";
+import RoomController from "../../../controller/RoomController.ts";
+import type Room from "../../../room/Room.ts";
+import RequestType from "../../RequestType.ts";
+import type IArea from "../../../database/interfaces/IArea.ts";
+import database from "../../../database/drizzle/database.ts";
 import {eq} from "drizzle-orm";
-import {areas} from "../../database/drizzle/schema.ts";
-import RequestRegister from "../RequestRegister.ts";
+import {areas} from "../../../database/drizzle/schema.ts";
+import RequestRegister from "../../RequestRegister.ts";
 
 @RequestRegister({
 	name: "firstJoin",

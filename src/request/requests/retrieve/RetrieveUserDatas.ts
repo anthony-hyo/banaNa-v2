@@ -1,11 +1,11 @@
-import type IRequest from "../../interfaces/request/IRequest.ts";
-import type RequestArg from "../RequestArg.ts";
-import type Player from "../../avatar/player/Player.ts";
-import JSONObject from "../../util/json/JSONObject.ts";
-import JSONArray from "../../util/json/JSONArray.ts";
-import PlayerController from "../../controller/PlayerController.ts";
-import RequestType from "../RequestType.ts";
-import RequestRegister from "../RequestRegister.ts";
+import type IRequest from "../../../interfaces/request/IRequest.ts";
+import type RequestArg from "../../RequestArg.ts";
+import type Player from "../../../avatar/player/Player.ts";
+import JSONObject from "../../../util/json/JSONObject.ts";
+import JSONArray from "../../../util/json/JSONArray.ts";
+import PlayerController from "../../../controller/PlayerController.ts";
+import RequestType from "../../RequestType.ts";
+import RequestRegister from "../../RequestRegister.ts";
 
 @RequestRegister({
 	name: "retrieveUserDatas",
