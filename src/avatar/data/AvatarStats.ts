@@ -31,8 +31,7 @@ export default abstract class AvatarStats {
 	public cape: Map<string, number> = new Map<string, number>();
 
 	public effects: Set<ISkillAuraEffect> = new Set<ISkillAuraEffect>();
-	public physicalDamage: number = 0;
-	public magicDamage: number = 0;
+
 	private $cai: number = 1.0;
 	private $cao: number = 1.0;
 	private $cdi: number = 1.0;
@@ -85,17 +84,19 @@ export default abstract class AvatarStats {
 	private _tbl: number = 0.0;
 	private _tcr: number = 0.0; //total crit
 	private _tdo: number = 0.0; //total dodge
-	//private mDPS: number = 0;
 	private _tha: number = 0.0; //total haste
 	private _thi: number = 0.0; //total hit
 	private _tpa: number = 0.0;
 	private _tre: number = 0.0;
 
-	protected minimumPhysicalDamage: number = 0;
-	protected maximumPhysicalDamage: number = 0;
+	protected physicalDamage: number = 0;
+	protected magicDamage: number = 0;
 
-	protected minimumMagicDamage: number = 0;
-	protected maximumMagicDamage: number = 0;
+	protected _minimumPhysicalDamage: number = 0;
+	protected _maximumPhysicalDamage: number = 0;
+
+	protected _minimumMagicDamage: number = 0;
+	protected _maximumMagicDamage: number = 0;
 
 	protected constructor(
 		private readonly avatar: Avatar
@@ -634,12 +635,20 @@ export default abstract class AvatarStats {
 		return this._tre;
 	}
 
-	public get getMinDmg(): number {
-		return this.minimumPhysicalDamage;
+	public get minimumPhysicalDamage(): number {
+		return this._minimumPhysicalDamage;
 	}
 
-	public get getMaxDmg(): number {
-		return this.maximumPhysicalDamage;
+	public get maximumPhysicalDamage(): number {
+		return this._maximumPhysicalDamage;
+	}
+
+	public get minimumMagicDamage(): number {
+		return this._minimumMagicDamage;
+	}
+
+	public get maximumMagicDamage(): number {
+		return this._maximumMagicDamage;
 	}
 
 }

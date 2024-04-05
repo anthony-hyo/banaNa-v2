@@ -125,6 +125,11 @@ export default class PlayerInventory {
 		return false;
 	}
 
+	public hasItems(items: Map<number, number>): boolean {
+		//TODO: ..
+		return false;
+	}
+
 	public addTemporaryItem(itemId: number, quantity: number): void {
 		const temporaryQuantity: number | undefined = this.temporary.get(itemId);
 

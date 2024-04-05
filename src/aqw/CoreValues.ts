@@ -88,7 +88,7 @@ export default class CoreValues {
 	public static getValue(property: string): number {
 		const value: number | undefined = CoreValues.CORE_VALUES.get(property);
 
-		if (!value) {
+		if (value === undefined) {
 			throw new Error(`Core property '${property}' is undefined.`);
 		}
 

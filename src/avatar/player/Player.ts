@@ -33,6 +33,7 @@ import type INetworkData from "../../interfaces/network/INetworkData.ts";
 import Network from "../../network/Network.ts";
 import PlayerStats from "./data/PlayerStats.ts";
 import PlayerCombat from "./data/PlayerCombat.ts";
+import PlayerFilter from "./data/PlayerFilter.ts";
 
 export default class Player extends Avatar {
 
@@ -56,11 +57,10 @@ export default class Player extends Avatar {
 	private readonly _stats: PlayerStats = new PlayerStats(this);
 
 	private readonly _data: PlayerData = new PlayerData(this);
+	private readonly _filter: PlayerFilter = new PlayerFilter(this);
 	private readonly _inventory: PlayerInventory = new PlayerInventory(this);
 	private readonly _position: PlayerPosition = new PlayerPosition();
 	private readonly _preferences: PlayerPreference = new PlayerPreference(this);
-
-	private partyId: number | undefined = undefined;
 
 	constructor(user: IUser, socket: Socket<INetworkData>) {
 		super();
@@ -136,6 +136,10 @@ export default class Player extends Avatar {
 
 	public get data(): PlayerData {
 		return this._data;
+	}
+
+	public get filter(): PlayerFilter {
+		return this._filter;
 	}
 
 	public get inventory(): PlayerInventory {
@@ -259,7 +263,7 @@ export default class Player extends Avatar {
 	}
 
 
-	public log(violation: string, details: string): void {
+	public log(details: string): void {
 		database
 			.insert(usersLogs)
 			.values({
@@ -299,8 +303,8 @@ export default class Player extends Avatar {
 		}
 
 		//Party
-		if (this.partyId) {
-			const party: Party = await Party.findOrCreate(this.partyId);
+		if (this.data.partyId) {
+			const party: Party = await Party.findOrCreate(this.data.partyId);
 
 			party.onMemberLeave(this);
 		}

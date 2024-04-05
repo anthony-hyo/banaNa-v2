@@ -251,7 +251,7 @@ export default class PlayerStats extends AvatarStats {
 			throw new Error("Equipped weapon is undefined");
 		}
 
-		const aaDamage: number = autoAttack.damage;
+		const aaDamage: number = Number(autoAttack.damage);
 
 		const wSPD: number = 2;
 
@@ -265,11 +265,11 @@ export default class PlayerStats extends AvatarStats {
 		const tADMG: number = wDMG * aaDamage;
 		const tMDMG: number = mDMG * aaDamage;
 
-		this.minimumPhysicalDamage = Math.floor(tADMG - tADMG * iRNG);
-		this.maximumPhysicalDamage = Math.ceil(tADMG + tADMG * iRNG);
+		this._minimumPhysicalDamage = Math.floor(tADMG - tADMG * iRNG);
+		this._maximumPhysicalDamage = Math.ceil(tADMG + tADMG * iRNG);
 
-		this.minimumMagicDamage = Math.floor(tMDMG - tMDMG * iRNG);
-		this.maximumMagicDamage = Math.ceil(tMDMG + tMDMG * iRNG);
+		this._minimumMagicDamage = Math.floor(tMDMG - tMDMG * iRNG);
+		this._maximumMagicDamage = Math.ceil(tMDMG + tMDMG * iRNG);
 	}
 
 	public override async applyCoreStatRatings(): Promise<void> {

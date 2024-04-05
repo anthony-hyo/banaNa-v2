@@ -81,7 +81,6 @@ export default class Room implements IDispatchable {
 		)!;
 	}
 
-
 	public get isFull(): boolean {
 		return this.players.size >= this.data.maxPlayers;
 	}
@@ -89,7 +88,6 @@ export default class Room implements IDispatchable {
 	public get isNotFull(): boolean {
 		return !this.isFull;
 	}
-
 
 	public addPlayer(player: Player): void {
 		this._players.set(player.avatarId, player);
@@ -155,7 +153,7 @@ export default class Room implements IDispatchable {
 		}
 	}
 
-	public getPvPResult(room: Room): JSONObject {
+	public get getPvPResult(): JSONObject {
 		const pvp: JSONObject = new JSONObject()
 			.element("cmd", "PVPS");
 

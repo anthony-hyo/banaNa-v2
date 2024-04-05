@@ -1,5 +1,6 @@
 import AvatarVitality from "../helper/AvatarVitality.ts";
 import {AvatarState} from "../helper/AvatarState.ts";
+import JSONObject from "../../util/json/JSONObject.ts";
 
 export default class AvatarStatus {
 
@@ -30,6 +31,13 @@ export default class AvatarStatus {
 
 	public endCombat(): void {
 		this.state = AvatarState.NEUTRAL;
+	}
+
+	public json(): JSONObject {
+		return new JSONObject()
+			.element("intState", this.state)
+			.element("intHP", this.health.value)
+			.element("intMP", this.mana.value);
 	}
 
 }

@@ -29,6 +29,14 @@ export default class JSONObject {
 		return this.properties[key];
 	}
 
+	public remove(key: string) {
+		if (key in this.properties) {
+			delete this.properties[key];
+		}
+
+		return this;
+	}
+
 	public getString(key: string): string | null {
 		const value = this.properties[key];
 

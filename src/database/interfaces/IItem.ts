@@ -5,6 +5,7 @@ import type ITypeRarity from "./ITypeRarity.ts";
 import type IFaction from "./IFaction.ts";
 import type IEnhancement from "./IEnhancement.ts";
 import type IClass from "./IClass.ts";
+import type ISkill from "./ISkill.ts";
 
 export default interface IItem {
 	id: number;
@@ -44,6 +45,8 @@ export default interface IItem {
 	questStringIndex: number;
 	questStringValue: number;
 
+	skillPotionId: number | null;
+
 	meta: string | null;
 
 	dateUpdated: Date;
@@ -60,6 +63,8 @@ export default interface IItem {
 	requiredFaction?: IFaction | null;
 
 	requiredClassItem?: IItem | null;
+
+	skillPotion?: ISkill | null;
 
 	requirements?: IItemRequirement[];
 }

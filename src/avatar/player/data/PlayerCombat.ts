@@ -5,7 +5,7 @@ import JSONObject from "../../../util/json/JSONObject.ts";
 import JSONArray from "../../../util/json/JSONArray.ts";
 import {Rank} from "../../../aqw/Rank.ts";
 import type ISkill from "../../../database/interfaces/ISkill.ts";
-import SkillReference from "../../../util/SkillReference.ts";
+import SkillReference from "../../helper/combat/skill/SkillReference.ts";
 
 export default class PlayerCombat extends AvatarCombat {
 
@@ -31,6 +31,20 @@ export default class PlayerCombat extends AvatarCombat {
 		private readonly player: Player
 	) {
 		super(player);
+	}
+
+	public isSkillInvalid(skill: ISkill): boolean {
+		const equippedClass: IUserInventory | undefined = this.player.inventory.equippedClass;
+
+		if (equippedClass == undefined) {
+			return false;
+		}
+
+		const rank: number = Rank.getRankFromPoints(equippedClass.quantity);
+
+		const skillReference: SkillReference = <SkillReference>skill.reference;
+
+		return rank < 2 && skillReference == SkillReference.ATTACK_2 || rank < 3 && skillReference == SkillReference.ATTACK_3 || rank < 5 && skillReference == SkillReference.ATTACK_4;
 	}
 
 	public updateClass(equippedClass: IUserInventory): void {

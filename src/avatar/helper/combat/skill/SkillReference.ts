@@ -12,5 +12,4 @@ enum SkillReference {
 	POTION = "i1"
 }
 
-
 export default SkillReference;
