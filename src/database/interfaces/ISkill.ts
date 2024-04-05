@@ -9,7 +9,7 @@ export default interface ISkill {
 
 	icon: string;
 
-	damage: number;
+	damage: string;
 	mana: number;
 	cooldown: number;
 	range: number;

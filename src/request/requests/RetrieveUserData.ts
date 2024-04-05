@@ -23,8 +23,8 @@ export default class RetrieveUserData implements IRequest {
 		player.writeObject(new JSONObject()
 			.element("cmd", "initUserData")
 			.element("data", await target.json(false, true, false))
-			.element("strFrame", target.position.frame)
-			.element("strPad", target.position.pad)
+			.element("strFrame", target.frame)
+			.element("strPad", target.pad)
 			.element("uid", target.avatarId)
 		);
 	}

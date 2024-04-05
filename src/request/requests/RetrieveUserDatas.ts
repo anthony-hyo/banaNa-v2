@@ -27,8 +27,8 @@ export default class RetrieveUserDatas implements IRequest {
 
 			jsonArray.add(new JSONObject()
 				.element("uid", userId)
-				.element("strFrame", playerRetrieved.position.frame)
-				.element("strPad", playerRetrieved.position.pad)
+				.element("strFrame", playerRetrieved.frame)
+				.element("strPad", playerRetrieved.pad)
 				.element("data", await playerRetrieved.json(userId == player.avatarId, false, true))
 			);
 		}

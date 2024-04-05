@@ -57,9 +57,9 @@ export default interface IItem {
 
 	enhancement?: IEnhancement;
 
-	requiredFaction?: IFaction;
+	requiredFaction?: IFaction | null;
 
-	requiredClassItem?: IItem;
+	requiredClassItem?: IItem | null;
 
 	requirements?: IItemRequirement[];
 }
