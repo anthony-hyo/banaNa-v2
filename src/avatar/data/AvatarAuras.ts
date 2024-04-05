@@ -48,7 +48,7 @@ export default class AvatarAuras {
 
 		this.avatar.stats.effects.clear();
 
-		this.writeObject(new JSONObject()
+		this.avatar.writeObject(new JSONObject()
 			.element("cmd", "clearAuras")
 		);
 	}

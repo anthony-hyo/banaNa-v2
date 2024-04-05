@@ -86,7 +86,13 @@ export default class CoreValues {
 	}
 
 	public static getValue(property: string): number {
-		return CoreValues.CORE_VALUES.get(property)!;
+		const value: number | undefined = CoreValues.CORE_VALUES.get(property);
+
+		if (!value) {
+			throw new Error(`Core property '${property}' is undefined.`);
+		}
+
+		return value;
 	}
 
 	public static setInitInnateStats(level: number, category: string, innate: Map<string, number>): void {

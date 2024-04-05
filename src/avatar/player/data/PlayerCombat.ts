@@ -187,7 +187,7 @@ export default class PlayerCombat extends AvatarCombat {
 			);
 		}
 
-		//this.clearAuras(user);
+		this.player.auras.clearAuras();
 
 		this.player.writeObject(
 			new JSONObject()
