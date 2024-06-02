@@ -1,56 +1,30 @@
-import Avatar from "../Avatar.ts";
-import RemoveAura from "../../scheduler/tasks/RemoveAura.ts";
-import ISkillAura from "../../database/interfaces/ISkillAura.ts";
-import Scheduler from "../../scheduler/Scheduler.ts";
-import JSONObject from "../../util/json/JSONObject.ts";
+import type CombatAura from "../combat/CombatAura.ts";
+import type ISkillAura from "../../database/interfaces/ISkillAura.ts";
 
 export default class AvatarAuras {
 
-	private auras: Set<RemoveAura> = new Set<RemoveAura>();
+	private readonly _auras: Set<CombatAura> = new Set<CombatAura>();
 
-	constructor(
-		private readonly avatar: Avatar
-	) {
+	public get auras(): Set<CombatAura> {
+		return this._auras;
 	}
 
-	public hasAura(auraId: number): boolean {
-		for (const removeAura of this.auras) {
-			const aura: ISkillAura = removeAura.getAura();
+	public clear(): void {
+		for (const combatAura of this._auras) {
+			combatAura.remove();
+		}
 
-			if (aura.id === auraId) {
-				return true;
+		this._auras.clear();
+	}
+
+	public findCombatAura(skillAura: ISkillAura): CombatAura | undefined {
+		for (const combatAura of this._auras) {
+			if (combatAura.aura.id === skillAura.id) {
+				return combatAura;
 			}
 		}
 
-		return false;
-	}
-
-	public removeAura(ra: RemoveAura): void {
-		this.auras.delete(ra);
-	}
-
-	public applyAura(aura: ISkillAura): RemoveAura {
-		const ra: RemoveAura = new RemoveAura(aura, this, undefined);
-
-		ra.setRunning(Scheduler.oneTime(ra, aura.duration));
-
-		this.auras.add(ra);
-
-		return ra;
-	}
-
-	public clearAuras(): void {
-		for (const removeAura of this.auras) {
-			removeAura.cancel();
-		}
-
-		this.auras.clear();
-
-		this.avatar.stats.effects.clear();
-
-		this.avatar.writeObject(new JSONObject()
-			.element("cmd", "clearAuras")
-		);
+		return undefined;
 	}
 
 }

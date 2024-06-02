@@ -21,6 +21,24 @@ export default class JSONObject {
 		return this;
 	}
 
+	public elementMap(key: string, map: Map<any, any>): this {
+		this.properties[key] = new JSONObject();
+
+		for (const [value, key] of map) {
+			this.properties[key].element(String(key), value);
+		}
+
+		return this;
+	}
+
+	public accumulateAll(map: Map<any, any>): this {
+		for (const [value, key] of map) {
+			this.element(String(key), value);
+		}
+
+		return this;
+	}
+
 	public has(key: string): boolean {
 		return key in this.properties;
 	}

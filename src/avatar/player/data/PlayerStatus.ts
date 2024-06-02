@@ -26,7 +26,7 @@ export default class PlayerStatus extends AvatarStatus {
 
 		this.state = AvatarState.NEUTRAL;
 
-		this.player.auras.clearAuras();
+		this.player.auras.clear();
 
 		await this.player.sendUotls(true, false, true, false, false, true);
 	}

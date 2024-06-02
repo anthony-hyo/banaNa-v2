@@ -6,6 +6,8 @@ import database from "../../../database/drizzle/database.ts";
 import {and, eq, sql} from "drizzle-orm";
 import {usersInventory} from "../../../database/drizzle/schema.ts";
 import type IItem from "../../../database/interfaces/IItem.ts";
+import CoreValues from "../../../aqw/CoreValues.ts";
+import Attribute from "../../helper/combat/Attribute.ts";
 
 export default class PlayerInventory {
 
@@ -20,6 +22,18 @@ export default class PlayerInventory {
 	constructor(
 		private readonly player: Player
 	) {
+	}
+
+	public readonly statsItems: Map<Equipment, Map<Attribute, number>> = new Map<Equipment, Map<Attribute, number>>();
+
+	public stat(stat: Attribute): number {
+		let value: number = 0;
+
+		for (const stats of this.statsItems.values()) {
+			value += stats.get(stat) || 0;
+		}
+
+		return value;
 	}
 
 	public get equippedClass(): IUserInventory | undefined {
@@ -94,7 +108,8 @@ export default class PlayerInventory {
 			.where(eq(usersInventory.id, userInventory.id));
 
 		if (PlayerInventory.hasStats(equipment)) {
-			this.player.stats.updateStats(equipment, userInventory.enhancement!);
+			this.statsItems.set(equipment, CoreValues.getItemStats(userInventory.enhancement!, equipment));
+			this.player.stats.update(false);
 		}
 	}
 

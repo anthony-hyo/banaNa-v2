@@ -3,7 +3,8 @@ import database from "../database/drizzle/database.ts";
 import type ISettingCoreValue from "../database/interfaces/ISettingCoreValue.ts";
 import type IEnhancement from "../database/interfaces/IEnhancement.ts";
 import JSONObject from "../util/json/JSONObject.ts";
-import AvatarStats from "../avatar/data/AvatarStats.ts";
+import Stats from "../avatar/data/Stats.ts";
+import Attribute from "../avatar/helper/combat/Attribute.ts";
 
 export default class CoreValues {
 
@@ -97,7 +98,7 @@ export default class CoreValues {
 
 	public static setInitInnateStats(level: number, category: string, innate: Map<string, number>): void {
 		const innateStat: number = CoreValues.getInnateStats(level);
-		const ratios: number[] = AvatarStats.classCatMap.get(category)!;
+		const ratios: number[] = Stats.CAT.get(category)!;
 
 		const keyEntry: IterableIterator<string> = innate.keys();
 
@@ -110,28 +111,42 @@ export default class CoreValues {
 		}
 	}
 
-	public static getItemStats(enhancement: IEnhancement, equipment: string): Map<string, number> {
-		const itemStats: Map<string, number> = new Map<string, number>([
-			["END", 0],
-			["STR", 0],
-			["INT", 0],
-			["DEX", 0],
-			["WIS", 0],
-			["LCK", 0]
+	public static setInitialBaseStats(level: number, category: string, baseStats: Map<string, number>): void {
+		const innateStat: number = CoreValues.getInnateStats(level);
+
+		const ratios: Array<number> = Stats.CAT.get(category)!;
+
+		let ratioIndex: number = 0;
+
+		for (const [key, value] of baseStats.entries()) {
+			const statValue: number = Math.round(ratios[ratioIndex] * innateStat);
+			baseStats.set(key, statValue);
+			ratioIndex++;
+		}
+	}
+
+	public static getItemStats(enhancement: IEnhancement, equipment: string): Map<Attribute, number> {
+		const itemStats: Map<Attribute, number> = new Map<Attribute, number>([
+			[Attribute.ENDURANCE, 0],
+			[Attribute.STRENGTH, 0],
+			[Attribute.INTELLIGENCE, 0],
+			[Attribute.DEXTERITY, 0],
+			[Attribute.WISDOM, 0],
+			[Attribute.LUCK, 0]
 		]);
 
 		const iBudget: number = Math.round(this.getIBudget(enhancement.level, enhancement.rarity) * CoreValues.EQUIPMENT_RATIO.get(equipment)!);
 
-		const statPattern: Map<string, number> = new Map<string, number>([
-			['WIS', enhancement.pattern!.wisdom],
-			['END', enhancement.pattern!.endurance],
-			['LCK', enhancement.pattern!.luck],
-			['STR', enhancement.pattern!.strength],
-			['DEX', enhancement.pattern!.dexterity],
-			['INT', enhancement.pattern!.intelligence]
+		const statPattern: Map<Attribute, number> = new Map<Attribute, number>([
+			[Attribute.WISDOM, enhancement.pattern!.wisdom],
+			[Attribute.ENDURANCE, enhancement.pattern!.endurance],
+			[Attribute.LUCK, enhancement.pattern!.luck],
+			[Attribute.STRENGTH, enhancement.pattern!.strength],
+			[Attribute.DEXTERITY, enhancement.pattern!.dexterity],
+			[Attribute.INTELLIGENCE, enhancement.pattern!.intelligence]
 		]);
 
-		const keyEntry: string[] = Array.from(itemStats.keys());
+		const keyEntry: Array<Attribute> = Array.from(itemStats.keys());
 
 		let valTotal: number = 0;
 
@@ -141,11 +156,12 @@ export default class CoreValues {
 			valTotal += stat;
 		}
 
-		const keyArray: string[] = keyEntry.slice();
+		const keyArray: Array<Attribute> = keyEntry.slice();
 
 		let i: number = 0;
 		while (valTotal < iBudget) {
-			const key: string = keyArray[i];
+			const key: Attribute = keyArray[i];
+
 			itemStats.set(key, Math.round(itemStats.get(key)! + 1));
 
 			valTotal++;

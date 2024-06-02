@@ -25,7 +25,7 @@ export default class HelperItem {
 			.element("iCost", item.cost)
 			.element("iRng", item.range)
 			.element("sElmt", typeElement.name)
-			.element("iDPS", enhancement.damage_per_second)
+			.element("iDPS", enhancement.damagePerSecond)
 			.element("EnhID", item.enhancementId)
 			//.element("bQuest", 1)
 			.element("iQty", item.quantity)

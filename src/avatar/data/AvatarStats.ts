@@ -1,654 +1,252 @@
-import CoreValues from "../../aqw/CoreValues.ts";
+import Stats from "./Stats.ts";
+import TypeStat from "../helper/combat/skill/TypeStat.ts";
+import Attribute from "../helper/combat/Attribute.ts";
 import type ISkillAuraEffect from "../../database/interfaces/ISkillAuraEffect.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
-import type Avatar from "../Avatar.ts";
 
-export default abstract class AvatarStats {
+export default abstract class AvatarStats extends Stats {
 
-	public static readonly classCatMap: Map<string, number[]> = new Map([
-		["M1", [0.27, 0.3, 0.22, 0.05, 0.1, 0.06]],
-		["M2", [0.2, 0.22, 0.33, 0.05, 0.1, 0.1]],
-		["M3", [0.24, 0.2, 0.2, 0.24, 0.07, 0.05]],
-		["M4", [0.3, 0.18, 0.3, 0.02, 0.06, 0.14]],
-		["C1", [0.06, 0.2, 0.11, 0.33, 0.15, 0.15]],
-		["C2", [0.08, 0.27, 0.1, 0.3, 0.1, 0.15]],
-		["C3", [0.06, 0.23, 0.05, 0.28, 0.28, 0.1]],
-		["S1", [0.22, 0.18, 0.21, 0.08, 0.08, 0.23]]
-	]);
+	private readonly effects: Set<ISkillAuraEffect> = new Set<ISkillAuraEffect>();
 
-	public static readonly ratioByEquipment: Map<string, number> = new Map([
-		["he", 0.25],
-		["ar", 0.25],
-		["ba", 0.2],
-		["Weapon", 0.33]
-	]);
+	public abstract update(effectsOnly: boolean): void;
 
-	public innate: Map<string, number> = new Map<string, number>();
+	public abstract get get$DEX(): number;
 
-	public weapon: Map<string, number> = new Map<string, number>();
-	public helm: Map<string, number> = new Map<string, number>();
-	public armor: Map<string, number> = new Map<string, number>();
-	public cape: Map<string, number> = new Map<string, number>();
+	public abstract get get$END(): number;
 
-	public effects: Set<ISkillAuraEffect> = new Set<ISkillAuraEffect>();
+	public abstract get get$INT(): number;
 
-	private $cai: number = 1.0;
-	private $cao: number = 1.0;
-	private $cdi: number = 1.0;
-	private $cdo: number = 1.0;
-	private $chi: number = 1.0;
-	private $cho: number = 1.0;
-	private $cmc: number = 1.0;
-	private $cmi: number = 1.0;
-	private $cmo: number = 1.0;
-	private $cpi: number = 1.0;
-	private $cpo: number = 1.0;
-	private $dsh: number = 1.0;
-	private $sbm: number = 0.7;
-	private $scm: number = 1.5;
-	private $sem: number = 0.05;
-	private $shb: number = 0.0;
-	private $smb: number = 0.0;
-	private $srm: number = 0.7;
+	public abstract get get$LCK(): number;
 
-	protected attackPower: number = 0.0;
-	protected magicPower: number = 0.0;
+	public abstract get get$STR(): number;
 
-	private block: number = 0.0;
-	private criticalHit: number = 0.05;
-	private evasion: number = 0.04;
-	private haste: number = 0.0;
-	private hit: number = 0.0;
-	private parry: number = 0.03;
-	private resist: number = 0.7;
+	public abstract get get$WIS(): number;
 
-	private _ap: number = 0.0;
-	private _cai: number = 1.0;
-	private _cao: number = 1.0;
-	private _cdi: number = 1.0;
-	private _cdo: number = 1.0;
-	private _chi: number = 1.0;
-	private _cho: number = 1.0;
-	private _cmc: number = 1.0;
-	private _cmi: number = 1.0;
-	private _cmo: number = 1.0;
-	private _cpi: number = 1.0;
-	private _cpo: number = 1.0;
-	private _sbm: number = 0.7;
-	private _scm: number = 1.5;
-	private _sem: number = 0.05;
-	private _shb: number = 0.0;
-	private _smb: number = 0.0;
-	private _sp: number = 0.0; //magic power
-	private _srm: number = 0.7;
-	private _tbl: number = 0.0;
-	private _tcr: number = 0.0; //total crit
-	private _tdo: number = 0.0; //total dodge
-	private _tha: number = 0.0; //total haste
-	private _thi: number = 0.0; //total hit
-	private _tpa: number = 0.0;
-	private _tre: number = 0.0;
+	public abstract get get_DEX(): number;
 
-	protected physicalDamage: number = 0;
-	protected magicDamage: number = 0;
+	public abstract get get_END(): number;
 
-	protected _minimumPhysicalDamage: number = 0;
-	protected _maximumPhysicalDamage: number = 0;
+	public abstract get get_INT(): number;
 
-	protected _minimumMagicDamage: number = 0;
-	protected _maximumMagicDamage: number = 0;
+	public abstract get get_LCK(): number;
 
-	protected constructor(
-		private readonly avatar: Avatar
-	) {
-		//IN ORDER DO NOT TOUCH
-		this.innate.set("STR", 0.0);
-		this.innate.set("END", 0.0);
-		this.innate.set("DEX", 0.0);
-		this.innate.set("INT", 0.0);
-		this.innate.set("WIS", 0.0);
-		this.innate.set("LCK", 0.0);
+	public abstract get get_STR(): number;
 
-		this.weapon.set("STR", 0.0);
-		this.weapon.set("END", 0.0);
-		this.weapon.set("DEX", 0.0);
-		this.weapon.set("INT", 0.0);
-		this.weapon.set("WIS", 0.0);
-		this.weapon.set("LCK", 0.0);
+	public abstract get get_WIS(): number;
 
-		this.helm.set("STR", 0.0);
-		this.helm.set("END", 0.0);
-		this.helm.set("DEX", 0.0);
-		this.helm.set("INT", 0.0);
-		this.helm.set("WIS", 0.0);
-		this.helm.set("LCK", 0.0);
-
-		this.armor.set("STR", 0.0);
-		this.armor.set("END", 0.0);
-		this.armor.set("DEX", 0.0);
-		this.armor.set("INT", 0.0);
-		this.armor.set("WIS", 0.0);
-		this.armor.set("LCK", 0.0);
-
-		this.cape.set("STR", 0.0);
-		this.cape.set("END", 0.0);
-		this.cape.set("DEX", 0.0);
-		this.cape.set("INT", 0.0);
-		this.cape.set("WIS", 0.0);
-		this.cape.set("LCK", 0.0);
-	}
-
-	public abstract initInnateStats(): void;
-
-	public abstract applyCoreStatRatings(): Promise<void>;
-	private applyAuraEffects(): void {
-		for (let ae of this.effects) {
-			switch (ae.typeStat!.name) {
-				case "tha":
-					if (ae.type === "+") {
-						this.haste += ae.value;
-					} else if (ae.type === "-") {
-						this.haste -= ae.value;
-					} else {
-						this.haste *= ae.value;
-					}
-					break;
-				case "tdo":
-					if (ae.type === "+") {
-						this.evasion += ae.value;
-					} else if (ae.type === "-") {
-						this.evasion -= ae.value;
-					} else {
-						this.evasion *= ae.value;
-					}
-					break;
-				case "thi":
-					if (ae.type === "+") {
-						this.hit += ae.value;
-					} else if (ae.type === "-") {
-						this.hit -= ae.value;
-					} else {
-						this.hit *= ae.value;
-					}
-					break;
-				case "tcr":
-					if (ae.type === "+") {
-						this.criticalHit += ae.value;
-					} else if (ae.type === "-") {
-						this.criticalHit -= ae.value;
-					} else {
-						this.criticalHit *= ae.value;
-					}
-					break;
-			}
-		}
-	}
-
-	public abstract initDamage(): void;
-
-	public sendStatChanges(skillAuraEffects: Set<ISkillAuraEffect>): void {
+	public applyAuraEffects(): JSONObject {
 		const sta: JSONObject = new JSONObject();
 
-		for (let skillAuraEffect of skillAuraEffects) {
-			if (skillAuraEffect.typeStat!.name === "tha") {
-				sta.element("$tha", this.haste);
-			} else if (skillAuraEffect.typeStat!.name === "tdo") {
-				sta.element("$tdo", this.evasion);
-			} else if (skillAuraEffect.typeStat!.name === "thi") {
-				sta.element("$thi", this.hit);
-			} else if (skillAuraEffect.typeStat!.name === "tcr") {
-				sta.element("$tcr", this.criticalHit);
-			}
+		for (const ae of this.effects) {
+			this.applyStatByPercent(sta, ae.type, ae.typeStat!.stat, ae.value);
 		}
 
-		this.avatar.writeObject(
-			new JSONObject()
-				.element("cmd", "stu")
-				.element("sta", sta)
-		);
+		return sta;
 	}
 
-	public resetValues(): void {
-		this._ap = 0.0;
-		this.attackPower = 0.0;
-		this._sp = 0.0;
-		this.magicPower = 0.0;
-		this._tbl = 0.0;
-		this._tpa = 0.0;
-		this._tdo = 0.0;
-		this._tcr = 0.0;
-		this._thi = 0.0;
-		this._tha = 0.0;
-		this._tre = 0.0;
-		this.block = CoreValues.getValue("baseBlock")!;
-		this.parry = CoreValues.getValue("baseParry")!;
-		this.evasion = CoreValues.getValue("baseDodge")!;
-		this.criticalHit = CoreValues.getValue("baseCrit")!;
-		this.hit = CoreValues.getValue("baseHit")!;
-		this.haste = CoreValues.getValue("baseHaste")!;
-		this.resist = 0.0; //baseResist
-		this._cpo = 1.0;
-		this._cpi = 1.0;
-		this._cao = 1.0;
-		this._cai = 1.0;
-		this._cmo = 1.0;
-		this._cmi = 1.0;
-		this._cdo = 1.0;
-		this._cdi = 1.0;
-		this._cho = 1.0;
-		this._chi = 1.0;
-		this._cmc = 1.0;
-		this.$cpo = 1.0;
-		this.$cpi = 1.0;
-		this.$cao = 1.0;
-		this.$cai = 1.0;
-		this.$cmo = 1.0;
-		this.$cmi = 1.0;
-		this.$cdo = 1.0;
-		this.$cdi = 1.0;
-		this.$cho = 1.0;
-		this.$chi = 1.0;
-		this.$cmc = 1.0;
-		this._scm = CoreValues.getValue("baseCritValue")!;
-		this._sbm = CoreValues.getValue("baseBlockValue")!;
-		this._srm = CoreValues.getValue("baseResistValue")!;
-		this._sem = CoreValues.getValue("baseEventValue")!;
-		this.$scm = CoreValues.getValue("baseCritValue")!;
-		this.$sbm = CoreValues.getValue("baseBlockValue")!;
-		this.$srm = CoreValues.getValue("baseResistValue")!;
-		this.$sem = CoreValues.getValue("baseEventValue")!;
-		this._shb = 0.0;
-		this._smb = 0.0;
-		this.$shb = 0.0;
-		this.$smb = 0.0;
+	public applyEffect(effect: ISkillAuraEffect): void {
+		this.effects.add(effect);
 	}
 
-	protected applyStats(sp1pc: number, cat: string): void {
-		for (const key in this.innate) {
-			const val: number = this.innate.get(key)! + this.armor.get(key)! + this.weapon.get(key)! + this.helm.get(key)! + this.cape.get(key)!;
-
-			const baseVal: number = val / sp1pc / 100;
-
-			switch (key) {
-				case "STR":
-					if (cat === "M1") {
-						this.$sbm -= baseVal * 0.3;
-					}
-
-					if (cat === "S1") {
-						this.attackPower += Math.round(val * 1.4);
-					} else {
-						this.attackPower += val * 2;
-					}
-
-					if (["M1", "M2", "M3", "M4", "S1"].includes(cat)) {
-						this.criticalHit += baseVal * (cat === "M4" ? 0.7 : 0.4);
-					}
-					break;
-				case "INT":
-					this.$cmi -= baseVal;
-
-					if (cat[0] === "C" || cat === "M3") {
-						this.$cmo += baseVal;
-					}
-
-					if (cat === "S1") {
-						this.magicPower += Math.round(val * 1.4);
-					} else {
-						this.magicPower += val * 2;
-					}
-
-					if (["C1", "C2", "C3", "M3", "S1"].includes(cat)) {
-						this.haste += baseVal * (cat === "C2" ? 0.5 : 0.3);
-					}
-					break;
-				case "DEX":
-					if (["M1", "M2", "M3", "M4", "S1"].includes(cat)) {
-						if (!cat.startsWith("C")) {
-							this.hit += baseVal * 0.2;
-						}
-
-						if (["M2", "M4"].includes(cat)) {
-							this.haste += baseVal * 0.5;
-						} else {
-							this.haste += baseVal * 0.3;
-						}
-
-						if (cat === "M1" && this._tbl > 0.01) {
-							this.block += baseVal * 0.5;
-						}
-					}
-
-					if (!["M2", "M3"].includes(cat)) {
-						this.evasion += baseVal * 0.3;
-					} else {
-						this.evasion += baseVal * 0.5;
-					}
-					break;
-				case "WIS":
-					if (["C1", "C2", "C3", "S1"].includes(cat)) {
-						if (cat === "C1") {
-							this.criticalHit += baseVal * 0.7;
-						} else {
-							this.criticalHit += baseVal * 0.4;
-						}
-
-						this.hit += baseVal * 0.2;
-					}
-					this.evasion += baseVal * 0.3;
-					break;
-				case "LCK":
-					this.$sem += baseVal * 2;
-
-					if (cat === "S1") {
-						this.attackPower += Math.round(val * 1);
-						this.magicPower += Math.round(val * 1);
-						this.criticalHit += baseVal * 0.3;
-						this.hit += baseVal * 0.1;
-						this.haste += baseVal * 0.3;
-						this.evasion += baseVal * 0.25;
-						this.$scm += baseVal * 2.5;
-					} else {
-						if (["M1", "M2", "M3", "M4"].includes(cat)) {
-							this.attackPower += Math.round(val * 0.7);
-						}
-
-						if (["C1", "C2", "C3", "M3"].includes(cat)) {
-							this.magicPower += Math.round(val * 0.7);
-						}
-
-						this.criticalHit += baseVal * 0.2;
-						this.hit += baseVal * 0.1;
-						this.haste += baseVal * 0.1;
-						this.evasion += baseVal * 0.1;
-						this.$scm += baseVal * 5;
-					}
-					break;
+	public removeEffect(effect: ISkillAuraEffect): void {
+		for (const e of this.effects) {
+			if (e.id === effect.id) {
+				this.effects.delete(e);
 			}
 		}
 	}
 
-	public async update(): Promise<void> {
-		this.initInnateStats();
-		await this.applyCoreStatRatings();
-		this.applyAuraEffects();
-		this.initDamage();
-	}
-
-	public get get$DEX(): number {
-		return Math.floor(this.weapon.get("DEX")! + this.armor.get("DEX")! + this.helm.get("DEX")! + this.cape.get("DEX")!);
-	}
-
-	public get get$END(): number {
-		return Math.floor(this.weapon.get("END")! + this.armor.get("END")! + this.helm.get("END")! + this.cape.get("END")!);
-	}
-
-	public get get$INT(): number {
-		return Math.floor(this.weapon.get("INT")! + this.armor.get("INT")! + this.helm.get("INT")! + this.cape.get("INT")!);
-	}
-
-	public get get$LCK(): number {
-		return Math.floor(this.weapon.get("LCK")! + this.armor.get("LCK")! + this.helm.get("LCK")! + this.cape.get("LCK")!);
-	}
-
-	public get get$STR(): number {
-		return Math.floor(this.weapon.get("STR")! + this.armor.get("STR")! + this.helm.get("STR")! + this.cape.get("STR")!);
-	}
-
-	public get get$WIS(): number {
-		return Math.floor(this.weapon.get("WIS")! + this.armor.get("WIS")! + this.helm.get("WIS")! + this.cape.get("WIS")!);
-	}
-
-	public get get$ap(): number {
-		return this.attackPower;
-	}
-
-	public get get$cai(): number {
-		return this.$cai;
-	}
-
-	public get get$cao(): number {
-		return this.$cao;
-	}
-
-	public get get$cdi(): number {
-		return this.$cdi;
-	}
-
-	public get get$cdo(): number {
-		return this.$cdo;
-	}
-
-	public get get$chi(): number {
-		return this.$chi;
-	}
-
-	public get get$cho(): number {
-		return this.$cho;
-	}
-
-	public get get$cmc(): number {
-		return this.$cmc;
-	}
-
-	public get get$cmi(): number {
-		return this.$cmi;
-	}
-
-	public get get$cmo(): number {
-		return this.$cmo;
-	}
-
-	public get get$cpi(): number {
-		return this.$cpi;
-	}
-
-	public get get$cpo(): number {
-		return this.$cpo;
-	}
-
-	public get get$dsh(): number {
-		return this.$dsh;
-	}
-
-	public get get$sbm(): number {
-		return this.$sbm;
-	}
-
-	public get get$scm(): number {
-		return this.$scm;
-	}
-
-	public get get$sem(): number {
-		return this.$sem;
-	}
-
-	public get get$shb(): number {
-		return this.$shb;
-	}
-
-	public get get$smb(): number {
-		return this.$smb;
-	}
-
-	public get get$sp(): number {
-		return this.magicPower;
-	}
-
-	public get get$srm(): number {
-		return this.$srm;
-	}
-
-	public get get$tbl(): number {
-		return this.block;
-	}
-
-	public get get$tcr(): number {
-		return this.criticalHit;
-	}
-
-	public get get$tdo(): number {
-		return this.evasion;
-	}
-
-	public get get$tha(): number {
-		return this.haste;
-	}
-
-	public get get$thi(): number {
-		return this.hit;
-	}
-
-	public get get$tpa(): number {
-		return this.parry;
-	}
-
-	public get get$tre(): number {
-		return this.resist;
-	}
-
-	public get get_DEX(): number {
-		return this.innate.get("DEX")!;
-	}
-
-	public get get_END(): number {
-		return this.innate.get("END")!;
-	}
-
-	public get get_INT(): number {
-		return this.innate.get("INT")!;
-	}
-
-	public get get_LCK(): number {
-		return this.innate.get("LCK")!;
-	}
-
-	public get get_STR(): number {
-		return this.innate.get("STR")!;
-	}
-
-	public get get_WIS(): number {
-		return this.innate.get("WIS")!;
-	}
-
-	public get get_ap(): number {
-		return this._ap;
-	}
-
-	public get get_cai(): number {
-		return this._cai;
-	}
-
-	public get get_cao(): number {
-		return this._cao;
-	}
-
-	public get get_cdi(): number {
-		return this._cdi;
-	}
-
-	public get get_cdo(): number {
-		return this._cdo;
-	}
-
-	public get get_chi(): number {
-		return this._chi;
-	}
-
-	public get get_cho(): number {
-		return this._cho;
-	}
-
-	public get get_cmc(): number {
-		return this._cmc;
-	}
-
-	public get get_cmi(): number {
-		return this._cmi;
-	}
-
-	public get get_cmo(): number {
-		return this._cmo;
-	}
-
-	public get get_cpi(): number {
-		return this._cpi;
-	}
-
-	public get get_cpo(): number {
-		return this._cpo;
-	}
-
-	public get get_sbm(): number {
-		return this._sbm;
-	}
-
-	public get get_scm(): number {
-		return this._scm;
-	}
-
-	public get get_sem(): number {
-		return this._sem;
-	}
-
-	public get get_shb(): number {
-		return this._shb;
-	}
-
-	public get get_smb(): number {
-		return this._smb;
-	}
-
-	public get get_sp(): number {
-		return this._sp;
-	}
-
-	public get get_srm(): number {
-		return this._srm;
-	}
-
-	public get get_tbl(): number {
-		return this._tbl;
-	}
-
-	public get get_tcr(): number {
-		return this._tcr;
-	}
-
-	public get get_tdo(): number {
-		return this._tdo;
-	}
-
-	public get get_tha(): number {
-		return this._tha;
-	}
-
-	public get get_thi(): number {
-		return this._thi;
-	}
-
-	public get get_tpa(): number {
-		return this._tpa;
-	}
-
-	public get get_tre(): number {
-		return this._tre;
-	}
-
-	public get minimumPhysicalDamage(): number {
-		return this._minimumPhysicalDamage;
-	}
-
-	public get maximumPhysicalDamage(): number {
-		return this._maximumPhysicalDamage;
-	}
-
-	public get minimumMagicDamage(): number {
-		return this._minimumMagicDamage;
-	}
-
-	public get maximumMagicDamage(): number {
-		return this._maximumMagicDamage;
+	public clearEffects(): void {
+		this.effects.clear();
+	}
+
+	private applyStatByPercent(sta: JSONObject, type: string, stat: string, value: number): void {
+		switch (stat) {
+			case TypeStat.CMO:
+				this.$cmo = Stats.calculate(type, this.$cmo, value, true); // Magic Boost
+
+				sta
+					.element("$cmo", this.$cmo);
+				break;
+			case TypeStat.CMI:
+				this.$cmi = Stats.calculate(type, this.$cmi, value, true); // Magic Resistance
+
+				sta
+					.element("$cmi", this.$cmi);
+				break;
+
+			case TypeStat.CPO:
+				this.$cpo = Stats.calculate(type, this.$cpo, value, true); // Physical Boost
+
+				sta
+					.element("$cpo", this.$cpo);
+				break;
+			case TypeStat.CPI:
+				this.$cpi = Stats.calculate(type, this.$cpi, value, true); // Physical Resistance
+
+				sta
+					.element("$cpi", this.$cpi);
+				break;
+
+			case TypeStat.CAO:
+				this.$cao = Stats.calculate(type, this.$cao, value, true); // Damage Boost
+
+				sta
+					.element("$cao", this.$cao);
+				break;
+			case TypeStat.CAI:
+				this.$cai = Stats.calculate(type, this.$cai, value, true); // Damage Resistance
+
+				sta
+					.element("$cai", this.$cai);
+				break;
+
+			case TypeStat.CMC:
+				this.$cmc = Stats.calculate(type, this.$cmc, value, false); // Mana Consumption
+
+				sta
+					.element("$cmc", this.$cmc);
+				break;
+
+			case TypeStat.CHO:
+				this.$cho = Stats.calculate(type, this.$cho, value, true); // Heal Over Time Boost
+
+				sta
+					.element("$cho", this.$cho);
+				break;
+			case TypeStat.CHI:
+				this.$chi = Stats.calculate(type, this.$chi, value, true); // Heal Over Time Intake
+
+				sta
+					.element("$chi", this.$chi);
+				break;
+
+			case TypeStat.CDO:
+				this.$cdo = Stats.calculate(type, this.$cdo, value, true); // Damage Over Time Boost
+
+				sta
+					.element("$cdo", this.$cdo);
+				break;
+			case TypeStat.CDI:
+				this.$cdi = Stats.calculate(type, this.$cdi, value, true); // Damage Over Time Resistance
+
+				sta
+					.element("$cdi", this.$cdi);
+				break;
+
+			case TypeStat.SCM:
+				this.$scm = Stats.calculate(type, this.$scm, value, false); // Stat Critical Multiplier
+
+				sta
+					.element("$scm", this.$scm);
+				break;
+			case TypeStat.SBM:
+				this.$sbm = Stats.calculate(type, this.$sbm, value, false); // Stat Block Multiplier
+
+				sta
+					.element("$sbm", this.$sbm);
+				break;
+			case TypeStat.SEM:
+				this.$sem = Stats.calculate(type, this.$sem, value, false); // Stat Event Multiplier TODO
+
+				sta
+					.element("$sem", this.$sem);
+				break;
+			case TypeStat.SRM:
+				this.$srm = Stats.calculate(type, this.$srm, value, false); // Stat Resist Multiplier
+
+				sta
+					.element("$srm", this.$srm);
+				break;
+
+			case TypeStat.SHB:
+				this.$shb = Stats.calculate(type, this.$shb, value, false); // Stat Health Boost TODO
+
+				sta
+					.element("$shb", this.$shb);
+				break;
+			case TypeStat.SMB:
+				this.$smb = Stats.calculate(type, this.$smb, value, false); // Stat Mana Boost TODO
+
+				sta
+					.element("$smb", this.$smb);
+				break;
+
+			case TypeStat.TCR:
+				this.$tcr = Stats.calculate(type, this.$tcr, value, false); // Critical
+
+				sta
+					.element("$tcr", this.$tcr);
+				break;
+			case TypeStat.THA:
+				this.$tha = Stats.calculate(type, this.$tha, value, false); // Haste
+
+				sta
+					.element("$tha", this.$tha);
+				break;
+			case TypeStat.TDO:
+				this.$tdo = Stats.calculate(type, this.$tdo, value, false); // Evasion
+
+				sta
+					.element("$tdo", this.$tdo);
+				break;
+			case TypeStat.THI:
+				this.$thi = Stats.calculate(type, this.$thi, value, false); // Hit
+
+				sta
+					.element("$thi", this.$thi);
+				break;
+
+			case TypeStat.AP:
+				this.$ap = Stats.calculate(type, this.$ap, value, false); // Attack Power
+
+				sta
+					.element("$ap", this.$ap);
+				break;
+			case TypeStat.MP:
+				this.$sp = Stats.calculate(type, this.$sp, value, false); // Magic Power
+
+				sta
+					.element("$sp", this.$sp);
+				break;
+
+			case Attribute.WISDOM:
+				this.$WIS = Stats.calculate(type, this.$WIS, value, false); // Wisdom
+
+				sta
+					.element("$WIS", this.$WIS);
+				break;
+			case Attribute.INTELLIGENCE:
+				this.$INT = Stats.calculate(type, this.$INT, value, false); // Intelligence
+
+				sta
+					.element("$INT", this.$INT);
+				break;
+			case Attribute.ENDURANCE:
+				this.$END = Stats.calculate(type, this.$END, value, false); // Endurance
+
+				sta
+					.element("$END", this.$END);
+				break;
+			case Attribute.DEXTERITY:
+				this.$DEX = Stats.calculate(type, this.$DEX, value, false); // Dexterity
+
+				sta
+					.element("$DEX", this.$DEX);
+				break;
+			case Attribute.STRENGTH:
+				this.$STR = Stats.calculate(type, this.$STR, value, false); // Strength
+
+				sta
+					.element("$STR", this.$STR);
+				break;
+			case Attribute.LUCK:
+				this.$LCK = Stats.calculate(type, this.$LCK, value, false); // Luck
+
+				sta
+					.element("$LCK", this.$LCK);
+				break;
+		}
 	}
 
 }
