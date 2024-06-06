@@ -4,6 +4,7 @@ import type IItem from "../../../database/interfaces/IItem.ts";
 export default class PlayerData {
 
 	public isAway: boolean = false;
+	public isStaff: boolean = false;
 	public pvpTeam: number = 0;
 	public potion: IItem | undefined;
 	public partyId: number | undefined = undefined;
