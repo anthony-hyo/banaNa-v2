@@ -349,7 +349,7 @@ export default class Player extends Avatar {
 	}
 
 
-	public async json(self: boolean, withNetworkId: boolean, withEquipment: boolean): Promise<JSONObject> {
+	public async json(self: boolean, withCharId: boolean, withEquipment: boolean): Promise<JSONObject> {
 		const user: IUser | undefined = await database.query.users.findFirst({
 			with: {
 				guild: {
@@ -384,9 +384,9 @@ export default class Player extends Avatar {
 			return data;
 		}
 
-		if (withNetworkId) {
+		if (withCharId) {
 			data
-				.element("CharID", this.avatarId);
+				.element("CharID", this.databaseId);
 		}
 
 		const dateNow: Date = new Date();

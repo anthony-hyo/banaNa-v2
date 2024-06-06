@@ -25,11 +25,13 @@ export default class RetrieveUserDatas implements IRequest {
 				continue;
 			}
 
+			const isSelf: boolean = userId == player.avatarId;
+
 			jsonArray.add(new JSONObject()
 				.element("uid", userId)
 				.element("strFrame", playerRetrieved.frame)
 				.element("strPad", playerRetrieved.pad)
-				.element("data", await playerRetrieved.json(userId == player.avatarId, false, true))
+				.element("data", await playerRetrieved.json(isSelf, isSelf, true))
 			);
 		}
 
