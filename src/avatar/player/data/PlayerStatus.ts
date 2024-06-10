@@ -1,7 +1,7 @@
 import AvatarVitality from "../../helper/AvatarVitality.ts";
 import AvatarStatus from "../../data/AvatarStatus.ts";
-import {AvatarState} from "../../helper/AvatarState.ts";
 import type Player from "../Player.ts";
+import JSONObject from "../../../util/json/JSONObject.ts";
 
 export default class PlayerStatus extends AvatarStatus {
 
@@ -21,23 +21,46 @@ export default class PlayerStatus extends AvatarStatus {
 	}
 
 	public async respawn(): Promise<void> {
-		this.health.update = this.health.max;
-		this.mana.update = this.mana.max;
+		this.restore();
 
-		this.state = AvatarState.NEUTRAL;
+		this.endCombat();
 
 		this.player.auras.clear();
 
 		await this.player.sendUotls(true, false, true, false, false, true);
 	}
 
-	public die(): void {
-		this.health.update = 0;
-		this.mana.update = 0;
+	public jsonTls(...args: boolean[]): void {
+		if (!this.player.room) {
+			this.player.writeArray("warning", ["Error occurred while updating stats, contact staff if the problem persist."]);
+			this.player.kick("[jsonTls] Null room, player kicked.");
+			return;
+		}
 
-		this.state = AvatarState.DEAD;
+		const uotls: JSONObject = new JSONObject().element("cmd", "uotls");
+		const o: JSONObject = new JSONObject();
 
-		this.player.properties.set(PlayerConst.RESPAWN_TIME, Date.now());
+		if (args[0]) {
+			o.element("intHP", String(this.health.value));
+		}
+		if (args[1]) {
+			o.element("intHPMax", this.health.max);
+		}
+		if (args[2]) {
+			o.element("intMP", this.mana.value);
+		}
+		if (args[3]) {
+			o.element("intMPMax", this.mana.max);
+		}
+		if (args[4]) {
+			o.element("intState", this.state);
+		}
+
+		this.player.room.writeObject(
+			uotls
+				.element("o", o)
+				.element("unm", this.player.avatarName)
+		);
 	}
 
 }

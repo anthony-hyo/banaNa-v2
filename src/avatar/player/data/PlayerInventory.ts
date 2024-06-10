@@ -7,7 +7,7 @@ import {and, eq, sql} from "drizzle-orm";
 import {usersInventory} from "../../../database/drizzle/schema.ts";
 import type IItem from "../../../database/interfaces/IItem.ts";
 import CoreValues from "../../../aqw/CoreValues.ts";
-import Attribute from "../../helper/combat/Attribute.ts";
+import TypeStatPrimary from "../../helper/combat/skill/TypeStatPrimary.ts";
 
 export default class PlayerInventory {
 
@@ -24,12 +24,16 @@ export default class PlayerInventory {
 	) {
 	}
 
-	public readonly statsItems: Map<Equipment, Map<Attribute, number>> = new Map<Equipment, Map<Attribute, number>>();
+	private readonly _statsItems: Map<Equipment, Map<TypeStatPrimary, number>> = new Map<Equipment, Map<TypeStatPrimary, number>>();
 
-	public stat(stat: Attribute): number {
+	public get statsItems(): Map<Equipment, Map<TypeStatPrimary, number>> {
+		return this._statsItems;
+	}
+
+	public stat(stat: TypeStatPrimary): number {
 		let value: number = 0;
 
-		for (const stats of this.statsItems.values()) {
+		for (const stats of this._statsItems.values()) {
 			value += stats.get(stat) || 0;
 		}
 
@@ -72,7 +76,7 @@ export default class PlayerInventory {
 		return this.equipped.get(Equipment.HOUSE_ITEM);
 	}
 
-	public async equip(userInventory: IUserInventory): Promise<void> {
+	public async equip(userInventory: IUserInventory, updateStats: boolean = true): Promise<void> {
 		const item: IItem = userInventory.item!;
 
 		const equipment: Equipment = <Equipment>item.typeItem!.equipment;
@@ -108,8 +112,10 @@ export default class PlayerInventory {
 			.where(eq(usersInventory.id, userInventory.id));
 
 		if (PlayerInventory.hasStats(equipment)) {
-			this.statsItems.set(equipment, CoreValues.getItemStats(userInventory.enhancement!, equipment));
-			this.player.stats.update(false);
+			this._statsItems.set(equipment, CoreValues.getItemStats(userInventory.enhancement!, equipment));
+			if (updateStats) {
+				this.player.stats.update();
+			}
 		}
 	}
 

@@ -1,7 +1,5 @@
 import CoreValues from "../../aqw/CoreValues.ts";
 import CombatCategory from "../helper/combat/CombatCategory.ts";
-import TypeStat from "../helper/combat/skill/TypeStat.ts";
-import Attribute from "../helper/combat/Attribute.ts";
 
 export default abstract class Stats {
 
@@ -16,26 +14,7 @@ export default abstract class Stats {
 		[CombatCategory.S1, [0.22, 0.18, 0.21, 0.08, 0.08, 0.23]]
 	]);
 
-	protected static calculate(type: string, val: number, val2: number, checkNegative: boolean): number {
-		switch (type) {
-			case TypeStat.INCREASE:
-				val += val2;
-				break;
-			case TypeStat.DECREASE:
-				if (checkNegative && val - val2 < 0) {
-					return 0;
-				}
-
-				val -= val2;
-				break;
-			default:
-				val *= val2;
-				break;
-		}
-
-		return val;
-	}
-
+	protected $ap: number = 0;
 	protected $cai: number = 1;
 	protected $cao: number = 1;
 	protected $cdi: number = 1;
@@ -52,9 +31,23 @@ export default abstract class Stats {
 	protected $sem: number = 0.05;
 	protected $shb: number = 0;
 	protected $smb: number = 0;
+	protected $sp: number = 0;
 	protected $srm: number = 0.7;
+	protected $tbl: number = 0;
+	protected $tcr: number = 0.05;
+	protected $tdo: number = 0.04;
+	protected $tha: number = 0;
+	protected $thi: number = 0;
+	protected $tpa: number = 0.03;
+	protected $tre: number = 0.7;
+	protected $str: number = 0;
+	protected $end: number = 0;
+	protected $wis: number = 0;
+	protected $int: number = 0;
+	protected $dex: number = 0;
+	protected $lck: number = 0;
 
-	protected _ap: number = 0; //$ missing
+	protected _ap: number = 0;
 	protected _cai: number = 1;
 	protected _cao: number = 1;
 	protected _cdi: number = 1;
@@ -74,32 +67,21 @@ export default abstract class Stats {
 	protected _sp: number = 0;
 	protected _srm: number = 0.7;
 	protected _tbl: number = 0;
-	protected _tcr: number = 0;
-	protected _tdo: number = 0;
+	protected _tcr: number = 0.05;
+	protected _tdo: number = 0.04;
 	protected _tha: number = 0;
 	protected _thi: number = 0;
-	protected _tpa: number = 0;
-	protected _tre: number = 0;
-
-	protected $ap: number = 0;
-	protected block: number = 0;
-	protected $tcr: number = 0.05;
-	protected $tdo: number = 0.04;
-	protected $tha: number = 0;
-	protected $thi: number = 0;
-	protected $sp: number = 0;
-	protected parry: number = 0.03;
-	protected resist: number = 0;
-
-	protected physicalDamage: number = 0;
-	protected maximumPhysicalDamage: number = 0;
-	protected minimumPhysicalDamage: number = 0;
-
-	protected magicDamage: number = 0;
-	protected maximumMagicDamage: number = 0;
-	protected minimumMagicDamage: number = 0;
+	protected _tpa: number = 0.03;
+	protected _tre: number = 0.7;
+	public _str: number = 0;
+	public _end: number = 0;
+	public _wis: number = 0;
+	public _int: number = 0;
+	public _dex: number = 0;
+	public _lck: number = 0;
 
 	public resetValues(): void {
+		this.$ap = 0;
 		this.$cai = 1;
 		this.$cao = 1;
 		this.$cdi = 1;
@@ -116,7 +98,15 @@ export default abstract class Stats {
 		this.$sem = CoreValues.getValue("baseEventValue");
 		this.$shb = 0;
 		this.$smb = 0;
+		this.$sp = 0;
 		this.$srm = CoreValues.getValue("baseResistValue");
+		this.$tbl = CoreValues.getValue("baseBlock");
+		this.$tcr = CoreValues.getValue("baseCrit");
+		this.$tdo = CoreValues.getValue("baseDodge");
+		this.$tha = CoreValues.getValue("baseHaste");
+		this.$thi = CoreValues.getValue("baseHit");
+		this.$tpa = CoreValues.getValue("baseParry");
+		this.$tre = 0; // baseResist
 
 		this._ap = 0;
 		this._cai = 1;
@@ -143,95 +133,111 @@ export default abstract class Stats {
 		this._tha = CoreValues.getValue("baseHaste");
 		this._thi = CoreValues.getValue("baseHit");
 		this._tpa = CoreValues.getValue("baseParry");
-		this._tre = 0;
-
-		this.$ap = 0;
-		this.block = CoreValues.getValue("baseBlock");
-		this.$tcr = CoreValues.getValue("baseCrit");
-		this.$tdo = CoreValues.getValue("baseDodge");
-		this.$tha = CoreValues.getValue("baseHaste");
-		this.$thi = CoreValues.getValue("baseHit");
-		this.$sp = 0;
-		this.parry = CoreValues.getValue("baseParry");
-		this.resist = 0; // baseResist
+		this._tre = 0; // baseResist
 	}
 
-	protected applyStats(combatCategory: CombatCategory, sp1pc: number, key: Attribute, val: number): void {
-		const baseVal: number = val / sp1pc / 100;
-
-		switch (key) {
-			case Attribute.STRENGTH:
-				if (combatCategory == CombatCategory.M1) {
-					this.$sbm -= baseVal * 0.3;
-				}
-
-				this.$ap += combatCategory == CombatCategory.S1 ? Math.round(val * 1.4) : val * 2;
-
-				if (combatCategory == CombatCategory.M1 || combatCategory == CombatCategory.M2 || combatCategory == CombatCategory.M3 || combatCategory == CombatCategory.M4 || combatCategory == CombatCategory.S1) {
-					this.$tcr += combatCategory == CombatCategory.M4 ? baseVal * 0.7 : baseVal * 0.4;
-				}
-				break;
-			case Attribute.INTELLIGENCE:
-				this.$cmi -= baseVal;
-
-				if (combatCategory.charAt(0) == 'C' || combatCategory == CombatCategory.M3) {
-					this.$cmo += baseVal;
-				}
-
-				this.$sp += combatCategory == CombatCategory.S1 ? Math.round(val * 1.4) : val * 2;
-
-				if (combatCategory == CombatCategory.C1 || combatCategory == CombatCategory.C2 || combatCategory == CombatCategory.C3 || combatCategory == CombatCategory.M3 || combatCategory == CombatCategory.S1) {
-					this.$tha += combatCategory == CombatCategory.C2 ? baseVal * 0.5 : baseVal * 0.3;
-				}
-				break;
-			case Attribute.DEXTERITY:
-				if (combatCategory == CombatCategory.M1 || combatCategory == CombatCategory.M2 || combatCategory == CombatCategory.M3 || combatCategory == CombatCategory.M4 || combatCategory == CombatCategory.S1) {
-					this.$thi += baseVal * 0.2;
-					this.$tha += combatCategory == CombatCategory.M2 || combatCategory == CombatCategory.M4 ? baseVal * 0.5 : baseVal * 0.3;
-					if (combatCategory == CombatCategory.M1 && this._tbl > 0.01) {
-						this.block += baseVal * 0.5;
-					}
-				}
-
-				this.$tdo += combatCategory != CombatCategory.M2 && combatCategory != CombatCategory.M3 ? baseVal * 0.3 : baseVal * 0.5;
-				break;
-			case Attribute.WISDOM:
-				if (combatCategory == CombatCategory.C1 || combatCategory == CombatCategory.C2 || combatCategory == CombatCategory.C3 || combatCategory == CombatCategory.S1) {
-					this.$tcr += combatCategory == CombatCategory.C1 ? baseVal * 0.7 : baseVal * 0.4;
-					this.$thi += baseVal * 0.2;
-				}
-
-				this.$tdo += baseVal * 0.3;
-				break;
-			case Attribute.LUCK:
-				this.$sem += baseVal * 2;
-
-				if (CombatCategory.S1 == combatCategory) {
-					this.$ap += Math.round(val * 1);
-					this.$sp += Math.round(val * 1);
-					this.$tcr += baseVal * 0.3;
-					this.$thi += baseVal * 0.1;
-					this.$tha += baseVal * 0.3;
-					this.$tdo += baseVal * 0.25;
-					this.$scm += baseVal * 2.5;
-				} else {
-					if (combatCategory == CombatCategory.M1 || combatCategory == CombatCategory.M2 || combatCategory == CombatCategory.M3 || combatCategory == CombatCategory.M4) {
-						this.$ap += Math.round(val * 0.7);
-					}
-
-					if (combatCategory == CombatCategory.C1 || combatCategory == CombatCategory.C2 || combatCategory == CombatCategory.C3 || combatCategory == CombatCategory.M3) {
-						this.$sp += Math.round(val * 0.7);
-					}
-
-					this.$tcr += baseVal * 0.2;
-					this.$thi += baseVal * 0.1;
-					this.$tha += baseVal * 0.1;
-					this.$tdo += baseVal * 0.1;
-					this.$scm += baseVal * 5;
-				}
-				break;
-		}
+	public get$ap(): number {
+		return this.$ap;
 	}
 
+	public get$cai(): number {
+		return this.$cai;
+	}
+
+	public get$cao(): number {
+		return this.$cao;
+	}
+
+	public get$cdi(): number {
+		return this.$cdi;
+	}
+
+	public get$cdo(): number {
+		return this.$cdo;
+	}
+
+	public get$chi(): number {
+		return this.$chi;
+	}
+
+	public get$cho(): number {
+		return this.$cho;
+	}
+
+	public get$cmc(): number {
+		return this.$cmc;
+	}
+
+	public get$cmi(): number {
+		return this.$cmi;
+	}
+
+	public get$cmo(): number {
+		return this.$cmo;
+	}
+
+	public get$cpi(): number {
+		return this.$cpi;
+	}
+
+	public get$cpo(): number {
+		return this.$cpo;
+	}
+
+	public get$sbm(): number {
+		return this.$sbm;
+	}
+
+	public get$scm(): number {
+		return this.$scm;
+	}
+
+	public get$sem(): number {
+		return this.$sem;
+	}
+
+	public get$shb(): number {
+		return this.$shb;
+	}
+
+	public get$smb(): number {
+		return this.$smb;
+	}
+
+	public get$sp(): number {
+		return this.$sp;
+	}
+
+	public get$srm(): number {
+		return this.$srm;
+	}
+
+	public get$tbl(): number {
+		return this.$tbl;
+	}
+
+	public get$tcr(): number {
+		return this.$tcr;
+	}
+
+	public get$tdo(): number {
+		return this.$tdo;
+	}
+
+	public get$tha(): number {
+		return this.$tha;
+	}
+
+	public get$thi(): number {
+		return this.$thi;
+	}
+
+	public get$tpa(): number {
+		return this.$tpa;
+	}
+
+	public get$tre(): number {
+		return this.$tre;
+	}
 
 }

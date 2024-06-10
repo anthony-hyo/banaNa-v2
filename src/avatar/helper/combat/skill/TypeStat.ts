@@ -31,13 +31,6 @@ enum TypeStat {
 	AP = "ap",   // Attack Power
 	MP = "mp",   // Magic Power
 
-	WISDOM = "WISDOM", // Wisdom
-	INTELLIGENCE = "INTELLIGENCE", // Intelligence
-	ENDURANCE = "ENDURANCE", // Endurance
-	DEXTERITY = "DEXTERITY", // Dexterity
-	STRENGTH = "STRENGTH", // Strength
-	LUCK = "LUCK", // Luck
-
 	INCREASE = "+",
 	DECREASE = "-",
 	MULTIPLY = "*"

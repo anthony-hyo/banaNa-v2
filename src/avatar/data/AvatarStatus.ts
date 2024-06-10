@@ -2,13 +2,13 @@ import AvatarVitality from "../helper/AvatarVitality.ts";
 import {AvatarState} from "../helper/AvatarState.ts";
 import JSONObject from "../../util/json/JSONObject.ts";
 
-export default class AvatarStatus {
+export default abstract class AvatarStatus {
 
 	public _health: AvatarVitality;
 	public _mana: AvatarVitality;
 	public _state: AvatarState = AvatarState.NEUTRAL;
 
-	constructor(health: number, mana: number) {
+	protected constructor(health: number, mana: number) {
 		this._health = new AvatarVitality(health, health);
 		this._mana = new AvatarVitality(mana, mana);
 	}
@@ -29,6 +29,22 @@ export default class AvatarStatus {
 		this._state = value;
 	}
 
+	public die(): void {
+		if (this.state == AvatarState.DEAD) {
+			return;
+		}
+
+		this.state = AvatarState.DEAD;
+
+		this.health.update = 0;
+		this.mana.update = 0;
+	}
+
+	public restore(): void {
+		this.health.resetToFull();
+		this.mana.resetToFull();
+	}
+
 	public endCombat(): void {
 		this.state = AvatarState.NEUTRAL;
 	}
@@ -39,6 +55,8 @@ export default class AvatarStatus {
 			.element("intHP", this.health.value)
 			.element("intMP", this.mana.value);
 	}
+
+	public abstract jsonTls(...args: boolean[]): void;
 
 }
 

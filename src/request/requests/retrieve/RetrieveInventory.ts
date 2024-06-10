@@ -208,8 +208,6 @@ export default class RetrieveInventory implements IRequest {
 				client.writeArray(friendMessage[0], [friendMessage[1]]);
 			}
 		}
-
-		await player.stats.sendStats(true); //TODO: MOVE OR DELETE - DUPLICATE
 	}
 
 }
