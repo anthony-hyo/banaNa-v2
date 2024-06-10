@@ -21,5 +21,4 @@ export class Main {
 
 }
 
-
 new Main();

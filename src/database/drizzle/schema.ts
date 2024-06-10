@@ -437,7 +437,7 @@ export const enhancements = mysqlTable("enhancements", {
 			.default(1)
 			.notNull(),
 
-	damage_per_second:
+	damagePerSecond:
 		smallint("damage_per_second", {
 			unsigned: true
 		})
@@ -849,6 +849,15 @@ export const items = mysqlTable("items", {
 			.default(0)
 			.notNull(),
 
+	skillPotionId:
+		int("skill_potion_id", {
+			unsigned: true
+		})
+			.references((): AnyMySqlColumn => skills.id, {
+				onDelete: "restrict",
+				onUpdate: "cascade"
+			}),
+
 	meta:
 		varchar("meta", {
 			length: 32
@@ -892,6 +901,11 @@ export const itemsRelations = relations(items, ({ one, many }) => ({
 	requiredClassItem: one(items, {
 		fields: [items.requiredClassItemId],
 		references: [items.id],
+	}),
+
+	skillPotion: one(skills, {
+		fields: [items.skillPotionId],
+		references: [skills.id],
 	}),
 
 	requirements: many(itemsRequirements),
