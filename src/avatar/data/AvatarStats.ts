@@ -149,94 +149,94 @@ export default abstract class AvatarStats extends Stats {
 		}
 	}
 
-	protected addStat(stu: JSONObject, stat: TypeStat | TypeStatPrimary): void {
+	protected addStat(sta: JSONObject, stat: TypeStat | TypeStatPrimary): void {
 		switch (stat) {
 			case TypeStat.CMO: // Magic Boost
-				stu.element("$cmo", this.$cmo);
+				sta.element("$cmo", this.$cmo);
 				break;
 			case TypeStat.CMI: // Magic Resistance
-				stu.element("$cmi", this.$cmi);
+				sta.element("$cmi", this.$cmi);
 				break;
 			case TypeStat.CPO: // Physical Boost
-				stu.element("$cpo", this.$cpo);
+				sta.element("$cpo", this.$cpo);
 				break;
 			case TypeStat.CPI: // Physical Resistance
-				stu.element("$cpi", this.$cpi);
+				sta.element("$cpi", this.$cpi);
 				break;
 			case TypeStat.CAO: // Damage Boost
-				stu.element("$cao", this.$cao);
+				sta.element("$cao", this.$cao);
 				break;
 			case TypeStat.CAI: // Damage Resistance
-				stu.element("$cai", this.$cai);
+				sta.element("$cai", this.$cai);
 				break;
 			case TypeStat.CMC: // Mana Consumption
-				stu.element("$cmc", this.$cmc);
+				sta.element("$cmc", this.$cmc);
 				break;
 			case TypeStat.CHO: // Heal Over Time Boost
-				stu.element("$cho", this.$cho);
+				sta.element("$cho", this.$cho);
 				break;
 			case TypeStat.CHI: // Heal Over Time Intake
-				stu.element("$chi", this.$chi);
+				sta.element("$chi", this.$chi);
 				break;
 			case TypeStat.CDO: // Damage Over Time Boost
-				stu.element("$cdo", this.$cdo);
+				sta.element("$cdo", this.$cdo);
 				break;
 			case TypeStat.CDI: // Damage Over Time Resistance
-				stu.element("$cdi", this.$cdi);
+				sta.element("$cdi", this.$cdi);
 				break;
 			case TypeStat.SCM: // Stat Critical Multiplier
-				stu.element("$scm", this.$scm);
+				sta.element("$scm", this.$scm);
 				break;
 			case TypeStat.SBM: // Stat Block Multiplier
-				stu.element("$sbm", this.$sbm);
+				sta.element("$sbm", this.$sbm);
 				break;
 			case TypeStat.SEM: // Stat Event Multiplier TODO
-				stu.element("$sem", this.$sem);
+				sta.element("$sem", this.$sem);
 				break;
 			case TypeStat.SRM: // Stat Resist Multiplier
-				stu.element("$srm", this.$srm);
+				sta.element("$srm", this.$srm);
 				break;
 			case TypeStat.SHB: // Stat Health Boost TODO
-				stu.element("$shb", this.$shb);
+				sta.element("$shb", this.$shb);
 				break;
 			case TypeStat.SMB: // Stat Mana Boost TODO
-				stu.element("$smb", this.$smb);
+				sta.element("$smb", this.$smb);
 				break;
 			case TypeStat.TCR: // Critical
-				stu.element("$tcr", this.$tcr);
+				sta.element("$tcr", this.$tcr);
 				break;
 			case TypeStat.THA: // Haste
-				stu.element("$tha", this.$tha);
+				sta.element("$tha", this.$tha);
 				break;
 			case TypeStat.TDO: // Evasion
-				stu.element("$tdo", this.$tdo);
+				sta.element("$tdo", this.$tdo);
 				break;
 			case TypeStat.THI: // Hit
-				stu.element("$thi", this.$thi);
+				sta.element("$thi", this.$thi);
 				break;
 			case TypeStat.AP: // Attack Power
-				stu.element("$ap", this.$ap);
+				sta.element("$ap", this.$ap);
 				break;
 			case TypeStat.MP: // Magic Power
-				stu.element("$sp", this.$sp);
+				sta.element("$sp", this.$sp);
 				break;
 			case TypeStatPrimary.WISDOM: // Wisdom
-				stu.element("$WIS", this.get$WIS());
+				sta.element("$WIS", this.get$WIS());
 				break;
 			case TypeStatPrimary.INTELLIGENCE: // Intelligence
-				stu.element("$INT", this.get$INT());
+				sta.element("$INT", this.get$INT());
 				break;
 			case TypeStatPrimary.ENDURANCE: // Endurance
-				stu.element("$END", this.get$END());
+				sta.element("$END", this.get$END());
 				break;
 			case TypeStatPrimary.DEXTERITY: // Dexterity
-				stu.element("$DEX", this.get$DEX());
+				sta.element("$DEX", this.get$DEX());
 				break;
 			case TypeStatPrimary.STRENGTH: // Strength
-				stu.element("$STR", this.get$STR());
+				sta.element("$STR", this.get$STR());
 				break;
 			case TypeStatPrimary.LUCK: // Luck
-				stu.element("$LCK", this.get$LCK());
+				sta.element("$LCK", this.get$LCK());
 				break;
 		}
 	}
