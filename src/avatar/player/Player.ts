@@ -602,7 +602,7 @@ export default class Player extends Avatar {
 	public async levelUp(level: number): Promise<void> {
 		const newLevel: number = level >= CoreValues.getValue("intLevelMax") ? CoreValues.getValue("intLevelMax") : level;
 
-		await this.stats.sendStats(true);
+		await this.stats.update();
 
 		this.writeObject(
 			new JSONObject()

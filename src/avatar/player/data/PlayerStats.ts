@@ -24,13 +24,13 @@ export default class PlayerStats extends AvatarStats {
 	}
 
 	public override async update(): Promise<void> {
-		this.initInnateStats();
+		await this.initInnateStats();
 		this.initTotalStats();
-		this.applyCoreStatRatings();
+		await this.applyCoreStatRatings();
 
 		try {
 			this.applyAuraEffects();
-			this.updateStatus();
+			await this.updateStatus();
 			this.initDamage();
 
 			const tempStat: JSONObject = new JSONObject();
@@ -88,9 +88,9 @@ export default class PlayerStats extends AvatarStats {
 	}
 
 	public override async updateEffect(statsUpdated: TypeStat[] | TypeStatPrimary[] | null): Promise<void> {
-		this.initInnateStats();
+		await this.initInnateStats();
 		this.initTotalStats();
-		this.applyCoreStatRatings();
+		await this.applyCoreStatRatings();
 
 		try {
 			this.applyAuraEffects();
